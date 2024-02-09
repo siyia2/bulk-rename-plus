@@ -3,7 +3,7 @@ Tiny but powerful C++ program to rename recursively paths into upper/lower/rever
 
 Useful for improving performance for wine windows apps in a case sensitive linux system and for improving compatibility with some windows wine game mods.
 
-# How to use:
+## How to use:
 modes include `lower` for converting everything to lower case `upper` for converting everything to upper case and `reverse` for reversing existing case status.
 
 e.g. lower: Test => test, upper: Test=> TEST, reverse: Test => tEST.
