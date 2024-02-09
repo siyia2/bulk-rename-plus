@@ -6,7 +6,7 @@ Useful for improving the performance of installed wine windows apps in a case se
 Default and recommended installation path is `~/.local/bin/bulk_rename++`, no need to run it as `ROOT` unless of course you know what you are doing.
 
 ## How to use:
-Case conversion modes include `lower` for converting everything to lower case, `upper` for converting everything to upper case, `fupper` for converting everything to lower case except each first letter and `reverse` for reversing existing case status.
+Case conversion modes include `lower` for converting everything to lower case, `upper` for converting everything to upper case, `fupper` for converting every first character to upper case and the rest to lower case and `reverse` for reversing existing case status.
 
 e.g. lower: Test => test, upper: Test=> TEST, reverse: Test => tEST fupper: test => Test.
 
