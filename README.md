@@ -3,6 +3,8 @@ Tiny but powerful C++ program to rename recursively paths into upper/lower/rever
 
 Useful for improving the performance of installed wine windows apps in a case sensitive linux file system and/or for improving compatibility with some wine windows game mods.
 
+Default and recommended installation path is `~/.local/bin/bulk_rename++`, no need to run it as `ROOT` unless of course you know what you are doing.
+
 ## How to use:
 Case conversion modes include `lower` for converting everything to lower case `upper` for converting everything to upper case and `reverse` for reversing existing case status.
 
