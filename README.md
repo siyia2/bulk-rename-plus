@@ -1,5 +1,5 @@
 # bulk-rename-plus
-Tiny but powerful C++ program to rename files into upper/lower/reverse case from the terminal.
+Tiny but powerful C++ program to rename recursively paths into upper/lower/reverse case from the terminal.
 
 Useful for improving performance for wine windows apps in a case sensitive linux system and for improving compatibility with some windows wine game mods.
 
