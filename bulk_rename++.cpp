@@ -245,8 +245,8 @@ int main(int argc, char *argv[]) {
 
     // Display confirmation prompt after validating paths
     // Clear the screen and display warning
-    system("clear");
-    print_message("\n\033[1;93m!!! WARNING OPERATION IRREVERSIBLE !!!\033[0m\n");
+    std::system("clear");
+    std::cout << "\033[1;93m!!! WARNING OPERATION IRREVERSIBLE !!!\033[0m\n\n";
 
     // Confirm renaming for all paths
     std::string confirmation;
@@ -266,13 +266,27 @@ int main(int argc, char *argv[]) {
 
     if (confirmation != "y") {
         std::cout << "\n\033[1;91mOperation aborted by user.\n\033[0m\n";
+        
+        std::cout << "Press enter to continue...";
+        std::cin.get();
+        
+        std::system("clear");
+        
         return 0;
     }
+    if (verbose_enabled==true){
+		std::cout << "\n";
+	}
     
     // Process each path based on the chosen case conversion mode
     rename_path(paths, case_input, rename_parents, verbose_enabled);
     
     std::cout << "\n";
+    
+    std::cout << "\033[0mPress enter to continue...";
+    std::cin.get();
+        
+    std::system("clear");
 
     return 0;
 }
