@@ -28,6 +28,14 @@ bulk_rename [path1] [path2]... -v -c lower.
 for help:
 bulk_rename++ -h or bulk_rename++ --help.
 
+For improving the performance and compatibility of windows apps in a case sensitive linux file system with wine, use `lower` case mode exclusively.
+
+### Ways to install:
+
+1. Download binary from latest release.
+2. Download from source and compile with `make`.
+3. If on arch, or on an arch based distro `yay -S bulk-rename-plus`
+
 
 
 
