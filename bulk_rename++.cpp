@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
     // Confirm renaming for all paths
     std::string confirmation;
     if (rename_parents == true) {
-        std::cout << "\033[1mThe following paths, along with their parent directories, will be recursively renamed to \033[1;92m"<< case_input <<"_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[1mThe following path(s), along with their parent dir(s), will be recursively renamed to \033[1;92m"<< case_input <<"_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;95m" << path << "\033[0m" << std::endl;
         }
