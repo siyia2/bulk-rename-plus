@@ -132,7 +132,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     try {
         fs::rename(directory_path, new_path);
         if (verbose) {
-            print_message("\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+            print_message("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
         }
         ++dirs_count; // Increment directories count
     } catch (const std::filesystem::filesystem_error& e) {
@@ -166,7 +166,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             try {
                 fs::rename(entry.path(), new_file_path);
                 if (verbose) {
-                    print_message("\033[92mRenamed\033[0m file " + entry.path().string() + " to " + new_file_path.string());
+                    print_message("\033[0m\033[92mRenamed\033[0m file " + entry.path().string() + " to " + new_file_path.string());
                 }
                 ++files_count; // Increment files count
             } catch (const std::filesystem::filesystem_error& e) {
