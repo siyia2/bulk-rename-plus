@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
     if (confirmation != "y") {
         std::cout << "\n\033[1;91mOperation aborted by user.\n\033[0m\n";
         
-        std::cout << "Press enter to exit...";
+        std::cout << "\033[1mPress enter to exit...";
         std::cin.get();
         
         std::system("clear");
@@ -276,7 +276,7 @@ int main(int argc, char *argv[]) {
     
     std::cout << "\n";
     
-    std::cout << "\033[0mPress enter to exit...";
+    std::cout << "\033[1mPress enter to exit...";
     std::cin.get();
         
     std::system("clear");
