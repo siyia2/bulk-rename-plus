@@ -5,8 +5,6 @@
 #include <vector>
 #include <thread>
 #include <mutex>
-#include <readline/readline.h>
-#include <readline/history.h>
 #include <unistd.h>
 #include <chrono> // Include chrono for time measurement
 
@@ -16,11 +14,6 @@ bool verbose_enabled = false; // Verbose mode disabled by default
 
 std::mutex cout_mutex;  // Mutex to protect std::cout
 std::mutex input_mutex;   // Mutex to protect input operations
-
-char* safe_readline(const char* prompt) {
-    std::lock_guard<std::mutex> lock(input_mutex);
-    return readline(prompt);
-}
 
 void print_message(const std::string& message) {
     if (verbose_enabled) {
