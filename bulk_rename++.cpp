@@ -7,6 +7,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <chrono> // Include chrono for time measurement
+#include <iomanip> // Include iomanip for setprecision
 
 namespace fs = std::filesystem;
 
@@ -127,6 +128,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
+    // Check if case_input is empty
+    if (case_input.empty()) {
+        print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\033[0m");
+        return;
+    }
+
     std::vector<std::thread> threads;
 
     unsigned int max_threads = std::thread::hardware_concurrency();
@@ -187,20 +194,22 @@ int main(int argc, char *argv[]) {
     std::string case_input;
     bool rename_parents = false;
 
-    // Check if the user requested help
+    bool case_specified = false; // Flag to track if case conversion mode is specified
+
+    // Check if the user requested help or specified the case conversion mode
     if (argc >= 2) {
         for (int i = 1; i < argc; ++i) {
             std::string arg(argv[i]);
-            if (arg == "-v" || arg== "--verbose") {
+            if (arg == "-v" || arg == "--verbose") {
                 verbose_enabled = true;
             } else if (arg == "-h" || arg == "--help") {
                 print_help();
                 return 0;
-                
             } else if (arg == "-cp") {
                 rename_parents = true;
                 if (i + 1 < argc) {
                     case_input = argv[++i]; // Get the case conversion mode
+                    case_specified = true;
                     // Check if the case mode is valid
                     if (case_input != "lower" && case_input != "upper" && case_input != "reverse") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', or 'reverse'.\n");
@@ -213,6 +222,7 @@ int main(int argc, char *argv[]) {
             } else if (arg == "-c") {
                 if (i + 1 < argc) {
                     case_input = argv[++i]; // Get the case conversion mode
+                    case_specified = true;
                     // Check if the case mode is valid
                     if (case_input != "lower" && case_input != "upper" && case_input != "reverse") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', or 'reverse'.\n");
@@ -226,6 +236,12 @@ int main(int argc, char *argv[]) {
                 paths.emplace_back(arg);
             }
         }
+    }
+
+    // Check if the case conversion mode is specified
+    if (!case_specified) {
+        print_error("\033[1;91mError: Case conversion mode not specified (-c or -cp option is required)\033[0m\n");
+        return 1;
     }
 
     // Validate paths before confirmation
@@ -243,7 +259,7 @@ int main(int argc, char *argv[]) {
 
     // Confirm renaming for all paths
     std::string confirmation;
-    if (rename_parents == true) {
+    if (rename_parents) {
         std::cout << "\033[1mThe following path(s), along with their parent dir(s), will be recursively renamed to \033[1;92m"<< case_input <<"_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;95m" << path << "\033[0m" << std::endl;
@@ -267,9 +283,9 @@ int main(int argc, char *argv[]) {
         
         return 0;
     }
-    if (verbose_enabled==true){
-		std::cout << "\n";
-	}
+    if (verbose_enabled) {
+        std::cout << "\n";
+    }
     
     // Process each path based on the chosen case conversion mode
     rename_path(paths, case_input, rename_parents, verbose_enabled);
