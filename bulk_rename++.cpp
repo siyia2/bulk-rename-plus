@@ -100,19 +100,32 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     fs::path new_path = directory_path;
     std::string dirname = directory_path.filename().string();
     std::string new_dirname;
-    new_dirname.resize(dirname.size());
 
-    std::transform(dirname.begin(), dirname.end(), new_dirname.begin(), [case_input](unsigned char c) -> unsigned char {
-        if (case_input == "lower") {
-            return std::tolower(c);
-        } else if (case_input == "upper") {
-            return std::toupper(c);
-        } else if (case_input == "reverse") {
+    // Apply appropriate case conversion mode to directory name
+    if (case_input == "lower") {
+        std::transform(dirname.begin(), dirname.end(), std::back_inserter(new_dirname), ::tolower);
+    } else if (case_input == "upper") {
+        std::transform(dirname.begin(), dirname.end(), std::back_inserter(new_dirname), ::toupper);
+    } else if (case_input == "reverse") {
+        std::transform(dirname.begin(), dirname.end(), std::back_inserter(new_dirname), [](unsigned char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
-        } else {
-            return c;
+        });
+    } else if (case_input == "fupper") {
+        bool capitalize_next = true;
+        for (char c : dirname) {
+            if (std::isalpha(c)) {
+                if (capitalize_next) {
+                    new_dirname += std::toupper(c);
+                    capitalize_next = false;
+                } else {
+                    new_dirname += std::tolower(c);
+                }
+            } else {
+                new_dirname += c;
+                capitalize_next = true;
+            }
         }
-    });
+    }
 
     new_path.remove_filename(); // Remove the last component (file name) from the path
     new_path /= new_dirname; // Append the new directory name
@@ -132,7 +145,34 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (entry.is_directory()) {
             rename_directory(entry.path(), case_input, rename_immediate_parent, verbose, files_count, dirs_count);
         } else {
-            rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
+            // For files, directly rename the item without considering the parent directory
+            std::string filename = entry.path().filename().string();
+            std::string new_filename;
+            new_filename.reserve(filename.size());
+            bool capitalize_next = true;
+            for (char c : filename) {
+                if (std::isalpha(c)) {
+                    if (capitalize_next) {
+                        new_filename += std::toupper(c);
+                        capitalize_next = false;
+                    } else {
+                        new_filename += std::tolower(c);
+                    }
+                } else {
+                    new_filename += c;
+                    capitalize_next = true;
+                }
+            }
+            fs::path new_file_path = new_path / new_filename;
+            try {
+                fs::rename(entry.path(), new_file_path);
+                if (verbose) {
+                    print_message("\033[92mRenamed\033[0m file " + entry.path().string() + " to " + new_file_path.string());
+                }
+                ++files_count; // Increment files count
+            } catch (const std::filesystem::filesystem_error& e) {
+                print_error("\033[91mError\033[0m: " + std::string(e.what()));
+            }
         }
     }
 
