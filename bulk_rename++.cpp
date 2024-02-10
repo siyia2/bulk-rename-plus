@@ -41,11 +41,11 @@ void print_help() {
               << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
               << "Examples:\n"
-              << "  bulk_rename++ /path/to/folder1 /path/to/folder2 -c lower\n"
-              << "  bulk_rename++ /path/to/folder -cp upper\n"
-              << "  bulk_rename++ /path/to/folder -ce upper\n"
-              << "  bulk_rename++ /path/to/folder -v -cp upper\n"
-              << "  bulk_rename++ /path/to/folder -c upper -v\n"
+              << "  bulk_rename++ [path1] [path2]... -c lower\n"
+              << "  bulk_rename++ [path1] -c lower -v\n"
+              << "  bulk_rename++ [path1] -v -c lower\n"
+              << "  bulk_rename++ [path1] -v -cp upper\n"
+              << "  bulk_rename++ [path1] -ce upper -v\n"
               << "\n";
 }
 
@@ -422,4 +422,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
