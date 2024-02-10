@@ -56,8 +56,8 @@ std::string fupper(const std::string& word) {
 }
 
 std::string fupper_extension(const std::string& extension) {
-    std::string result = extension;
     bool first_letter_encountered = true;
+    std::string result = extension; // No need for string copy here
     for (char& c : result) {
         if (std::isalpha(c)) {
             if (first_letter_encountered) {
@@ -68,7 +68,7 @@ std::string fupper_extension(const std::string& extension) {
             }
         }
     }
-    return result;
+    return result; // Avoids unnecessary string copy
 }
 
 void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose, int& files_count, int& dirs_count) {
@@ -194,24 +194,22 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 
-    fs::path new_path = directory_path.parent_path() / new_dirname;
-
-    // Check if renaming is necessary
-    if (directory_path != new_path) {
-        try {
-            fs::rename(directory_path, new_path);
-            if (verbose) {
-                std::cout << "\033[0m\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
-            }
-            ++dirs_count;
-        } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-            return; // Stop processing if renaming failed
-        }
+    fs::path new_path;
+    if (rename_immediate_parent) {
+        new_path = directory_path.parent_path() / new_dirname;
     } else {
-        if (verbose && !rename_immediate_parent) { // Only print skipped message if not renaming the immediate parent
-            std::cout << "\033[0m\033[93mSkipped\033[0m directory " << directory_path.string() << " (name unchanged)" << std::endl;
+        new_path = directory_path;
+    }
+
+    try {
+        fs::rename(directory_path, new_path);
+        if (verbose) {
+            std::cout << "\033[0m\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
         }
+        ++dirs_count;
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+        return; // Stop processing if renaming failed
     }
 
     // If rename_immediate_parent is true, rename the immediate parent directory
@@ -228,6 +226,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 }
+
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
     // Check if case_input is empty
