@@ -14,18 +14,18 @@ e.g. with -ce lower: Test.txt => test.txt upper: Test.txt => TEST.txt fupper: te
 
 usage:
 
-bulk_rename [path1] [path2]... -c lower.
+bulk_rename++ [path1] [path2]... -c lower.
 
 if you wish to also rename the parent directories of input paths:
 
-bulk_rename [path1] [path2]... -cp lower.
+bulk_rename++ [path1] [path2]... -cp lower.
 
 
 if you wish to also enable verbose mode:
 
-bulk_rename [path1] [path2]... -c lower -v.
+bulk_rename++ [path1] [path2]... -c lower -v.
 or
-bulk_rename [path1] [path2]... -v -c lower.
+bulk_rename++ [path1] [path2]... -v -c lower.
 
 `--verbose` instead of `-v` can also be used.
 
