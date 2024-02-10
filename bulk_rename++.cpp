@@ -7,7 +7,6 @@
 #include <mutex>
 #include <unistd.h>
 #include <chrono>
-#include <iomanip>
 
 namespace fs = std::filesystem;
 
@@ -106,6 +105,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with original name
 
+    // Apply case transformation if needed
     if (case_input == "lower") {
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
     } else if (case_input == "upper") {
@@ -130,21 +130,24 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
     fs::path new_path = directory_path.parent_path() / new_dirname;
 
-    try {
-        fs::rename(directory_path, new_path);
-        if (verbose) {
-            std::cout << "\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
+    // Check if renaming is necessary
+    if (directory_path != new_path) {
+        try {
+            fs::rename(directory_path, new_path);
+            if (verbose) {
+                std::cout << "\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
+            }
+            ++dirs_count;
+        } catch (const fs::filesystem_error& e) {
+            std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
         }
-        ++dirs_count;
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
     }
 
     std::vector<std::thread> threads;
     // Recursively rename all contents within the directory
     for (const auto& entry : fs::directory_iterator(new_path)) {
         if (entry.is_directory()) {
-            threads.emplace_back(rename_directory, entry.path(), case_input, rename_immediate_parent, verbose, std::ref(files_count), std::ref(dirs_count));
+            threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
         } else {
             rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
         }
@@ -155,10 +158,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         thread.join();
     }
 
+    // If rename_immediate_parent is true, rename the immediate parent directory and its contents recursively
     if (rename_immediate_parent) {
-        return;
+        rename_directory(new_path, case_input, false, verbose, files_count, dirs_count);
     }
 }
+
+
 
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
