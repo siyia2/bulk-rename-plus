@@ -103,27 +103,33 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose, int& files_count, int& dirs_count) {
     std::string dirname = directory_path.filename().string();
-    std::string new_dirname = dirname; // Initialize with original name
+    std::string new_dirname; // Initialize with original name
 
     // Apply case transformation if needed
     if (case_input == "lower") {
+        new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
     } else if (case_input == "upper") {
+        new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
     } else if (case_input == "reverse") {
+        new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
     } else if (case_input == "fupper") {
         bool first_letter = true;
-        for (char& c : new_dirname) {
-            if (!std::isalpha(c)) {
-                first_letter = true;
-            } else if (first_letter) {
-                c = std::toupper(c);
-                first_letter = false;
+        new_dirname.reserve(dirname.size()); // Reserve space for efficiency
+        for (char c : dirname) {
+            if (std::isalpha(c)) {
+                if (first_letter) {
+                    new_dirname.push_back(std::toupper(c));
+                    first_letter = false;
+                } else {
+                    new_dirname.push_back(std::tolower(c));
+                }
             } else {
-                c = std::tolower(c);
+                new_dirname.push_back(c);
             }
         }
     }
