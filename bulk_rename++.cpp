@@ -156,40 +156,30 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
+            return; // Stop processing if renaming failed
         }
     } else {
-        if (verbose) {
+        if (verbose && !rename_immediate_parent) { // Only print skipped message if not renaming the immediate parent
             std::cout << "\033[93mSkipped\033[0m directory " << directory_path.string() << " (name unchanged)" << std::endl;
         }
     }
 
-    // Determine the maximum number of threads supported by the system
-    unsigned int max_threads = std::thread::hardware_concurrency();
-
-    std::vector<std::thread> threads;
-    // Recursively rename all contents within the directory
-    for (const auto& entry : fs::directory_iterator(new_path)) {
-        if (entry.is_directory()) {
-            if (threads.size() < max_threads) {
-                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
-            } else {
-                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count); // Rename synchronously if max threads reached
-            }
-        } else {
-            rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
-        }
-    }
-
-    // Join threads (if any)
-    for (auto& thread : threads) {
-        thread.join();
-    }
-
-    // If rename_immediate_parent is true, rename the immediate parent directory and its contents recursively
+    // If rename_immediate_parent is true, rename the immediate parent directory
     if (rename_immediate_parent) {
         rename_directory(new_path, case_input, false, verbose, files_count, dirs_count);
+    } else {
+        // Otherwise, recursively rename all contents within the directory
+        for (const auto& entry : fs::directory_iterator(new_path)) {
+            if (entry.is_directory()) {
+                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count);
+            } else {
+                rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
+            }
+        }
     }
 }
+
+
 
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
