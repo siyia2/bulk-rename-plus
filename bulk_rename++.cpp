@@ -314,6 +314,11 @@ int main(int argc, char *argv[]) {
 
     bool case_specified = false;
 
+    bool c_option_provided = false;
+    bool cp_option_provided = false;
+    bool ce_option_provided = false;
+
+    // Parse command line arguments
     if (argc >= 2) {
         for (int i = 1; i < argc; ++i) {
             std::string arg(argv[i]);
@@ -322,7 +327,30 @@ int main(int argc, char *argv[]) {
             } else if (arg == "-h" || arg == "--help") {
                 print_help();
                 return 0;
+            } else if (arg == "-c") {
+                if (c_option_provided || cp_option_provided || ce_option_provided) {
+                    print_error("\033[1;91mError: Multiple case conversion options specified. Please provide only one of -c, -cp, or -ce.\n");
+                    return 1;
+                }
+                c_option_provided = true;
+                if (i + 1 < argc) {
+                    case_input = argv[++i];
+                    case_specified = true;
+                    // Check if the case mode is valid
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
+                        return 1;
+                    }
+                } else {
+                    print_error("\033[1;91mError: Missing argument for option -c\n");
+                    return 1;
+                }
             } else if (arg == "-cp") {
+                if (c_option_provided || cp_option_provided || ce_option_provided) {
+                    print_error("\033[1;91mError: Multiple case conversion options specified. Please provide only one of -c, -cp, or -ce.\n");
+                    return 1;
+                }
+                cp_option_provided = true;
                 rename_parents = true;
                 if (i + 1 < argc) {
                     case_input = argv[++i];
@@ -336,20 +364,12 @@ int main(int argc, char *argv[]) {
                     print_error("\033[1;91mError: Missing argument for option -cp\n");
                     return 1;
                 }
-            } else if (arg == "-c") {
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                    // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
-                        return 1;
-                    }
-                } else {
-                    print_error("\033[1;91mError: Missing argument for option -c\n");
+            } else if (arg == "-ce") {
+                if (c_option_provided || cp_option_provided || ce_option_provided) {
+                    print_error("\033[1;91mError: Multiple case conversion options specified. Please provide only one of -c, -cp, or -ce.\n");
                     return 1;
                 }
-            } else if (arg == "-ce") { // Handle -ce option
+                ce_option_provided = true;
                 rename_only_extension = true;
                 if (i + 1 < argc) {
                     case_input = argv[++i];
@@ -369,7 +389,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (!case_specified) {
+    // Check if exactly one case conversion option is provided
+    if (!c_option_provided && !cp_option_provided && !ce_option_provided) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n");
         return 1;
     }
