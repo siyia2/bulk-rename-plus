@@ -194,7 +194,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 
-    fs::path new_path = directory_path.parent_path() / new_dirname;
+    fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
     // Check if renaming is necessary
     if (directory_path != new_path) {
@@ -218,13 +218,19 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (rename_immediate_parent) {
         rename_directory(new_path, case_input, false, verbose, files_count, dirs_count);
     } else {
-        // Otherwise, recursively rename all contents within the directory
+        // Otherwise, collect all files to be renamed and batch rename them
+        std::vector<fs::path> files_to_rename;
         for (const auto& entry : fs::directory_iterator(new_path)) {
             if (entry.is_directory()) {
                 rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count);
             } else {
-                rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
+                files_to_rename.push_back(entry.path());
             }
+        }
+
+        // Batch rename files
+        for (const auto& file : files_to_rename) {
+            rename_item(file, case_input, false, verbose, files_count, dirs_count);
         }
     }
 }
