@@ -49,11 +49,13 @@ void print_help() {
               << "\n";
 }
 
+
 std::string fupper_ext(const std::string& extension) {
     std::string result = extension;
     std::transform(result.begin(), result.end(), result.begin(), ::toupper);
     return result;
 }
+
 
 void rename_file_extension(const fs::path& file_path, const std::string& case_input, bool verbose, int& files_count) {
     std::string extension = file_path.extension().string();
@@ -79,7 +81,7 @@ void rename_file_extension(const fs::path& file_path, const std::string& case_in
         try {
             fs::rename(file_path, new_path);
             if (verbose) {
-                std::cout << "\033[0m\033[92mRenamed\033[0m file " << file_path.string() << " to " << new_path.string() << std::endl;
+                std::cout << "\033[0m\033[92mRenamed \033[0mfile " << file_path.string() << " to " << new_path.string() << std::endl;
             }
             ++files_count;
         } catch (const fs::filesystem_error& e) {
@@ -87,7 +89,7 @@ void rename_file_extension(const fs::path& file_path, const std::string& case_in
         }
     } else {
         if (verbose) {
-            std::cout << "\033[0m\033[93mSkipped\033[0m file " << file_path.string() << " (extension unchanged)" << std::endl;
+            std::cout << "\033[0m\033[93mSkipped file\033[0m " << file_path.string() << " (extension unchanged)" << std::endl;
         }
     }
 }
@@ -148,7 +150,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             fs::rename(item_path, new_path);
             if (verbose) {
                 std::string item_type = is_directory ? "directory" : "file";
-                std::cout << "\033[0m\033[92mRenamed\033[0m " << item_type << " " << item_path.string() << " to " << new_path.string() << std::endl;
+                std::cout << "\033[0m\033[92mRenamed\033[0m " << item_type << "\033[0m " << item_path.string() << " to " << new_path.string() << std::endl;
             }
             if (!is_directory) {
                 ++files_count;
@@ -161,13 +163,10 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     } else {
         if (verbose) {
             std::string item_type = is_directory ? "directory" : "file";
-            std::cout << "\033[0m\033[93mSkipped\033[0m " << item_type << " " << item_path.string() << " (name unchanged)" << std::endl;
+            std::cout << "\033[0m\033[93mSkipped\033[0m " << item_type << "\033[0m " << item_path.string() << " (name unchanged)" << std::endl;
         }
     }
 }
-
-
-
 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose, int& files_count, int& dirs_count) {
@@ -210,7 +209,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         try {
             fs::rename(directory_path, new_path);
             if (verbose) {
-                std::cout << "\033[0m\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
+                std::cout << "\033[0m\033[94mRenamed \033[0mdirectory " << directory_path.string() << " to " << new_path.string() << std::endl;
             }
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
@@ -219,7 +218,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     } else {
         if (verbose && !rename_immediate_parent) { // Only print skipped message if not renaming the immediate parent
-            std::cout << "\033[0m\033[93mSkipped\033[0m directory " << directory_path.string() << " (name unchanged)" << std::endl;
+            std::cout << "\033[0m\033[93mSkipped \033[0mdirectory " << directory_path.string() << " (name unchanged)" << std::endl;
         }
     }
 
@@ -239,23 +238,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
 
 
-
-
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true, bool rename_only_extension = false) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
         return;
     }
-
-    std::vector<std::thread> threads;
-
-    unsigned int max_threads = std::thread::hardware_concurrency();
-    if (max_threads == 0) {
-        max_threads = 2; // If hardware concurrency is not available, default to 1 thread
-    }
-
-    auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     int files_count = 0; // Initialize files count
     int dirs_count = 0;  // Initialize directories count
@@ -271,11 +259,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                     rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
                 } else {
                     // Otherwise, rename the entire path
-                    if (threads.size() < max_threads) {
-                        threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose, std::ref(files_count), std::ref(dirs_count));
-                    } else {
-                        rename_directory(current_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
-                    }
+                    rename_directory(current_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
@@ -292,20 +276,11 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
         }
     }
 
-    // Wait for all threads to finish
-    for (auto& thread : threads) {
-        thread.join();
-    }
-
-    auto end_time = std::chrono::steady_clock::now(); // End time measurement
-
-    std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
-
-    std::cout << "\n\033[1mRenamed to "<< case_input <<"_case: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m" 
-              << dirs_count << " dir(s) \033[0m\033[1mfrom \033[1;95m" << paths.size() 
-              << " input path(s) \033[0m\033[1min " << std::setprecision(1) 
-              << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+    std::cout << "\n\033[1mRenamed to " << case_input << "_case: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
+              << dirs_count << " dir(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
+              << " input path(s) \033[0m\n";
 }
+
 
 int main(int argc, char *argv[]) {
     std::vector<std::string> paths;
@@ -447,3 +422,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
