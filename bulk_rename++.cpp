@@ -56,115 +56,106 @@ std::string fupper(const std::string& word) {
 
 void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose, int& files_count, int& dirs_count) {
     std::string name = item_path.filename().string();
-    std::string new_name;
-    new_name.resize(name.size()); // Resize new_name
+    std::string new_name = name; // Initialize with original name
 
-    std::transform(name.begin(), name.end(), new_name.begin(), [case_input](unsigned char c) -> unsigned char {
-        if (case_input == "lower") {
-            return std::tolower(c);
-        } else if (case_input == "upper") {
-            return std::toupper(c);
-        } else if (case_input == "reverse") {
+    // Apply case transformation if needed
+    if (case_input == "lower") {
+        std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
+    } else if (case_input == "upper") {
+        std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::toupper);
+    } else if (case_input == "reverse") {
+        std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
-        } else {
-            return c;
-        }
-    });
-
-if (case_input == "fupper") {
-    // Special handling for filenames like "1_file" or "1-file"
-    bool found_non_letter = false; // Flag to track if a non-letter character is found
-    for (size_t i = 0; i < new_name.size(); ++i) {
-        // Check if the current character is not a letter
-        if (!isalpha(new_name[i])) {
-            found_non_letter = true; // Set the flag to true when a non-letter character is found
-        }
-        // Check if the current character is a letter and follows a non-letter character
-        else if (found_non_letter) {
-            // Capitalize the letter character
-            new_name[i] = std::toupper(new_name[i]);
-            found_non_letter = false; // Reset the flag since we found the first letter after a non-letter character
-        }
-        else {
-            // Lowercase the character if it's not already lowercase
-            if (std::isupper(new_name[i])) {
-                new_name[i] = std::tolower(new_name[i]);
+        });
+    } else if (case_input == "fupper") {
+        bool found_non_letter = false;
+        for (char& c : new_name) {
+            if (!std::isalpha(c)) {
+                found_non_letter = true;
+            } else if (found_non_letter) {
+                c = std::toupper(c);
+                found_non_letter = false;
+            } else {
+                c = std::tolower(c);
             }
         }
     }
-}
-    fs::path new_path = item_path.parent_path() / new_name;
 
-    try {
-        fs::rename(item_path, new_path);
-        if (verbose) {
-            std::string item_type = is_directory ? "directory" : "file";
-            print_message("\033[92mRenamed\033[0m " + item_type + " " + item_path.string() + " to " + new_path.string());
+    // Skip renaming if the new name is the same as the old name
+    if (name != new_name) {
+        fs::path new_path = item_path.parent_path() / new_name;
+
+        try {
+            fs::rename(item_path, new_path);
+            if (verbose) {
+                std::string item_type = is_directory ? "directory" : "file";
+                std::cout << "\033[92mRenamed\033[0m " << item_type << " " << item_path.string() << " to " << new_path.string() << std::endl;
+            }
+            if (!is_directory) {
+                ++files_count;
+            } else {
+                ++dirs_count;
+            }
+        } catch (const fs::filesystem_error& e) {
+            std::cerr << "\033[91mError\033[0m: " << e.what() << std::endl;
         }
-        if (!is_directory) {
-            ++files_count; // Increment files count
-        } else {
-            ++dirs_count; // Increment directories count
-        }
-    } catch (const std::filesystem::filesystem_error& e) {
-        print_error("\033[91mError\033[0m: " + std::string(e.what()));
     }
 }
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose, int& files_count, int& dirs_count) {
-    fs::path new_path = directory_path;
     std::string dirname = directory_path.filename().string();
-    std::string new_dirname;
-    new_dirname.resize(dirname.size());
+    std::string new_dirname = dirname; // Initialize with original name
 
-    std::transform(dirname.begin(), dirname.end(), new_dirname.begin(), [case_input, first_letter = true](unsigned char c) mutable -> unsigned char {
-        if (case_input == "lower") {
-            return std::tolower(c);
-        } else if (case_input == "upper") {
-            return std::toupper(c);
-        } else if (case_input == "reverse") {
+    if (case_input == "lower") {
+        std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
+    } else if (case_input == "upper") {
+        std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
+    } else if (case_input == "reverse") {
+        std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
-        } else if (case_input == "fupper") {
+        });
+    } else if (case_input == "fupper") {
+        bool first_letter = true;
+        for (char& c : new_dirname) {
             if (!std::isalpha(c)) {
-                first_letter = true; // Reset the flag when encountering non-letter character
-                return c;
-            }
-            if (first_letter) {
+                first_letter = true;
+            } else if (first_letter) {
                 c = std::toupper(c);
-                first_letter = false; // Set the flag to false after capitalizing the first letter
+                first_letter = false;
             } else {
                 c = std::tolower(c);
             }
-            return c;
-        } else {
-            return c;
         }
-    });
+    }
 
-    new_path.remove_filename(); // Remove the last component (file name) from the path
-    new_path /= new_dirname; // Append the new directory name
+    fs::path new_path = directory_path.parent_path() / new_dirname;
 
     try {
         fs::rename(directory_path, new_path);
         if (verbose) {
-            print_message("\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+            std::cout << "\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
         }
-        ++dirs_count; // Increment directories count
-    } catch (const std::filesystem::filesystem_error& e) {
-        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
+        ++dirs_count;
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
     }
 
+    std::vector<std::thread> threads;
     // Recursively rename all contents within the directory
     for (const auto& entry : fs::directory_iterator(new_path)) {
         if (entry.is_directory()) {
-            rename_directory(entry.path(), case_input, rename_immediate_parent, verbose, files_count, dirs_count);
+            threads.emplace_back(rename_directory, entry.path(), case_input, rename_immediate_parent, verbose, std::ref(files_count), std::ref(dirs_count));
         } else {
             rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
         }
     }
 
+    // Join threads
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
     if (rename_immediate_parent) {
-        // If rename_immediate_parent is true, do not recursively rename
         return;
     }
 }
