@@ -55,6 +55,22 @@ std::string fupper(const std::string& word) {
     return result;
 }
 
+std::string fupper_extension(const std::string& extension) {
+    std::string result = extension;
+    bool first_letter_encountered = true;
+    for (char& c : result) {
+        if (std::isalpha(c)) {
+            if (first_letter_encountered) {
+                c = std::toupper(c);
+                first_letter_encountered = false;
+            } else {
+                c = std::tolower(c); // Convert subsequent letters to lowercase
+            }
+        }
+    }
+    return result;
+}
+
 void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose, int& files_count, int& dirs_count) {
     std::string name = item_path.filename().string();
     std::string new_name = name; // Initialize with original name
@@ -122,7 +138,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
     } else if (case_input == "fupper") {
-        new_extension = fupper(extension);
+        new_extension = fupper_extension(extension);
     }
 
     // Skip renaming if the new extension is the same as the old extension
