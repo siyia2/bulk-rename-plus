@@ -143,17 +143,24 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 
+    // Determine the maximum number of threads supported by the system
+    unsigned int max_threads = std::thread::hardware_concurrency();
+
     std::vector<std::thread> threads;
     // Recursively rename all contents within the directory
     for (const auto& entry : fs::directory_iterator(new_path)) {
         if (entry.is_directory()) {
-            threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
+            if (threads.size() < max_threads) {
+                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
+            } else {
+                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count); // Rename synchronously if max threads reached
+            }
         } else {
             rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
         }
     }
 
-    // Join threads
+    // Join threads (if any)
     for (auto& thread : threads) {
         thread.join();
     }
