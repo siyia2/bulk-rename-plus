@@ -92,7 +92,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             fs::rename(item_path, new_path);
             if (verbose) {
                 std::string item_type = is_directory ? "directory" : "file";
-                std::cout << "\033[92mRenamed\033[0m " << item_type << " " << item_path.string() << " to " << new_path.string() << std::endl;
+                std::cout << "\033[0m\033[92mRenamed\033[0m " << item_type << " " << item_path.string() << " to " << new_path.string() << std::endl;
             }
             if (!is_directory) {
                 ++files_count;
@@ -100,12 +100,12 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
                 ++dirs_count;
             }
         } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[91mError\033[0m: " << e.what() << std::endl;
+            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     } else {
         if (verbose) {
             std::string item_type = is_directory ? "directory" : "file";
-            std::cout << "\033[93mSkipped\033[0m " << item_type << " " << item_path.string() << " (name unchanged)" << std::endl;
+            std::cout << "\033[0m\033[93mSkipped\033[0m " << item_type << " " << item_path.string() << " (name unchanged)" << std::endl;
         }
     }
 }
@@ -151,16 +151,16 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         try {
             fs::rename(directory_path, new_path);
             if (verbose) {
-                std::cout << "\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
+                std::cout << "\033[0m\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
             }
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
+            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
             return; // Stop processing if renaming failed
         }
     } else {
         if (verbose && !rename_immediate_parent) { // Only print skipped message if not renaming the immediate parent
-            std::cout << "\033[93mSkipped\033[0m directory " << directory_path.string() << " (name unchanged)" << std::endl;
+            std::cout << "\033[0m\033[93mSkipped\033[0m directory " << directory_path.string() << " (name unchanged)" << std::endl;
         }
     }
 
@@ -185,7 +185,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
     // Check if case_input is empty
     if (case_input.empty()) {
-        print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\033[0m");
+        print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
         return;
     }
 
