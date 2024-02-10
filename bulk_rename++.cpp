@@ -43,6 +43,7 @@ void print_help() {
               << "Examples:\n"
               << "  bulk_rename++ /path/to/folder1 /path/to/folder2 -c lower\n"
               << "  bulk_rename++ /path/to/folder -cp upper\n"
+              << "  bulk_rename++ /path/to/folder -ce upper\n"
               << "  bulk_rename++ /path/to/folder -v -cp upper\n"
               << "  bulk_rename++ /path/to/folder -c upper -v\n"
               << "\n";
@@ -446,4 +447,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
