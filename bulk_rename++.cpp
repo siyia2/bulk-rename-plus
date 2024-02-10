@@ -7,6 +7,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <chrono>
+#include <iomanip>
 
 namespace fs = std::filesystem;
 
@@ -32,8 +33,8 @@ void print_help() {
               << "\n"
               << "Options:\n"
               << "  -h, --help           Print this message and exit\n"
-              << "  -c  [MODE]           Set the case conversion mode (lower/upper/reverse/fupper) w/o parent dir(s)\n"
-              << "  -cp [MODE]           Set the case conversion mode (lower/upper/reverse/fupper) w parent dir(s)\n"
+              << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w/o parent dir(s)\n"
+              << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w parent dir(s)\n"
               << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
               << "Examples:\n"
@@ -70,10 +71,12 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         }
     });
 
-    // Special handling for filenames like "1_file" or "1-file"
-    for (size_t i = 0; i < new_name.size(); ++i) {
-        if ((isdigit(new_name[i]) || new_name[i] == '_') && i + 1 < new_name.size() && std::islower(new_name[i + 1])) {
-            new_name[i + 1] = std::toupper(new_name[i + 1]);
+    if (case_input == "fupper") {
+        // Special handling for filenames like "1_file" or "1-file"
+        for (size_t i = 0; i < new_name.size(); ++i) {
+            if ((isdigit(new_name[i]) || new_name[i] == '_') && i + 1 < new_name.size() && std::islower(new_name[i + 1])) {
+                new_name[i + 1] = std::toupper(new_name[i + 1]);
+            }
         }
     }
 
@@ -99,32 +102,19 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     fs::path new_path = directory_path;
     std::string dirname = directory_path.filename().string();
     std::string new_dirname;
+    new_dirname.resize(dirname.size());
 
-    // Apply appropriate case conversion mode to directory name
-    if (case_input == "lower") {
-        std::transform(dirname.begin(), dirname.end(), std::back_inserter(new_dirname), ::tolower);
-    } else if (case_input == "upper") {
-        std::transform(dirname.begin(), dirname.end(), std::back_inserter(new_dirname), ::toupper);
-    } else if (case_input == "reverse") {
-        std::transform(dirname.begin(), dirname.end(), std::back_inserter(new_dirname), [](unsigned char c) {
+    std::transform(dirname.begin(), dirname.end(), new_dirname.begin(), [case_input](unsigned char c) -> unsigned char {
+        if (case_input == "lower") {
+            return std::tolower(c);
+        } else if (case_input == "upper") {
+            return std::toupper(c);
+        } else if (case_input == "reverse") {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
-        });
-    } else if (case_input == "fupper") {
-        bool capitalize_next = true;
-        for (char c : dirname) {
-            if (std::isalpha(c)) {
-                if (capitalize_next) {
-                    new_dirname += std::toupper(c);
-                    capitalize_next = false;
-                } else {
-                    new_dirname += std::tolower(c);
-                }
-            } else {
-                new_dirname += c;
-                capitalize_next = true;
-            }
+        } else {
+            return c;
         }
-    }
+    });
 
     new_path.remove_filename(); // Remove the last component (file name) from the path
     new_path /= new_dirname; // Append the new directory name
@@ -132,7 +122,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     try {
         fs::rename(directory_path, new_path);
         if (verbose) {
-            print_message("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+            print_message("\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
         }
         ++dirs_count; // Increment directories count
     } catch (const std::filesystem::filesystem_error& e) {
@@ -144,34 +134,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (entry.is_directory()) {
             rename_directory(entry.path(), case_input, rename_immediate_parent, verbose, files_count, dirs_count);
         } else {
-            // For files, directly rename the item without considering the parent directory
-            std::string filename = entry.path().filename().string();
-            std::string new_filename;
-            new_filename.reserve(filename.size());
-            bool capitalize_next = true;
-            for (char c : filename) {
-                if (std::isalpha(c)) {
-                    if (capitalize_next) {
-                        new_filename += std::toupper(c);
-                        capitalize_next = false;
-                    } else {
-                        new_filename += std::tolower(c);
-                    }
-                } else {
-                    new_filename += c;
-                    capitalize_next = true;
-                }
-            }
-            fs::path new_file_path = new_path / new_filename;
-            try {
-                fs::rename(entry.path(), new_file_path);
-                if (verbose) {
-                    print_message("\033[0m\033[92mRenamed\033[0m file " + entry.path().string() + " to " + new_file_path.string());
-                }
-                ++files_count; // Increment files count
-            } catch (const std::filesystem::filesystem_error& e) {
-                print_error("\033[91mError\033[0m: " + std::string(e.what()));
-            }
+            rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
         }
     }
 
