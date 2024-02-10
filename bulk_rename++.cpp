@@ -7,6 +7,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <chrono>
+#include <iomanip>
 
 namespace fs = std::filesystem;
 
@@ -116,13 +117,25 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string new_dirname;
     new_dirname.resize(dirname.size());
 
-    std::transform(dirname.begin(), dirname.end(), new_dirname.begin(), [case_input](unsigned char c) -> unsigned char {
+    std::transform(dirname.begin(), dirname.end(), new_dirname.begin(), [case_input, first_letter = true](unsigned char c) mutable -> unsigned char {
         if (case_input == "lower") {
             return std::tolower(c);
         } else if (case_input == "upper") {
             return std::toupper(c);
         } else if (case_input == "reverse") {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
+        } else if (case_input == "fupper") {
+            if (!std::isalpha(c)) {
+                first_letter = true; // Reset the flag when encountering non-letter character
+                return c;
+            }
+            if (first_letter) {
+                c = std::toupper(c);
+                first_letter = false; // Set the flag to false after capitalizing the first letter
+            } else {
+                c = std::tolower(c);
+            }
+            return c;
         } else {
             return c;
         }
@@ -155,6 +168,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         return;
     }
 }
+
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
     // Check if case_input is empty
