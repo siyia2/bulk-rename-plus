@@ -35,14 +35,15 @@ void print_help() {
               << "  -h, --help           Print this message and exit\n"
               << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w/o parent dir(s)\n"
               << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w parent dir(s)\n"
-              << "  -ce  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) for file extensions\n"
+              << "  -ce  [MODE]          Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
               << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
               << "Examples:\n"
-              << "  bulk_rename++ /path/to/folder1 /path/to/folder2 -c lower\n"
-              << "  bulk_rename++ /path/to/folder -cp upper\n"
-              << "  bulk_rename++ /path/to/folder -v -cp upper\n"
-              << "  bulk_rename++ /path/to/folder -c upper -v\n"
+              << "  bulk_rename++ [path1] [path2]... -c lower\n"
+              << "  bulk_rename++ [path1] -cp upper\n"
+              << "  bulk_rename++ [path1] -ce upper -v\n"
+              << "  bulk_rename++ [path1] -v -cp upper\n"
+              << "  bulk_rename++ [path1] -c upper -v\n"
               << "\n";
 }
 
@@ -421,10 +422,10 @@ int main(int argc, char *argv[]) {
     if (rename_parents) {
         std::cout << "\033[1mThe following path(s), along with their parent dir(s), will be recursively renamed to \033[1;92m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
-            std::cout << "\033[1;95m" << path << "\033[0m" << std::endl;
+            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
     } else if (rename_extensions) {
-        std::cout << "\033[1mThe following path(s) file extensions will be recursively renamed to \033[1;92m" << case_input << "_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[1mThe following path(s) file \033[1;95mextensions\033[0m \033[1mwill be recursively renamed to \033[1;92m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
