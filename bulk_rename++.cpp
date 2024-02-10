@@ -14,6 +14,7 @@ bool verbose_enabled = false;
 std::mutex cout_mutex;
 std::mutex input_mutex;
 
+
 void print_message(const std::string& message) {
     if (verbose_enabled) {
         std::lock_guard<std::mutex> lock(cout_mutex);
@@ -21,10 +22,12 @@ void print_message(const std::string& message) {
     }
 }
 
+
 void print_error(const std::string& error) {
     std::lock_guard<std::mutex> lock(cout_mutex);
     std::cerr << error << std::endl;
 }
+
 
 void print_help() {
     std::cout << "Usage: rename [OPTIONS] [PATHS]\n"
@@ -52,6 +55,7 @@ std::string fupper(const std::string& word) {
     }
     return result;
 }
+
 
 void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose, int& files_count, int& dirs_count) {
     std::string name = item_path.filename().string();
@@ -98,8 +102,14 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[91mError\033[0m: " << e.what() << std::endl;
         }
+    } else {
+        if (verbose) {
+            std::string item_type = is_directory ? "directory" : "file";
+            std::cout << "\033[93mSkipped\033[0m " << item_type << " " << item_path.string() << " (name unchanged)" << std::endl;
+        }
     }
 }
+
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose, int& files_count, int& dirs_count) {
     std::string dirname = directory_path.filename().string();
@@ -147,6 +157,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
         }
+    } else {
+        if (verbose) {
+            std::cout << "\033[93mSkipped\033[0m directory " << directory_path.string() << " (name unchanged)" << std::endl;
+        }
     }
 
     // Determine the maximum number of threads supported by the system
@@ -176,8 +190,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         rename_directory(new_path, case_input, false, verbose, files_count, dirs_count);
     }
 }
-
-
 
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
