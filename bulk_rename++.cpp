@@ -71,15 +71,28 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         }
     });
 
-    if (case_input == "fupper") {
-        // Special handling for filenames like "1_file" or "1-file"
-        for (size_t i = 0; i < new_name.size(); ++i) {
-            if ((isdigit(new_name[i]) || new_name[i] == '_') && i + 1 < new_name.size() && std::islower(new_name[i + 1])) {
-                new_name[i + 1] = std::toupper(new_name[i + 1]);
+if (case_input == "fupper") {
+    // Special handling for filenames like "1_file" or "1-file"
+    bool found_non_letter = false; // Flag to track if a non-letter character is found
+    for (size_t i = 0; i < new_name.size(); ++i) {
+        // Check if the current character is not a letter
+        if (!isalpha(new_name[i])) {
+            found_non_letter = true; // Set the flag to true when a non-letter character is found
+        }
+        // Check if the current character is a letter and follows a non-letter character
+        else if (found_non_letter) {
+            // Capitalize the letter character
+            new_name[i] = std::toupper(new_name[i]);
+            found_non_letter = false; // Reset the flag since we found the first letter after a non-letter character
+        }
+        else {
+            // Lowercase the character if it's not already lowercase
+            if (std::isupper(new_name[i])) {
+                new_name[i] = std::tolower(new_name[i]);
             }
         }
     }
-
+}
     fs::path new_path = item_path.parent_path() / new_name;
 
     try {
