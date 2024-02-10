@@ -67,15 +67,15 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
     } else if (case_input == "fupper") {
-        bool found_non_letter = false;
+        bool first_letter_encountered = true;
         for (char& c : new_name) {
-            if (!std::isalpha(c)) {
-                found_non_letter = true;
-            } else if (found_non_letter) {
-                c = std::toupper(c);
-                found_non_letter = false;
-            } else {
-                c = std::tolower(c);
+            if (std::isalpha(c)) {
+                if (first_letter_encountered) {
+                    c = std::toupper(c);
+                    first_letter_encountered = false;
+                } else {
+                    c = std::tolower(c); // Convert subsequent letters to lowercase
+                }
             }
         }
     }
