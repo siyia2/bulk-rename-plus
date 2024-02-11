@@ -41,7 +41,7 @@ void print_help() {
               << "  -h, --help           Print this message and exit\n"
               << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspaces/runderscores) w/o parent dir(s)\n"
               << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspaces/runderscores) w parent dir(s)\n"
-              << "  -ce  [MODE]          Set the case conversion mode (lower/upper/fupper/reverse/rspaces/runderscores) for file extension(s)\n"
+              << "  -ce  [MODE]          Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
               << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
               << "Examples:\n"
@@ -305,15 +305,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                 // For directories, recursively rename all files within the directory
                 for (const auto& entry : fs::recursive_directory_iterator(current_path)) {
                     if (fs::is_regular_file(entry.path())) {
-                        std::vector<std::string> entry_path_vector = {entry.path().string()};
-rename_extension_path(entry_path_vector, case_input, verbose);
-
+                        rename_extension_path(paths, case_input, verbose);
                     }
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For individual files, directly rename the file
-                std::vector<std::string> current_path_vector = {current_path.string()};
-rename_extension_path(current_path_vector, case_input, verbose);
+                rename_extension_path(paths, case_input, verbose);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
@@ -380,8 +377,8 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspaces" && case_input != "runderscores") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspaces', or 'runderscores'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper'.\n");
                         return 1;
                     }
                 } else {
