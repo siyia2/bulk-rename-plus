@@ -72,23 +72,6 @@ void print_help() {
 
 // Extension stuff
 
-std::string fupper_extension(const std::string& extension) {
-    std::string result = extension;
-    bool first_letter_encountered = true;
-    for (char& c : result) {
-        if (std::isalpha(c)) {
-            if (first_letter_encountered) {
-                c = std::toupper(c);
-                first_letter_encountered = false;
-            } else {
-                c = std::tolower(c); // Convert subsequent letters to lowercase
-            }
-        }
-    }
-    return result;
-}
-
-
 void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose, int& files_count, int& dirs_count) {
     std::string extension = item_path.extension().string();
     std::string new_extension = extension; // Initialize with original extension
@@ -97,6 +80,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     std::regex lower_case("([a-zA-Z]+)");
     std::regex upper_case("([a-zA-Z]+)");
     std::regex reverse_case("([a-zA-Z])");
+    std::regex fupper_case("([a-zA-Z])([a-zA-Z.]*)"); // Capture first letter separately for fupper
 
     if (case_input == "lower") {
         std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::tolower);
@@ -114,8 +98,13 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             }
         }
     } else if (case_input == "fupper") {
-        new_extension = fupper_extension(extension);
+    std::smatch match;
+    if (std::regex_search(extension, match, fupper_case)) {
+        std::string rest_of_extension = match[2].str();
+        std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
+        new_extension = "." + std::string(1, std::toupper(match[1].str()[0])) + rest_of_extension;
     }
+}
 
     // Skip renaming if the new extension is the same as the old extension
     if (extension != new_extension) {
