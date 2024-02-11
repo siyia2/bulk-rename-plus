@@ -166,9 +166,13 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         }
     } else {
         
-        if (verbose) {
-    print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (extension unchanged)");
-}
+       if (verbose) {
+            if (extension.empty()) {
+                print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (no extension)");
+            } else {
+                print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (extension unchanged)");
+            }
+        }
     }
 }
 
