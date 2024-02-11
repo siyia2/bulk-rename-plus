@@ -28,7 +28,6 @@ void print_error(const std::string& error) {
     std::cerr << error << std::endl;
 }
 
-// Function to print verbose messages safely
 void print_verbose(const std::string& message) {
     std::lock_guard<std::mutex> lock(cout_mutex);
     std::cout << message << std::endl;
@@ -84,7 +83,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    // Apply case transformation if needed
+    // Apply case transformation
     if (case_input == "lower") {
         std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
     } else if (case_input == "upper") {
@@ -180,7 +179,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
 
-    // Apply case transformation if needed
+    // Apply case transformation
     if (case_input == "lower") {
         new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
@@ -255,7 +254,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         // Create threads to rename files
         unsigned int max_threads = std::thread::hardware_concurrency();
         if (max_threads == 0) {
-            max_threads = 1; // If hardware concurrency is not available, default to 2 threads
+            max_threads = 1; // If hardware concurrency is not available, default to 1 thread
         }
         unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(files_to_rename.size()));
         std::vector<std::thread> file_threads;
@@ -297,7 +296,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
     unsigned int max_threads = std::thread::hardware_concurrency();
     if (max_threads == 0) {
-        max_threads = 2; // If hardware concurrency is not available, default to 1 thread
+        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
     }
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
