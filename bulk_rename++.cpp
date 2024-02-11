@@ -13,8 +13,6 @@ namespace fs = std::filesystem;
 bool verbose_enabled = false;
 std::mutex cout_mutex;
 std::mutex input_mutex;
-std::mutex mtx;
-
 
 void print_message(const std::string& message) {
     if (verbose_enabled) {
