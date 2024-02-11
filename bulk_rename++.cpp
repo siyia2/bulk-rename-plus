@@ -14,6 +14,9 @@ bool verbose_enabled = false;
 std::mutex cout_mutex;
 std::mutex input_mutex;
 
+std::mutex dirs_count_mutex;
+std::mutex files_count_mutex;
+
 // General purpose stuff
 
 void print_message(const std::string& message) {
@@ -111,7 +114,8 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             
             if (verbose) {
     print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
-}
+}			
+			std::lock_guard<std::mutex> lock(files_count_mutex);
             ++files_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
@@ -223,8 +227,10 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
                 print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
             }
             if (!is_directory) {
+				    std::lock_guard<std::mutex> lock(files_count_mutex);
                 ++files_count;
             } else {
+				    std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count;
             }
         } catch (const fs::filesystem_error& e) {
@@ -294,6 +300,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             if (verbose) {
                 print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
             }
+                std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
