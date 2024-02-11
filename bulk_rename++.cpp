@@ -7,6 +7,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <chrono>
+#include <regex>
 
 namespace fs = std::filesystem;
 
@@ -189,16 +190,24 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         return;
     }
 
-    // Apply case transformation
-    if (case_input == "lower") {
+    // Regular expression patterns for transformations
+    std::regex lower_pattern("lower");
+    std::regex upper_pattern("upper");
+    std::regex reverse_pattern("reverse");
+    std::regex fupper_pattern("fupper");
+    std::regex rspace_pattern("rspace");
+    std::regex runderscore_pattern("runderscore");
+
+    // Apply case transformation using regex patterns
+    if (std::regex_match(case_input, lower_pattern)) {
         std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
-    } else if (case_input == "upper") {
+    } else if (std::regex_match(case_input, upper_pattern)) {
         std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::toupper);
-    } else if (case_input == "reverse") {
+    } else if (std::regex_match(case_input, reverse_pattern)) {
         std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
-    } else if (case_input == "fupper") {
+    } else if (std::regex_match(case_input, fupper_pattern)) {
         bool first_letter_encountered = true;
         for (char& c : new_name) {
             if (std::isalpha(c)) {
@@ -210,10 +219,10 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
                 }
             }
         }
-    } else if (case_input == "rspace") {
-        std::replace(new_name.begin(), new_name.end(), ' ', '_');
-    } else if (case_input == "runderscore") {
-        std::replace(new_name.begin(), new_name.end(), '_', ' ');
+    } else if (std::regex_match(case_input, rspace_pattern)) {
+        std::regex_replace(std::back_inserter(new_name), new_name.begin(), new_name.end(), std::regex(" "), "_");
+    } else if (std::regex_match(case_input, runderscore_pattern)) {
+        std::regex_replace(std::back_inserter(new_name), new_name.begin(), new_name.end(), std::regex("_"), " ");
     }
 
     // Skip renaming if the new name is the same as the old name
@@ -227,10 +236,10 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
                 print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
             }
             if (!is_directory) {
-				    std::lock_guard<std::mutex> lock(files_count_mutex);
+                std::lock_guard<std::mutex> lock(files_count_mutex);
                 ++files_count;
             } else {
-				    std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count;
             }
         } catch (const fs::filesystem_error& e) {
@@ -247,7 +256,15 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose, int& files_count, int& dirs_count) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
-    
+
+    // Regular expression patterns for transformations
+    std::regex lower_pattern("lower");
+    std::regex upper_pattern("upper");
+    std::regex reverse_pattern("reverse");
+    std::regex fupper_pattern("fupper");
+    std::regex rspace_pattern("rspace");
+    std::regex runderscore_pattern("runderscore");
+
     if (fs::is_symlink(directory_path)) {
         if (verbose) {
             print_verbose("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)");
@@ -255,19 +272,19 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         return;
     }
 
-    // Apply case transformation if needed
-    if (case_input == "lower") {
+    // Apply case transformation using regex patterns
+    if (std::regex_match(case_input, lower_pattern)) {
         new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
-    } else if (case_input == "upper") {
+    } else if (std::regex_match(case_input, upper_pattern)) {
         new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
-    } else if (case_input == "reverse") {
+    } else if (std::regex_match(case_input, reverse_pattern)) {
         new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
-    } else if (case_input == "fupper") {
+    } else if (std::regex_match(case_input, fupper_pattern)) {
         bool first_letter = true;
         new_dirname.reserve(dirname.size()); // Reserve space for efficiency
         for (char c : dirname) {
@@ -282,10 +299,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname.push_back(c);
             }
         }
-    } else if (case_input == "rspace") {
+    } else if (std::regex_match(case_input, rspace_pattern)) {
         std::replace(dirname.begin(), dirname.end(), ' ', '_');
         new_dirname = dirname;
-    } else if (case_input == "runderscore") {
+    } else if (std::regex_match(case_input, runderscore_pattern)) {
         std::replace(dirname.begin(), dirname.end(), '_', ' ');
         new_dirname = dirname;
     }
@@ -296,11 +313,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (directory_path != new_path) {
         try {
             fs::rename(directory_path, new_path);
-            
+
             if (verbose) {
                 print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
             }
-                std::lock_guard<std::mutex> lock(dirs_count_mutex);
+            std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
