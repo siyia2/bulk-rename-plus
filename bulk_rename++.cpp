@@ -28,6 +28,12 @@ void print_error(const std::string& error) {
     std::cerr << error << std::endl;
 }
 
+// Function to print verbose messages safely
+void print_verbose(const std::string& message) {
+    std::lock_guard<std::mutex> lock(cout_mutex);
+    std::cout << message << std::endl;
+}
+
 void print_help() {
     std::cout << "Usage: rename [OPTIONS] [PATHS]\n"
               << "Renames all files and folders under the specified path(s).\n"
@@ -76,6 +82,7 @@ std::string fupper_extension(const std::string& extension) {
 void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose, int& files_count, int& dirs_count) {
     std::string name = item_path.filename().string();
     std::string new_name = name; // Initialize with original name
+    fs::path new_path; // Declare new_path here to make it accessible in both branches
 
     // Apply case transformation if needed
     if (case_input == "lower") {
@@ -102,13 +109,13 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
 
     // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
-        fs::path new_path = item_path.parent_path() / new_name;
+        new_path = item_path.parent_path() / new_name; // Assign new_path here
 
         try {
             fs::rename(item_path, new_path);
+            
             if (verbose) {
-                std::string item_type = is_directory ? "directory" : "file";
-                std::cout << "\033[0m\033[92mRenamed\033[0m " << item_type << " " << item_path.string() << " to " << new_path.string() << std::endl;
+                print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
             }
             if (!is_directory) {
                 ++files_count;
@@ -120,11 +127,11 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         }
     } else {
         if (verbose) {
-            std::string item_type = is_directory ? "directory" : "file";
-            std::cout << "\033[0m\033[93mSkipped\033[0m " << item_type << " " << item_path.string() << " (name unchanged)" << std::endl;
+            print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
         }
     }
 }
+
 
 void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose, int& files_count, int& dirs_count) {
     std::string extension = item_path.extension().string();
@@ -149,17 +156,19 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
 
         try {
             fs::rename(item_path, new_path);
+            
             if (verbose) {
-                std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
-            }
+    print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
+}
             ++files_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     } else {
+        
         if (verbose) {
-            std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string() << " (extension unchanged)" << std::endl;
-        }
+    print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (extension unchanged)");
+}
     }
 }
 
@@ -202,21 +211,24 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (directory_path != new_path) {
         try {
             fs::rename(directory_path, new_path);
+            
             if (verbose) {
-                std::lock_guard<std::mutex> lock(mtx);
-                std::cout << "\033[0m\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
-            }
+    print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+}
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
-            std::lock_guard<std::mutex> lock(mtx);
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
             return; // Stop processing if renaming failed
         }
     } else {
-        if (verbose && !rename_immediate_parent) { // Only print skipped message if not renaming the immediate parent
-            std::lock_guard<std::mutex> lock(mtx);
-            std::cout << "\033[0m\033[93mSkipped\033[0m directory " << directory_path.string() << " (name unchanged)" << std::endl;
-        }
+        
+        if (verbose) {
+    print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + "(name unchanged)");
+    
+}
+if (verbose) {
+    print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + "(name unchanged)");
+}
     }
 
     // If rename_immediate_parent is true, rename the immediate parent directory
@@ -225,30 +237,51 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     } else {
         // Otherwise, collect all files to be renamed and batch rename them
         std::vector<fs::path> files_to_rename;
-        std::vector<std::thread> threads;
+        std::vector<fs::path> subdirectories;
 
+        // Collect files and subdirectories
         for (const auto& entry : fs::directory_iterator(new_path)) {
             if (entry.is_directory()) {
-                // Recursively call rename_directory for directories
-                if (threads.size() < std::thread::hardware_concurrency()) {
-                    threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
-                } else {
-                    rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count); // Rename synchronously if max threads reached
-                }
+                subdirectories.push_back(entry.path());
             } else {
-                files_to_rename.push_back(entry.path()); // Collect files to be renamed
+                files_to_rename.push_back(entry.path());
             }
         }
 
-        // Join threads (if any)
-        for (auto& thread : threads) {
+        // Function to rename files in a thread
+        auto rename_files = [&](const std::vector<fs::path>& files) {
+            for (const auto& file : files) {
+                rename_item(file, case_input, false, verbose, files_count, dirs_count);
+            }
+        };
+
+        // Create threads to rename files
+        unsigned int max_threads = std::thread::hardware_concurrency();
+        if (max_threads == 0) {
+            max_threads = 2; // If hardware concurrency is not available, default to 2 threads
+        }
+        unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(files_to_rename.size()));
+        std::vector<std::thread> file_threads;
+        file_threads.reserve(num_threads);
+        unsigned int files_per_thread = files_to_rename.size() / num_threads;
+        unsigned int remainder = files_to_rename.size() % num_threads;
+        auto file_it = files_to_rename.begin();
+
+        for (unsigned int i = 0; i < num_threads; ++i) {
+            unsigned int count = files_per_thread + (i < remainder ? 1 : 0);
+            std::vector<fs::path> files(file_it, file_it + count);
+            file_it += count;
+            file_threads.emplace_back(rename_files, std::move(files));
+        }
+
+        // Wait for all file threads to finish
+        for (auto& thread : file_threads) {
             thread.join();
         }
 
-        // Batch rename files
-        for (const auto& file : files_to_rename) {
-            // Assuming rename_item function exists
-            rename_item(file, case_input, false, verbose, files_count, dirs_count);
+        // Recursively rename subdirectories
+        for (const auto& subdir : subdirectories) {
+            rename_directory(subdir, case_input, false, verbose, files_count, dirs_count);
         }
     }
 }
