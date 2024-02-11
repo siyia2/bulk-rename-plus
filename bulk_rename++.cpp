@@ -214,39 +214,41 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (directory_path != new_path) {
         try {
             fs::rename(directory_path, new_path);
-            
             if (verbose) {
-                print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+                std::cout << "\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
             }
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-            return; // Stop processing if renaming failed
-        }
-    } else {
-        if (verbose) {
-            print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " (name unchanged)");
+            std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
         }
     }
 
-    // If rename_immediate_parent is true, rename the immediate parent directory
+    unsigned int max_threads = std::thread::hardware_concurrency();
+    if (max_threads == 0) {
+        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
+    }
+    std::vector<std::thread> threads;
+    // Recursively rename all contents within the directory
+    for (const auto& entry : fs::directory_iterator(new_path)) {
+        if (entry.is_directory()) {
+            if (threads.size() < max_threads) {
+                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
+            } else {
+                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count); // Rename synchronously if max threads reached
+            }
+        } else {
+            rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
+        }
+    }
+
+    // Join threads (if any)
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    // If rename_immediate_parent is true, rename the immediate parent directory and its contents recursively
     if (rename_immediate_parent) {
         rename_directory(new_path, case_input, false, verbose, files_count, dirs_count);
-    } else {
-        // Otherwise, collect all files to be renamed and batch rename them
-        std::vector<fs::path> files_to_rename;
-        for (const auto& entry : fs::directory_iterator(new_path)) {
-            if (entry.is_directory()) {
-                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count);
-            } else {
-                files_to_rename.push_back(entry.path());
-            }
-        }
-
-        // Batch rename files
-        for (const auto& file : files_to_rename) {
-            rename_item(file, case_input, false, verbose, files_count, dirs_count);
-        }
     }
 }
 
@@ -261,7 +263,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
     unsigned int max_threads = std::thread::hardware_concurrency();
     if (max_threads == 0) {
-        max_threads = 2; // If hardware concurrency is not available, default to 1 thread
+        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
     }
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
