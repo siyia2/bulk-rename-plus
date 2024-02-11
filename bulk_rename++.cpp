@@ -39,8 +39,8 @@ void print_help() {
               << "\n"
               << "Options:\n"
               << "  -h, --help           Print this message and exit\n"
-              << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspaces/runderscores) w/o parent dir(s)\n"
-              << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspaces/runderscores) w parent dir(s)\n"
+              << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore) w/o parent dir(s)\n"
+              << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore) w parent dir(s)\n"
               << "  -ce  [MODE]          Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
               << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
@@ -104,9 +104,9 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
                 }
             }
         }
-    } else if (case_input == "rspaces") {
+    } else if (case_input == "rspace") {
         std::replace(new_name.begin(), new_name.end(), ' ', '_');
-    } else if (case_input == "runderscores") {
+    } else if (case_input == "runderscore") {
         std::replace(new_name.begin(), new_name.end(), '_', ' ');
     }
 
@@ -166,10 +166,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname.push_back(c);
             }
         }
-    } else if (case_input == "rspaces") {
+    } else if (case_input == "rspace") {
         std::replace(dirname.begin(), dirname.end(), ' ', '_');
         new_dirname = dirname;
-    } else if (case_input == "runderscores") {
+    } else if (case_input == "runderscore") {
         std::replace(dirname.begin(), dirname.end(), '_', ' ');
         new_dirname = dirname;
     }
@@ -332,8 +332,8 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspaces" && case_input != "runderscores") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspaces', or 'runderscores'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "runderscore") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace', or 'runderscore'.\n");
                         return 1;
                     }
                 } else {
@@ -345,8 +345,8 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspaces" && case_input != "runderscores") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspaces', or 'runderscores'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "runderscore") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace', or 'runderscore'.\n");
                         return 1;
                     }
                 } else {
