@@ -225,7 +225,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     } else {
         if (verbose) {
-            print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + "(name unchanged)");
+            print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " (name unchanged)");
         }
     }
 
@@ -315,10 +315,18 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                     rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
                 } else {
                     // Otherwise, rename the entire path
-                    if (threads.size() < max_threads) {
-                        threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose, std::ref(files_count), std::ref(dirs_count));
-                    } else {
-                        rename_directory(current_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
+                    for (const auto& entry : fs::recursive_directory_iterator(current_path)) {
+                        if (fs::is_directory(entry)) {
+                            // Spawn threads for directory renaming
+                            if (threads.size() < max_threads) {
+                                threads.emplace_back(rename_directory, entry.path(), case_input, rename_immediate_parent, verbose, std::ref(files_count), std::ref(dirs_count));
+                            } else {
+                                rename_directory(entry.path(), case_input, rename_immediate_parent, verbose, files_count, dirs_count);
+                            }
+                        } else if (fs::is_regular_file(entry)) {
+                            // Rename regular files directly
+                            rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
+                        }
                     }
                 }
             } else if (fs::is_regular_file(current_path)) {
