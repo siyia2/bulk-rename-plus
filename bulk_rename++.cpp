@@ -41,7 +41,7 @@ void print_help() {
               << "  -h, --help           Print this message and exit\n"
               << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w/o parent dir(s)\n"
               << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w parent dir(s)\n"
-              << "  -ce [MODE]          Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
+              << "  -ce  [MODE]          Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
               << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
               << "Examples:\n"
@@ -179,7 +179,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
 
-    // Apply case transformation
+    // Apply case transformation if needed
     if (case_input == "lower") {
         new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
@@ -231,72 +231,37 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
     // If rename_immediate_parent is true, rename the immediate parent directory
     if (rename_immediate_parent) {
-        // Process files and subdirectories within the current directory
+        rename_directory(new_path, case_input, false, verbose, files_count, dirs_count);
+    } else {
+        // Otherwise, collect all files to be renamed and batch rename them
         std::vector<fs::path> files_to_rename;
-        std::vector<fs::path> subdirectories;
-
-        // Collect files and subdirectories
         for (const auto& entry : fs::directory_iterator(new_path)) {
             if (entry.is_directory()) {
-                subdirectories.push_back(entry.path());
+                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count);
             } else {
                 files_to_rename.push_back(entry.path());
             }
         }
 
-        // Function to rename files in a thread
-        auto rename_files = [&](const std::vector<fs::path>& files) {
-            for (const auto& file : files) {
-                rename_item(file, case_input, false, verbose, files_count, dirs_count);
-            }
-        };
-
-        // Create threads to rename files
-        unsigned int max_threads = std::thread::hardware_concurrency();
-        if (max_threads == 0) {
-            max_threads = 1; // If hardware concurrency is not available, default to 1 thread
-        }
-        unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(files_to_rename.size()));
-        std::vector<std::thread> file_threads;
-        file_threads.reserve(num_threads);
-        unsigned int files_per_thread = files_to_rename.size() / num_threads;
-        unsigned int remainder = files_to_rename.size() % num_threads;
-        auto file_it = files_to_rename.begin();
-
-        for (unsigned int i = 0; i < num_threads; ++i) {
-            unsigned int count = files_per_thread + (i < remainder ? 1 : 0);
-            std::vector<fs::path> files(file_it, file_it + count);
-            file_it += count;
-            file_threads.emplace_back(rename_files, std::move(files));
-        }
-
-        // Wait for all file threads to finish
-        for (auto& thread : file_threads) {
-            thread.join();
-        }
-
-        // Recursively rename subdirectories
-        for (const auto& subdir : subdirectories) {
-            rename_directory(subdir, case_input, false, verbose, files_count, dirs_count);
+        // Batch rename files
+        for (const auto& file : files_to_rename) {
+            rename_item(file, case_input, false, verbose, files_count, dirs_count);
         }
     }
 }
 
-
-
-
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent,bool replace_spaces, bool verbose = true) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
     // Check if case_input is empty
-    if (case_input.empty() && !replace_spaces) {
-    print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
-    return;
-}
+    if (case_input.empty()) {
+        print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
+        return;
+    }
 
     std::vector<std::thread> threads;
 
     unsigned int max_threads = std::thread::hardware_concurrency();
     if (max_threads == 0) {
-        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
+        max_threads = 2; // If hardware concurrency is not available, default to 1 thread
     }
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
@@ -315,18 +280,10 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                     rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
                 } else {
                     // Otherwise, rename the entire path
-                    for (const auto& entry : fs::recursive_directory_iterator(current_path)) {
-                        if (fs::is_directory(entry)) {
-                            // Spawn threads for directory renaming
-                            if (threads.size() < max_threads) {
-                                threads.emplace_back(rename_directory, entry.path(), case_input, rename_immediate_parent, verbose, std::ref(files_count), std::ref(dirs_count));
-                            } else {
-                                rename_directory(entry.path(), case_input, rename_immediate_parent, verbose, files_count, dirs_count);
-                            }
-                        } else if (fs::is_regular_file(entry)) {
-                            // Rename regular files directly
-                            rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
-                        }
+                    if (threads.size() < max_threads) {
+                        threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose, std::ref(files_count), std::ref(dirs_count));
+                    } else {
+                        rename_directory(current_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
                     }
                 }
             } else if (fs::is_regular_file(current_path)) {
@@ -397,32 +354,11 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
 
-void replace_spaces_with_underscores(const fs::path& directory_path) {
-    for (auto& entry : fs::directory_iterator(directory_path)) {
-        std::string name = entry.path().filename().string();
-        std::string new_name = name;
-        std::replace(new_name.begin(), new_name.end(), ' ', '_');
-
-        fs::path new_path = entry.path().parent_path() / new_name;
-
-        try {
-            fs::rename(entry.path(), new_path);
-        } catch (const fs::filesystem_error& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-
-        if (fs::is_directory(new_path)) {
-            replace_spaces_with_underscores(new_path);
-        }
-    }
-}
-
 int main(int argc, char *argv[]) {
     std::vector<std::string> paths;
     std::string case_input;
     bool rename_parents = false;
     bool rename_extensions = false;
-    bool replace_spaces = false; // New flag to indicate whether to replace spaces with underscores
 
     bool case_specified = false;
 
@@ -439,6 +375,7 @@ int main(int argc, char *argv[]) {
                 if (i + 1 < argc) {
                     case_input = argv[++i];
                     case_specified = true;
+                    // Check if the case mode is valid
                     if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
                         return 1;
@@ -451,6 +388,7 @@ int main(int argc, char *argv[]) {
                 if (i + 1 < argc) {
                     case_input = argv[++i];
                     case_specified = true;
+                    // Check if the case mode is valid
                     if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
                         return 1;
@@ -464,6 +402,7 @@ int main(int argc, char *argv[]) {
                 if (i + 1 < argc) {
                     case_input = argv[++i];
                     case_specified = true;
+                    // Check if the case mode is valid
                     if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
                         return 1;
@@ -472,19 +411,16 @@ int main(int argc, char *argv[]) {
                     print_error("\033[1;91mError: Missing argument for option -ce\n");
                     return 1;
                 }
-            } else if (arg == "-rs") { // Check for the replace spaces option
-                replace_spaces = true;
             } else {
                 paths.emplace_back(arg);
             }
         }
     }
 
-    // Check if any case conversion option is specified
-if (!case_specified && !replace_spaces) {
-    print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, -ce, or -rs option is required)\033[0m\n");
-    return 1;
-}
+    if (!case_specified) {
+        print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n");
+        return 1;
+    }
 
     for (const auto& path : paths) {
         if (!fs::exists(path)) {
@@ -527,12 +463,6 @@ if (!case_specified && !replace_spaces) {
         std::cout << "\n";
     }
 
-    if (replace_spaces) { // Call the function to replace spaces with underscores if the flag is set
-        for (const auto& path : paths) {
-            replace_spaces_with_underscores(path);
-        }
-    }
-
     if (rename_extensions) {
         rename_extension_path(paths, case_input, verbose_enabled);
     } else {
@@ -544,4 +474,3 @@ if (!case_specified && !replace_spaces) {
     std::system("clear");
     return 0;
 }
-
