@@ -1,7 +1,7 @@
 # bulk-rename-plus
 Tiny but powerful C++ cmd tool to rename recursively paths on Linux.
 
-Useful for improving the performance of installed wine windows apps in a case sensitive linux file system and/or for improving compatibility with some wine windows game mods.
+Useful for batch renaming.
 
 Default and recommended installation path is `~/.local/bin/bulk_rename++`, no need to run it as `ROOT` unless of course you know what you are doing.
 
@@ -9,12 +9,12 @@ Default and recommended installation path is `~/.local/bin/bulk_rename++`, no ne
 
 Options: `-c` option stands for case set, `-ce` option stands for case set for file extensions, `-cp` option stands for case ste including parent dir(s) and `-v` or `--verbose` option stands for verbose.
 
-Suported case modes: 
+Current suported case modes: 
 
--`lower` for lower case, `upper` for upper case, 
--`fupper` for converting every first character to upper case and the rest to lower, 
--`reverse` for reversing existing case status, 
--`rspace` and `runderscore` replace spaces with underscores and vice versa.
+*`lower` for lower case, `upper` for upper case, 
+*`fupper` for converting every first character to upper case and the rest to lower, 
+*`reverse` for reversing existing case status, 
+*`rspace` and `runderscore` replace spaces with underscores and vice versa.
 
 e.g. with -c lower: Test => test, upper: Test=> TEST, reverse: Test => tEST fupper: test => Test.
 
