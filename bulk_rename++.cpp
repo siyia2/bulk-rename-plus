@@ -285,12 +285,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
 
 
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent,bool replace_spaces, bool verbose = true) {
     // Check if case_input is empty
-    if (case_input.empty()) {
-        print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
-        return;
-    }
+    if (case_input.empty() && !replace_spaces) {
+    print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
+    return;
+}
 
     std::vector<std::thread> threads;
 
@@ -397,11 +397,32 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
 
+void replace_spaces_with_underscores(const fs::path& directory_path) {
+    for (auto& entry : fs::directory_iterator(directory_path)) {
+        std::string name = entry.path().filename().string();
+        std::string new_name = name;
+        std::replace(new_name.begin(), new_name.end(), ' ', '_');
+
+        fs::path new_path = entry.path().parent_path() / new_name;
+
+        try {
+            fs::rename(entry.path(), new_path);
+        } catch (const fs::filesystem_error& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
+
+        if (fs::is_directory(new_path)) {
+            replace_spaces_with_underscores(new_path);
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     std::vector<std::string> paths;
     std::string case_input;
     bool rename_parents = false;
     bool rename_extensions = false;
+    bool replace_spaces = false; // New flag to indicate whether to replace spaces with underscores
 
     bool case_specified = false;
 
@@ -418,7 +439,6 @@ int main(int argc, char *argv[]) {
                 if (i + 1 < argc) {
                     case_input = argv[++i];
                     case_specified = true;
-                    // Check if the case mode is valid
                     if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
                         return 1;
@@ -431,7 +451,6 @@ int main(int argc, char *argv[]) {
                 if (i + 1 < argc) {
                     case_input = argv[++i];
                     case_specified = true;
-                    // Check if the case mode is valid
                     if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
                         return 1;
@@ -445,7 +464,6 @@ int main(int argc, char *argv[]) {
                 if (i + 1 < argc) {
                     case_input = argv[++i];
                     case_specified = true;
-                    // Check if the case mode is valid
                     if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
                         return 1;
@@ -454,16 +472,19 @@ int main(int argc, char *argv[]) {
                     print_error("\033[1;91mError: Missing argument for option -ce\n");
                     return 1;
                 }
+            } else if (arg == "-rs") { // Check for the replace spaces option
+                replace_spaces = true;
             } else {
                 paths.emplace_back(arg);
             }
         }
     }
 
-    if (!case_specified) {
-        print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n");
-        return 1;
-    }
+    // Check if any case conversion option is specified
+if (!case_specified && !replace_spaces) {
+    print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, -ce, or -rs option is required)\033[0m\n");
+    return 1;
+}
 
     for (const auto& path : paths) {
         if (!fs::exists(path)) {
@@ -506,6 +527,12 @@ int main(int argc, char *argv[]) {
         std::cout << "\n";
     }
 
+    if (replace_spaces) { // Call the function to replace spaces with underscores if the flag is set
+        for (const auto& path : paths) {
+            replace_spaces_with_underscores(path);
+        }
+    }
+
     if (rename_extensions) {
         rename_extension_path(paths, case_input, verbose_enabled);
     } else {
@@ -517,3 +544,4 @@ int main(int argc, char *argv[]) {
     std::system("clear");
     return 0;
 }
+
