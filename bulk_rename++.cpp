@@ -39,9 +39,9 @@ void print_help() {
               << "\n"
               << "Options:\n"
               << "  -h, --help           Print this message and exit\n"
-              << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w/o parent dir(s)\n"
-              << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w parent dir(s)\n"
-              << "  -ce  [MODE]          Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
+              << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspaces/runderscores) w/o parent dir(s)\n"
+              << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspaces/runderscores) w parent dir(s)\n"
+              << "  -ce  [MODE]          Set the case conversion mode (lower/upper/fupper/reverse/rspaces/runderscores) for file extension(s)\n"
               << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
               << "Examples:\n"
@@ -104,6 +104,10 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
                 }
             }
         }
+    } else if (case_input == "rspaces") {
+        std::replace(new_name.begin(), new_name.end(), ' ', '_');
+    } else if (case_input == "runderscores") {
+        std::replace(new_name.begin(), new_name.end(), '_', ' ');
     }
 
     // Skip renaming if the new name is the same as the old name
@@ -127,50 +131,6 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     } else {
         if (verbose) {
             print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + "(name unchanged)");
-        }
-    }
-}
-
-
-void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose, int& files_count, int& dirs_count) {
-    std::string extension = item_path.extension().string();
-    std::string new_extension = extension; // Initialize with original extension
-
-    // Apply case transformation if needed
-    if (case_input == "lower") {
-        std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::tolower);
-    } else if (case_input == "upper") {
-        std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::toupper);
-    } else if (case_input == "reverse") {
-        std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), [](unsigned char c) {
-            return std::islower(c) ? std::toupper(c) : std::tolower(c);
-        });
-    } else if (case_input == "fupper") {
-        new_extension = fupper_extension(extension);
-    }
-
-    // Skip renaming if the new extension is the same as the old extension
-    if (extension != new_extension) {
-        fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
-
-        try {
-            fs::rename(item_path, new_path);
-            
-            if (verbose) {
-    print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
-}
-            ++files_count;
-        } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-        }
-    } else {
-        
-       if (verbose) {
-            if (extension.empty()) {
-                print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (no extension)");
-            } else {
-                print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (extension unchanged)");
-            }
         }
     }
 }
@@ -206,6 +166,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname.push_back(c);
             }
         }
+    } else if (case_input == "rspaces") {
+        std::replace(dirname.begin(), dirname.end(), ' ', '_');
+        new_dirname = dirname;
+    } else if (case_input == "runderscores") {
+        std::replace(dirname.begin(), dirname.end(), '_', ' ');
+        new_dirname = dirname;
     }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
@@ -339,12 +305,15 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                 // For directories, recursively rename all files within the directory
                 for (const auto& entry : fs::recursive_directory_iterator(current_path)) {
                     if (fs::is_regular_file(entry.path())) {
-                        rename_extension(entry.path(), case_input, verbose, files_count, files_count);
+                        std::vector<std::string> entry_path_vector = {entry.path().string()};
+rename_extension_path(entry_path_vector, case_input, verbose);
+
                     }
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For individual files, directly rename the file
-                rename_extension(current_path, case_input, verbose, files_count, files_count);
+                std::vector<std::string> current_path_vector = {current_path.string()};
+rename_extension_path(current_path_vector, case_input, verbose);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
@@ -384,8 +353,8 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspaces" && case_input != "runderscores") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspaces', or 'runderscores'.\n");
                         return 1;
                     }
                 } else {
@@ -397,8 +366,8 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspaces" && case_input != "runderscores") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspaces', or 'runderscores'.\n");
                         return 1;
                     }
                 } else {
@@ -411,8 +380,8 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', or 'fupper'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspaces" && case_input != "runderscores") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspaces', or 'runderscores'.\n");
                         return 1;
                     }
                 } else {
@@ -467,17 +436,16 @@ int main(int argc, char *argv[]) {
         std::system("clear");
         return 0;
     }
-    if (verbose_enabled) {
-        std::cout << "\n";
-    }
 
-    if (rename_extensions) {
-        rename_extension_path(paths, case_input, verbose_enabled);
+    if (rename_parents) {
+        rename_path(paths, case_input, true);
+    } else if (rename_extensions) {
+        rename_extension_path(paths, case_input);
     } else {
-        rename_path(paths, case_input, rename_parents, verbose_enabled);
+        rename_path(paths, case_input, false);
     }
 
-    std::cout << "\n\033[1mPress enter to exit...";
+    std::cout << "\n\033[1mPress enter to exit...\033[0m";
     std::cin.get();
     std::system("clear");
     return 0;
