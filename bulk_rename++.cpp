@@ -40,16 +40,6 @@ void print_verbose(const std::string& message) {
 }
 
 
-std::string fupper(const std::string& word) {
-    std::string result = word;
-    if (!result.empty()) {
-        result[0] = std::toupper(result[0]);
-        std::transform(result.begin() + 1, result.end(), result.begin() + 1, ::tolower);
-    }
-    return result;
-}
-
-
 void print_help() {
     std::cout << "Usage: rename [OPTIONS] [PATHS]\n"
               << "Renames all files and folders under the specified path(s).\n"
