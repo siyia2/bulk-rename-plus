@@ -311,18 +311,23 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             print_verbose("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)");
         }
     }
-	unsigned int max_threads = std::thread::hardware_concurrency();
-	if (max_threads == 0) {
+
+    unsigned int max_threads = std::thread::hardware_concurrency();
+    if (max_threads == 0) {
         max_threads = 1; // If hardware concurrency is not available, default to 1 thread
     }
+
     // Process items within the directory
     std::vector<std::thread> threads;
     for (const auto& entry : fs::directory_iterator(new_path)) {
         if (entry.is_directory()) {
-			if (threads.size() < max_threads) {
-            // Start a new thread for each subdirectory
-            threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
-			}
+            if (threads.size() < max_threads) {
+                // Start a new thread for each subdirectory
+                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
+            } else {
+                // Process directories in the main thread if max_threads is reached
+                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count);
+            }
         } else {
             // Process files in the main thread
             rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
