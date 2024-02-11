@@ -126,7 +126,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         }
     } else {
         if (verbose) {
-            print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
+            print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + "(name unchanged)");
         }
     }
 }
@@ -214,12 +214,18 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (directory_path != new_path) {
         try {
             fs::rename(directory_path, new_path);
+            
             if (verbose) {
-                std::cout << "\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
+                print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
             }
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
+            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+            return; // Stop processing if renaming failed
+        }
+    } else {
+        if (verbose) {
+            print_verbose("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)");
         }
     }
 
