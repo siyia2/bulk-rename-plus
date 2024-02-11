@@ -213,29 +213,22 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             fs::rename(directory_path, new_path);
             
             if (verbose) {
-    print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
-}
+                print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+            }
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
             return; // Stop processing if renaming failed
         }
     } else {
-        
         if (verbose) {
-    print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + "(name unchanged)");
-    
-}
-if (verbose) {
-    print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + "(name unchanged)");
-}
+            print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + "(name unchanged)");
+        }
     }
 
     // If rename_immediate_parent is true, rename the immediate parent directory
     if (rename_immediate_parent) {
-        rename_directory(new_path, case_input, false, verbose, files_count, dirs_count);
-    } else {
-        // Otherwise, collect all files to be renamed and batch rename them
+        // Process files and subdirectories within the current directory
         std::vector<fs::path> files_to_rename;
         std::vector<fs::path> subdirectories;
 
@@ -258,7 +251,7 @@ if (verbose) {
         // Create threads to rename files
         unsigned int max_threads = std::thread::hardware_concurrency();
         if (max_threads == 0) {
-            max_threads = 2; // If hardware concurrency is not available, default to 2 threads
+            max_threads = 1; // If hardware concurrency is not available, default to 2 threads
         }
         unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(files_to_rename.size()));
         std::vector<std::thread> file_threads;
@@ -285,6 +278,7 @@ if (verbose) {
         }
     }
 }
+
 
 
 
