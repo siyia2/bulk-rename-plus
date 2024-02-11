@@ -9,7 +9,7 @@ Options: `-c` option stands for case set, `-ce` option stands for case set for f
 
 Current suported case modes: 
 
-**`lower` for lower case, `upper` for upper case, 
+- `lower` for lower case, `upper` for upper case, 
 *`fupper` for converting every first character to upper case and the rest to lower, 
 *`reverse` for reversing existing case status, 
 *`rspace` and `runderscore` replace spaces with underscores and vice versa.
