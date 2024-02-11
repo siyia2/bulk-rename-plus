@@ -1,5 +1,5 @@
 # bulk-rename-plus
-Tiny but powerful C++ cmd tool to rename recursively paths.
+Tiny but powerful C++ cmd tool to rename recursively paths on Linux.
 
 Useful for improving the performance of installed wine windows apps in a case sensitive linux file system and/or for improving compatibility with some wine windows game mods.
 
