@@ -93,15 +93,26 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     std::string extension = item_path.extension().string();
     std::string new_extension = extension; // Initialize with original extension
 
-    // Apply case transformation if needed
+    // Regular expression patterns for transformation
+    std::regex lower_case("([a-zA-Z]+)");
+    std::regex upper_case("([a-zA-Z]+)");
+    std::regex reverse_case("([a-zA-Z])");
+
     if (case_input == "lower") {
         std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::tolower);
     } else if (case_input == "upper") {
         std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::toupper);
     } else if (case_input == "reverse") {
-        std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), [](unsigned char c) {
-            return std::islower(c) ? std::toupper(c) : std::tolower(c);
-        });
+        std::smatch match;
+        if (std::regex_search(extension, match, reverse_case)) {
+            for (auto& c : match[1].str()) {
+                if (std::islower(c)) {
+                    new_extension += std::toupper(c);
+                } else {
+                    new_extension += std::tolower(c);
+                }
+            }
+        }
     } else if (case_input == "fupper") {
         new_extension = fupper_extension(extension);
     }
@@ -114,16 +125,15 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             fs::rename(item_path, new_path);
             
             if (verbose) {
-    print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
-}			
-			std::lock_guard<std::mutex> lock(files_count_mutex);
+                print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
+            }
+            std::lock_guard<std::mutex> lock(files_count_mutex);
             ++files_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     } else {
-        
-       if (verbose) {
+        if (verbose) {
             if (extension.empty()) {
                 print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (no extension)");
             } else {
