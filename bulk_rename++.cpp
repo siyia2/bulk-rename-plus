@@ -41,7 +41,7 @@ void print_help() {
               << "  -h, --help           Print this message and exit\n"
               << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w/o parent dir(s)\n"
               << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) w parent dir(s)\n"
-              << "  -ce  [MODE]          Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
+              << "  -ce [MODE]          Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
               << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
               << "Examples:\n"
