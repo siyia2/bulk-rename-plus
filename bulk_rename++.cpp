@@ -480,7 +480,9 @@ int main(int argc, char *argv[]) {
     }
 
     std::system("clear");
+    if (case_input != "rspace" && case_input != "runderscore"){
     std::cout << "\033[1;93m!!! WARNING OPERATION IRREVERSIBLE !!!\033[0m\n\n";
+	}
 
     std::string confirmation;
     if (rename_parents) {
@@ -501,6 +503,7 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
     std::getline(std::cin, confirmation);
+    std::cout << " " << std::endl;
 
     if (confirmation != "y") {
         std::cout << "\n\033[1;91mOperation aborted by user.\n\033[0m\n";
