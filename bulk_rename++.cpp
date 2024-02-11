@@ -13,6 +13,7 @@ namespace fs = std::filesystem;
 bool verbose_enabled = false;
 std::mutex cout_mutex;
 std::mutex input_mutex;
+std::mutex mtx;
 
 
 void print_message(const std::string& message) {
@@ -202,15 +203,18 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         try {
             fs::rename(directory_path, new_path);
             if (verbose) {
+                std::lock_guard<std::mutex> lock(mtx);
                 std::cout << "\033[0m\033[94mRenamed\033[0m directory " << directory_path.string() << " to " << new_path.string() << std::endl;
             }
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
+            std::lock_guard<std::mutex> lock(mtx);
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
             return; // Stop processing if renaming failed
         }
     } else {
         if (verbose && !rename_immediate_parent) { // Only print skipped message if not renaming the immediate parent
+            std::lock_guard<std::mutex> lock(mtx);
             std::cout << "\033[0m\033[93mSkipped\033[0m directory " << directory_path.string() << " (name unchanged)" << std::endl;
         }
     }
@@ -221,20 +225,35 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     } else {
         // Otherwise, collect all files to be renamed and batch rename them
         std::vector<fs::path> files_to_rename;
+        std::vector<std::thread> threads;
+
         for (const auto& entry : fs::directory_iterator(new_path)) {
             if (entry.is_directory()) {
-                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count);
+                // Recursively call rename_directory for directories
+                if (threads.size() < std::thread::hardware_concurrency()) {
+                    threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
+                } else {
+                    rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count); // Rename synchronously if max threads reached
+                }
             } else {
-                files_to_rename.push_back(entry.path());
+                files_to_rename.push_back(entry.path()); // Collect files to be renamed
             }
+        }
+
+        // Join threads (if any)
+        for (auto& thread : threads) {
+            thread.join();
         }
 
         // Batch rename files
         for (const auto& file : files_to_rename) {
+            // Assuming rename_item function exists
             rename_item(file, case_input, false, verbose, files_count, dirs_count);
         }
     }
 }
+
+
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
     // Check if case_input is empty
