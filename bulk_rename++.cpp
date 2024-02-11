@@ -82,6 +82,13 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     std::string name = item_path.filename().string();
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
+    
+    if (fs::is_symlink(item_path)) {
+        if (verbose) {
+            print_verbose("\033[0m\033[93mSkipped\033[0m symlink " + item_path.string() + "(not supported)");
+        }
+        return;
+    }
 
     // Apply case transformation
     if (case_input == "lower") {
@@ -138,6 +145,13 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose, int& files_count, int& dirs_count) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
+    
+    if (fs::is_symlink(directory_path)) {
+        if (verbose) {
+            print_verbose("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + "(not supported)");
+        }
+        return;
+    }
 
     // Apply case transformation if needed
     if (case_input == "lower") {
