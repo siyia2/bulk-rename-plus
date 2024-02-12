@@ -208,7 +208,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 // Rename file&directory stuff
 
 
-void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, int& files_count, int& dirs_count) {
+void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, int& files_count, int& dirs_count) {
     std::string name = item_path.filename().string();
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
@@ -444,7 +444,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             }
         } else {
             // Process files in the main thread
-            rename_item(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+            rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
         }
     }
 
@@ -496,7 +496,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
-                rename_item(current_path, case_input, false, verbose_enabled, files_count, dirs_count);
+                rename_file(current_path, case_input, false, verbose_enabled, files_count, dirs_count);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
