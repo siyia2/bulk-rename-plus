@@ -228,7 +228,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -294,6 +294,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             }), new_name.end());
         } else if (transformation == "camel") {
             new_name = to_camel_case(new_name);
+        
+        } else if (transformation == "rcamel") {
+            new_name = from_camel_case(new_name);
         }
     }
 
@@ -333,7 +336,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab)");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -412,6 +415,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (transformation == "camel") {
 			new_dirname = dirname;
             new_dirname = to_camel_case(new_dirname);
+        }
+        else if (transformation == "rcamel") {
+			new_dirname = dirname;
+            new_dirname = from_camel_case(new_dirname);
         }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
@@ -555,32 +562,41 @@ int main(int argc, char *argv[]) {
         } else if (arg == "-h" || arg == "--help") {
             print_help();
             return 0;
-        } else if (arg == "-cp") {
-            rename_parents = true;
-            if (i + 1 < argc) {
-                case_input = argv[++i];
-                case_specified = true;
-            } else {
-                print_error("\033[1;91mError: Missing argument for option -cp\n");
-                return 1;
-            }
+            } else if (arg == "-cp") {
+                rename_parents = true;
+                if (i + 1 < argc) {
+                    case_input = argv[++i];
+                    case_specified = true;
+                    // Check if the case mode is valid
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebab" && case_input != "rkebab" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
+                        print_error("\033[1;91mError: Unspecified or invalid case mode. Run 'bulk_rename++ --help'.\n");
+                        return 1;
+                    }
+                } else {
+                    print_error("\033[1;91mError: Missing argument for option -cp\n");
+                    return 1;
+                }
         } else if (arg == "-c") {
-            if (i + 1 < argc) {
-                case_input = argv[++i];
-                case_specified = true;
-            } else {
-                print_error("\033[1;91mError: Missing argument for option -c\n");
-                return 1;
-            }
+                if (i + 1 < argc) {
+                    case_input = argv[++i];
+                    case_specified = true;
+                    // Check if the case mode is valid
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebab" && case_input != "rkebab" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
+                        print_error("\033[1;91mError: Unspecified or invalid case mode. Run 'bulk_rename++ --help'.\n");
+                        return 1;
+                    }
+				}
         } else if (arg == "-ce") {
-            rename_extensions = true;
-            if (i + 1 < argc) {
-                case_input = argv[++i];
-                case_specified = true;
-            } else {
-                print_error("\033[1;91mError: Missing argument for option -ce\n");
-                return 1;
-            }
+                rename_extensions = true;
+                if (i + 1 < argc) {
+                    case_input = argv[++i];
+                    case_specified = true;
+                    // Check if the case mode is valid
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title") {
+                        print_error("\033[1;91mError: Unspecified or invalid case mode. Please specify 'lower', 'upper', 'reverse', 'title'.\n");
+                        return 1;
+                    }
+				}
         } else {
             paths.emplace_back(arg);
         }
