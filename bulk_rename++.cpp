@@ -12,8 +12,6 @@
 namespace fs = std::filesystem;
 
 std::mutex cout_mutex;
-std::mutex input_mutex;
-
 std::mutex dirs_count_mutex;
 std::mutex files_count_mutex;
 
