@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <chrono>
 #include <regex>
+#include <cctype>
 
 namespace fs = std::filesystem;
 
@@ -167,7 +168,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|fupper|rspace|runderscore|rspecial)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|fupper|rspace|runderscore|rspecial|rnumeric)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -209,6 +210,11 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
                 return !std::isalnum(c) && c != '.' && c != '_'; // Retain alphanumeric characters, period, and underscore
             }), new_name.end());
+        } else if (transformation == "rnumeric") {
+            // Remove numeric characters from the name
+            new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
+                return std::isdigit(c);
+            }), new_name.end());
         }
     }
 
@@ -239,41 +245,35 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-
-
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
 
     // Static Regular expression patterns for transformations
-    static const std::regex lower_pattern("lower");
-    static const std::regex upper_pattern("upper");
-    static const std::regex reverse_pattern("reverse");
-    static const std::regex fupper_pattern("fupper");
-    static const std::regex rspace_pattern("rspace");
-    static const std::regex runderscore_pattern("runderscore");
-    static const std::regex rspecial_pattern("rspecial");
+static const std::regex transformation_pattern("lower|upper|reverse|fupper|rspace|runderscore|rspecial|rnumeric");
 
-    if (fs::is_symlink(directory_path)) {
-        if (verbose_enabled) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)");
-        }
-        return;
+if (fs::is_symlink(directory_path)) {
+    if (verbose_enabled) {
+        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)");
     }
+    return;
+}
 
-    // Apply case transformation using regex patterns
-    if (std::regex_match(case_input, lower_pattern)) {
+// Apply case transformation using regex patterns
+if (std::regex_match(case_input, transformation_pattern)) {
+    const std::string& transformation = case_input;
+    if (transformation == "lower") {
         new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
-    } else if (std::regex_match(case_input, upper_pattern)) {
+    } else if (transformation == "upper") {
         new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
-    } else if (std::regex_match(case_input, reverse_pattern)) {
+    } else if (transformation == "reverse") {
         new_dirname = dirname;
         std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
-    } else if (std::regex_match(case_input, fupper_pattern)) {
+    } else if (transformation == "fupper") {
         bool first_letter = true;
         new_dirname.reserve(dirname.size()); // Reserve space for efficiency
         for (char c : dirname) {
@@ -288,19 +288,26 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname.push_back(c);
             }
         }
-    } else if (std::regex_match(case_input, rspace_pattern)) {
+    } else if (transformation == "rspace") {
         std::replace(dirname.begin(), dirname.end(), ' ', '_');
         new_dirname = dirname;
-    } else if (std::regex_match(case_input, runderscore_pattern)) {
+    } else if (transformation == "runderscore") {
         std::replace(dirname.begin(), dirname.end(), '_', ' ');
         new_dirname = dirname;
-    } else if (std::regex_match(case_input, rspecial_pattern)) {
+    } else if (transformation == "rspecial") {
         // Remove special characters from the directory name
         new_dirname = dirname;
         new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
             return !std::isalnum(c) && c != '.' && c != '_'; // Retain alphanumeric characters, period, and underscore
         }), new_dirname.end());
+    } else if (transformation == "rnumeric") {
+        // Remove numeric characters from the directory name
+        new_dirname = dirname;
+        new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+            return std::isdigit(c);
+        }), new_dirname.end());
     }
+}
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
@@ -445,8 +452,8 @@ if (argc == 1) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "rspecial" && case_input != "runderscore") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace','rspecial', or 'runderscore'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace','rspecial',`rnumeric`, or 'runderscore'.\n");
                         return 1;
                     }
                 } else {
@@ -458,8 +465,8 @@ if (argc == 1) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "rspecial" && case_input != "runderscore") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace','rspecial', or 'runderscore'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace','rspecial',`rnumeric`, or 'runderscore'.\n");
                         return 1;
                     }
                 } else {
