@@ -168,8 +168,9 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 // Rename file&directory stuff
 
 void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose, int& files_count, int& dirs_count) {
-    std::string name = item_path.filename().string();
-    std::string new_name = name; // Initialize with original name
+    std::string name = item_path.stem().string(); // Get the filename without extension
+    std::string extension = item_path.extension().string(); // Get the extension
+    fs::path parent_path = item_path.parent_path();
     fs::path new_path; // Declare new_path here to make it accessible in both branches
     
     if (fs::is_symlink(item_path)) {
@@ -186,19 +187,20 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     std::regex fupper_pattern("fupper");
     std::regex rspace_pattern("rspace");
     std::regex runderscore_pattern("runderscore");
+    std::regex number_pattern("number");
 
     // Apply case transformation using regex patterns
     if (std::regex_match(case_input, lower_pattern)) {
-        std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
+        std::transform(name.begin(), name.end(), name.begin(), ::tolower);
     } else if (std::regex_match(case_input, upper_pattern)) {
-        std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::toupper);
+        std::transform(name.begin(), name.end(), name.begin(), ::toupper);
     } else if (std::regex_match(case_input, reverse_pattern)) {
-        std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
     } else if (std::regex_match(case_input, fupper_pattern)) {
         bool first_letter_encountered = true;
-        for (char& c : new_name) {
+        for (char& c : name) {
             if (std::isalpha(c)) {
                 if (first_letter_encountered) {
                     c = std::toupper(c);
@@ -209,15 +211,30 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             }
         }
     } else if (std::regex_match(case_input, rspace_pattern)) {
-        std::regex_replace(std::back_inserter(new_name), new_name.begin(), new_name.end(), std::regex(" "), "_");
+        std::regex_replace(name, std::regex(" "), "_");
     } else if (std::regex_match(case_input, runderscore_pattern)) {
-        std::regex_replace(std::back_inserter(new_name), new_name.begin(), new_name.end(), std::regex("_"), " ");
+        std::regex_replace(name, std::regex("_"), " ");
     }
 
-    // Skip renaming if the new name is the same as the old name
-    if (name != new_name) {
-        new_path = item_path.parent_path() / new_name; // Assign new_path here
+    // Skip renaming if the filename is already numbered
+    if (std::regex_match(name, std::regex(R"(\d+-.*$)"))) {
+        if (verbose) {
+            print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (already numbered)");
+        }
+        return;
+    }
 
+    // Apply numbering to the filename
+    std::string new_name = name; // Initialize with original name
+    if (std::regex_match(case_input, number_pattern)) {
+        std::string suffix = (is_directory) ? "-folder" : "-file";
+        int count = (is_directory) ? dirs_count : files_count;
+        new_name = std::to_string(count + 1) + "-" + name + suffix;
+    }
+
+    if (name != new_name) {
+        new_path = parent_path / (new_name + extension); // Construct the new path with original extension
+        
         try {
             fs::rename(item_path, new_path);
             
@@ -240,6 +257,12 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         }
     }
 }
+
+
+
+
+
+
 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose, int& files_count, int& dirs_count) {
@@ -445,7 +468,7 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "runderscore") {
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "runderscore" && case_input != "number") {
                         print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace', or 'runderscore'.\n");
                         return 1;
                     }
