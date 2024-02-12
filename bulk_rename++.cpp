@@ -119,8 +119,12 @@ void print_help() {
 // Extension stuff
 
 void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count, int& dirs_count) {
+    static const std::regex lower_case("([a-zA-Z]+)");
+    static const std::regex upper_case("([a-zA-Z]+)");
+    static const std::regex reverse_case("([a-zA-Z])");
+    static const std::regex title_case("([a-zA-Z])([a-zA-Z.]*)"); 
+
     if (!fs::is_regular_file(item_path)) {
-        // Skip if it's not a regular file
         if (verbose_enabled) {
             std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
         }
@@ -128,13 +132,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     }
     
     std::string extension = item_path.extension().string();
-    std::string new_extension = extension; // Initialize with original extension
-
-    // Regular expression patterns for transformation
-    std::regex lower_case("([a-zA-Z]+)");
-    std::regex upper_case("([a-zA-Z]+)");
-    std::regex reverse_case("([a-zA-Z])");
-    std::regex title_case("([a-zA-Z])([a-zA-Z.]*)"); // Capture first letter separately for title
+    std::string new_extension = extension; 
 
     if (case_input == "lower") {
         std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::tolower);
@@ -143,44 +141,40 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     } else if (case_input == "reverse") {
         std::smatch match;
         if (std::regex_search(extension, match, reverse_case)) {
+            std::ostringstream oss;
             for (auto& c : match[1].str()) {
-                if (std::islower(c)) {
-                    new_extension += std::toupper(c);
-                } else {
-                    new_extension += std::tolower(c);
-                }
+                oss << (std::islower(c) ? std::toupper(c) : std::tolower(c));
             }
+            new_extension = oss.str();
         }
-    } else if (case_input == "title") {
-        std::smatch match;
-        if (std::regex_search(extension, match, title_case)) {
-            std::string rest_of_extension = match[2].str();
-            std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
-            new_extension = "." + std::string(1, std::toupper(match[1].str()[0])) + rest_of_extension;
-        }
+} else if (case_input == "title") {
+    std::smatch match;
+    if (std::regex_search(extension, match, title_case)) {
+        std::string rest_of_extension = match[2].str();
+        std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
+        char first_letter = std::toupper(match[1].str()[0]);
+        new_extension = "." + std::string(1, first_letter) + rest_of_extension;
     }
+}
 
-    // Skip renaming if the new extension is the same as the old extension
     if (extension != new_extension) {
         fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
-
         try {
             fs::rename(item_path, new_path);
-            
             if (verbose_enabled) {
-                print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
+                std::lock_guard<std::mutex> lock(files_count_mutex);
+                ++files_count;
+                std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
             }
-            std::lock_guard<std::mutex> lock(files_count_mutex);
-            ++files_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     } else {
         if (verbose_enabled) {
             if (extension.empty()) {
-                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (no extension)");
+                std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string() << " (no extension)" << std::endl;
             } else {
-                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (extension unchanged)");
+                std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string() << " (extension unchanged)" << std::endl;
             }
         }
     }
