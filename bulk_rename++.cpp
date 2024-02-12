@@ -11,8 +11,6 @@
 
 namespace fs = std::filesystem;
 
-std::mutex verbose_mutex;
-
 std::mutex cout_mutex;
 std::mutex input_mutex;
 
