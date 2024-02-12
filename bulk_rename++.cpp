@@ -185,7 +185,11 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         print_error("\033[1;91mError: Case conversion mode not specified (-ce option is required)\n\033[0m");
         return;
     }
-
+    
+        if (depth == 0 ) {
+    return; // Exit recursion if depth is reached
+}
+    
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     int files_count = 0; // Initialize files count
@@ -327,13 +331,13 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count,int depth) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count,int depth=-1) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
     
-    if (depth <= 0) {
-        return; // Exit recursion if depth is reached
-    }
+    if (depth == 0 ) {
+    return; // Exit recursion if depth is reached
+}
 
     // Static Regular expression patterns for transformations
     static const std::regex transformation_pattern("lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab|snake");
@@ -548,15 +552,15 @@ int main(int argc, char *argv[]) {
     bool rename_parents = false;
     bool rename_extensions = false;
     bool verbose_enabled = false;
-	int depth = -1;
+    int depth = -1;
     bool case_specified = false;
-    
-if (argc == 1) {
+
+    if (argc == 1) {
         print_help();
         return 0;
     }
-    if (argc >= 2) {
-            for (int i = 1; i < argc; ++i) {
+
+    for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
         if (arg == "-d" && i + 1 < argc) {
             depth = std::atoi(argv[++i]);
@@ -565,50 +569,34 @@ if (argc == 1) {
         } else if (arg == "-h" || arg == "--help") {
             print_help();
             return 0;
-            } else if (arg == "-cp") {
-                rename_parents = true;
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                    // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebab" && case_input != "rkebab" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
-                        print_error("\033[1;91mError: Unspecified case mode. Run 'bulk_rename++ --help'.\n");
-                        return 1;
-                    }
-                } else {
-                    print_error("\033[1;91mError: Missing argument for option -cp\n");
-                    return 1;
-                }
-            } else if (arg == "-c") {
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                    // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebab" && case_input != "rkebab" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
-                        print_error("\033[1;91mError: Unspecified case mode. Run 'bulk_rename++ --help'.\n");
-                        return 1;
-                    }
-                } else {
-                    print_error("\033[1;91mError: Missing argument for option -c\n");
-                    return 1;
-                }
-            } else if (arg == "-ce") {
-                rename_extensions = true;
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                    // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'title'.\n");
-                        return 1;
-                    }
-                } else {
-                    print_error("\033[1;91mError: Missing argument for option -ce\n");
-                    return 1;
-                }
+        } else if (arg == "-cp") {
+            rename_parents = true;
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
             } else {
-                paths.emplace_back(arg);
+                print_error("\033[1;91mError: Missing argument for option -cp\n");
+                return 1;
             }
+        } else if (arg == "-c") {
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
+            } else {
+                print_error("\033[1;91mError: Missing argument for option -c\n");
+                return 1;
+            }
+        } else if (arg == "-ce") {
+            rename_extensions = true;
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
+            } else {
+                print_error("\033[1;91mError: Missing argument for option -ce\n");
+                return 1;
+            }
+        } else {
+            paths.emplace_back(arg);
         }
     }
 
@@ -626,8 +614,8 @@ if (argc == 1) {
 
     std::system("clear");
     if (case_input != "rspace" && case_input != "runderscore"){
-    std::cout << "\033[1;93m!!! WARNING OPERATION IRREVERSIBLE !!!\033[0m\n\n";
-	}
+        std::cout << "\033[1;93m!!! WARNING OPERATION IRREVERSIBLE !!!\033[0m\n\n";
+    }
 
     std::string confirmation;
     if (rename_parents) {
@@ -659,12 +647,12 @@ if (argc == 1) {
     }
 
     if (rename_parents) {
-    rename_path(paths, case_input, true, verbose_enabled,depth); // Pass true for rename_immediate_parent
-	} else if (rename_extensions) {
-    rename_extension_path(paths, case_input, verbose_enabled,depth);
-	} else {
-    rename_path(paths, case_input, false, verbose_enabled,depth); // Pass false for rename_immediate_parent
-	}
+        rename_path(paths, case_input, true, verbose_enabled, depth); // Pass true for rename_immediate_parent
+    } else if (rename_extensions) {
+        rename_extension_path(paths, case_input, verbose_enabled, depth);
+    } else {
+        rename_path(paths, case_input, false, verbose_enabled, depth); // Pass false for rename_immediate_parent
+    }
 
     std::cout << "\n\033[1mPress enter to exit...\033[0m";
     std::cin.get();
