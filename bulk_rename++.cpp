@@ -568,7 +568,7 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebab" && case_input != "rkebab" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "rcamel" && case_input != "kebab" && case_input != "rkebab" && case_input != "rsnake" && case_input != "snake" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "rbra" && case_input != "roperand") {
                         print_error("\033[1;91mError: Unspecified or invalid case mode. Run 'bulk_rename++ --help'.\n");
                         return 1;
                     }
@@ -581,7 +581,7 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebab" && case_input != "rkebab" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "rcamel" && case_input != "kebab" && case_input != "rkebab" && case_input != "rsnake" && case_input != "snake" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "rbra" && case_input != "roperand") {
                         print_error("\033[1;91mError: Unspecified or invalid case mode. Run 'bulk_rename++ --help'.\n");
                         return 1;
                     }
