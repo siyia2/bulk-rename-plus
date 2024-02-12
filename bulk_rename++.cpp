@@ -187,6 +187,8 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
     }
+    
+    bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
@@ -200,14 +202,15 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         auto [current_path, current_depth] = directories.front();
         directories.pop();
 
-        if (current_depth >= depth) {
-            std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path << "\033[0m" << std::endl;
-            continue; // Skip processing this directory
-        }
+        if (current_depth >= depth && !depth_limit_reached_printed) {
+        std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path << "\033[0m" << std::endl;
+        depth_limit_reached_printed = true; // Set the flag to true after printing the message
+        continue; // Skip processing this directory
+    }
 
         fs::path current_fs_path(current_path);
 
-        if (!fs::exists(current_fs_path)) {
+        if (verbose_enabled && !fs::exists(current_fs_path)) {
             print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
             continue;
         }
