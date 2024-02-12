@@ -186,7 +186,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     }
 }
 
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled = false, int depth = -1, bool last_recursion = true) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, bool last_recursion, int& files_count) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-ce option is required)\n\033[0m");
@@ -194,8 +194,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     }
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
-
-    int files_count = 0; // Initialize files count
 
     for (const auto& path : paths) {
         fs::path current_path(path);
@@ -212,7 +210,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                             rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
                         }
                     }
-                    rename_extension_path(sub_paths, case_input, verbose_enabled, depth - 1, false); // Not the last recursion
+                    rename_extension_path(sub_paths, case_input, verbose_enabled, depth - 1, false, files_count); // Not the last recursion
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For individual files, directly rename the file
@@ -662,7 +660,8 @@ int main(int argc, char *argv[]) {
     if (rename_parents) {
         rename_path(paths, case_input, true, verbose_enabled, depth); // Pass true for rename_immediate_parent
     } else if (rename_extensions) {
-        rename_extension_path(paths, case_input, verbose_enabled, depth);
+		int files_count = 0; // Declare files_count here
+        rename_extension_path(paths, case_input, verbose_enabled, depth, true, files_count);
     } else {
         rename_path(paths, case_input, false, verbose_enabled, depth); // Pass false for rename_immediate_parent
     }
