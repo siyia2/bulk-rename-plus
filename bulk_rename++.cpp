@@ -28,11 +28,22 @@ std::string to_camel_case(const std::string& input) {
             capitalizeNext = false;
         } else if (std::isspace(c)) {
             capitalizeNext = true;
+        } else if (c == '.') {
+            // If the character is a period, add it to the result
+            // as it's part of the file extension
+            result += c;
+            capitalizeNext = false; // Prevent the next character from being capitalized
+        } else {
+            // If the character is neither alphabetic nor a space,
+            // add it to the result without any modification
+            result += c;
+            capitalizeNext = false;
         }
     }
 
     return result;
 }
+
 
 std::string from_camel_case(const std::string& input) {
     std::string result;
