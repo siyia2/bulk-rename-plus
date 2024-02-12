@@ -35,17 +35,6 @@ std::string to_camel_case(const std::string& input) {
     return result;
 }
 
-std::string to_kebab_case(const std::string& input) {
-    std::string result;
-    for (char c : input) {
-        if (std::isspace(c)) {
-            result += '-';
-        } else {
-            result += std::tolower(c);
-        }
-    }
-    return result;
-}
 
 std::string to_snake_case(const std::string& input) {
     std::string result;
@@ -224,7 +213,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|snake)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab|snake)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -257,10 +246,17 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
                     }
                 }
             }
+            
         } else if (transformation == "rspace") {
             std::replace(new_name.begin(), new_name.end(), ' ', '_');
         } else if (transformation == "runderscore") {
             std::replace(new_name.begin(), new_name.end(), '_', ' ');
+        } else if (transformation == "kebab") {
+            std::replace(new_name.begin(), new_name.end(), ' ', '-');
+        } else if (transformation == "rkebab") {
+            std::replace(new_name.begin(), new_name.end(), ' ', '-');
+		
+        
         } else if (transformation == "rspecial") {
             // Remove special characters from the name
             new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
@@ -283,9 +279,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             }), new_name.end());
         } else if (transformation == "camel") {
             new_name = to_camel_case(new_name);
-        } else if (transformation == "kebab") {
-            new_name = to_kebab_case(new_name);
-        } else if (transformation == "snake") {
+        }    else if (transformation == "snake") {
             new_name = to_snake_case(new_name);
         }
     }
@@ -322,7 +316,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string new_dirname; // Initialize with original name
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|snake");
+    static const std::regex transformation_pattern("lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab|snake");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -366,7 +360,18 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (transformation == "runderscore") {
             std::replace(dirname.begin(), dirname.end(), '_', ' ');
             new_dirname = dirname;
-        } else if (transformation == "rspecial") {
+        }  else if (transformation == "rspaceh") {
+            std::replace(dirname.begin(), dirname.end(), ' ', '-');
+            new_dirname = dirname;
+        } else if (transformation == "kebab") {
+            std::replace(dirname.begin(), dirname.end(), ' ', '-');
+            new_dirname = dirname;
+        } else if (transformation == "rkebab") {
+            std::replace(dirname.begin(), dirname.end(), '-', ' ');
+            new_dirname = dirname;
+        }
+        
+		  else if (transformation == "rspecial") {
             // Remove special characters from the directory name
             new_dirname = dirname;
             new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
@@ -393,13 +398,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (transformation == "camel") {
 			new_dirname = dirname;
             new_dirname = to_camel_case(new_dirname);
-        } else if (transformation == "kebab") {
-			new_dirname = dirname;
-            new_dirname = to_kebab_case(new_dirname);
         } else if (transformation == "snake") {
 			new_dirname = dirname;
             new_dirname = to_snake_case(new_dirname);
-        }
+        
     }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
@@ -449,9 +451,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Join all threads
     for (auto& thread : threads) {
         thread.join();
-    }
+		}
+	}
 }
-
 
 
 
@@ -546,7 +548,7 @@ if (argc == 1) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebap" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebab" && case_input != "rkebab" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
                         print_error("\033[1;91mError: Unspecified case mode. Run 'bulk_rename++ --help'.\n");
                         return 1;
                     }
@@ -559,7 +561,7 @@ if (argc == 1) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebap" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebab" && case_input != "rkebab" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
                         print_error("\033[1;91mError: Unspecified case mode. Run 'bulk_rename++ --help'.\n");
                         return 1;
                     }
