@@ -34,13 +34,10 @@ void print_error(const std::string& error) {
 }
 
 
-void print_verbose_enabled(const std::string& message, bool verbose_enabled) {
-    if (verbose_enabled) {
-        std::lock_guard<std::mutex> lock(cout_mutex);
-        std::cout << message << std::endl;
-    }
+void print_verbose(const std::string& message) {
+    std::lock_guard<std::mutex> lock(cout_mutex);
+    std::cout << message << std::endl;
 }
-
 
 
 void print_help() {
@@ -52,7 +49,7 @@ void print_help() {
               << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore) w/o parent dir(s)\n"
               << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore) w parent dir(s)\n"
               << "  -ce [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
-              << "  -v, --verbose_enabled        Enable verbose_enabled mode\n"
+              << "  -v, --verbose        Enable verbose mode\n"
               << "\n"
               << "Examples:\n"
               << "  bulk_rename++ [path1] [path2]... -c lower\n"
@@ -65,7 +62,7 @@ void print_help() {
 
 // Extension stuff
 
-void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count, int& dirs_count) {
+void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose, int& files_count, int& dirs_count) {
     std::string extension = item_path.extension().string();
     std::string new_extension = extension; // Initialize with original extension
 
@@ -106,8 +103,8 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         try {
             fs::rename(item_path, new_path);
             
-            if (verbose_enabled) {
-                print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), verbose_enabled);
+            if (verbose) {
+                print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
             }
             std::lock_guard<std::mutex> lock(files_count_mutex);
             ++files_count;
@@ -115,18 +112,18 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     } else {
-        if (verbose_enabled) {
+        if (verbose) {
             if (extension.empty()) {
-                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (no extension)", verbose_enabled);
+                print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (no extension)");
             } else {
-                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (extension unchanged)", verbose_enabled);
+                print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (extension unchanged)");
             }
         }
     }
 }
 
 
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose = true) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-ce option is required)\n\033[0m");
@@ -145,12 +142,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                 // For directories, recursively rename all files within the directory
                 for (const auto& entry : fs::recursive_directory_iterator(current_path)) {
                     if (fs::is_regular_file(entry.path())) {
-                        rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
+                        rename_extension(entry.path(), case_input, verbose, files_count, files_count);
                     }
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For individual files, directly rename the file
-                rename_extension(current_path, case_input, verbose_enabled, files_count, files_count);
+                rename_extension(current_path, case_input, verbose, files_count, files_count);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
@@ -170,25 +167,27 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
 // Rename file&directory stuff
 
-void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, int& files_count, int& dirs_count) {
+void rename_item(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose, int& files_count, int& dirs_count) {
     std::string name = item_path.filename().string();
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
     
-    static std::regex lower_pattern("lower");
-    static std::regex upper_pattern("upper");
-    static std::regex reverse_pattern("reverse");
-    static std::regex fupper_pattern("fupper");
-    static std::regex rspace_pattern("rspace");
-    static std::regex runderscore_pattern("runderscore");
-
     if (fs::is_symlink(item_path)) {
-        if (verbose_enabled) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + item_path.string() + " (not supported)", verbose_enabled);
+        if (verbose) {
+            print_verbose("\033[0m\033[93mSkipped\033[0m symlink " + item_path.string() + " (not supported)");
         }
         return;
     }
 
+    // Regular expression patterns for transformations
+    std::regex lower_pattern("lower");
+    std::regex upper_pattern("upper");
+    std::regex reverse_pattern("reverse");
+    std::regex fupper_pattern("fupper");
+    std::regex rspace_pattern("rspace");
+    std::regex runderscore_pattern("runderscore");
+
+    // Apply case transformation using regex patterns
     if (std::regex_match(case_input, lower_pattern)) {
         std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
     } else if (std::regex_match(case_input, upper_pattern)) {
@@ -215,35 +214,35 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         std::regex_replace(std::back_inserter(new_name), new_name.begin(), new_name.end(), std::regex("_"), " ");
     }
 
+    // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
-        new_path = item_path.parent_path() / new_name; // Move assignment to avoid copy
-        
+        new_path = item_path.parent_path() / new_name; // Assign new_path here
+
         try {
             fs::rename(item_path, new_path);
             
-            if (verbose_enabled) {
-                print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), verbose_enabled);
+            if (verbose) {
+                print_verbose("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
             }
             if (!is_directory) {
-			std::lock_guard<std::mutex> lock(files_count_mutex);
+                std::lock_guard<std::mutex> lock(files_count_mutex);
                 ++files_count;
             } else {
-				std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count;
             }
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     } else {
-        if (verbose_enabled) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (name unchanged)", verbose_enabled);
+        if (verbose) {
+            print_verbose("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (name unchanged)");
         }
     }
 }
 
 
-
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose, int& files_count, int& dirs_count) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
 
@@ -256,8 +255,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::regex runderscore_pattern("runderscore");
 
     if (fs::is_symlink(directory_path)) {
-        if (verbose_enabled) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)", verbose_enabled);
+        if (verbose) {
+            print_verbose("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)");
         }
         return;
     }
@@ -304,8 +303,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         try {
             fs::rename(directory_path, new_path);
 
-            if (verbose_enabled) {
-                print_verbose_enabled("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string(), verbose_enabled);
+            if (verbose) {
+                print_verbose("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
             }
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count;
@@ -314,8 +313,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             return; // Stop processing if renaming failed
         }
     } else {
-        if (verbose_enabled) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)", verbose_enabled);
+        if (verbose) {
+            print_verbose("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)");
         }
     }
 
@@ -330,14 +329,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (entry.is_directory()) {
             if (threads.size() < max_threads) {
                 // Start a new thread for each subdirectory
-                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count));
+                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose, std::ref(files_count), std::ref(dirs_count));
             } else {
                 // Process directories in the main thread if max_threads is reached
-                rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+                rename_directory(entry.path(), case_input, false, verbose, files_count, dirs_count);
             }
         } else {
             // Process files in the main thread
-            rename_item(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+            rename_item(entry.path(), case_input, false, verbose, files_count, dirs_count);
         }
     }
 
@@ -348,7 +347,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
 
 
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose = true) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
@@ -375,18 +374,18 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 if (rename_immediate_parent) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count);
+                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
                 } else {
                     // Otherwise, rename the entire path
                     if (threads.size() < max_threads) {
-                        threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose_enabled, std::ref(files_count), std::ref(dirs_count));
+                        threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose, std::ref(files_count), std::ref(dirs_count));
                     } else {
-                        rename_directory(current_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count);
+                        rename_directory(current_path, case_input, rename_immediate_parent, verbose, files_count, dirs_count);
                     }
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
-                rename_item(current_path, case_input, false, verbose_enabled, files_count, dirs_count);
+                rename_item(current_path, case_input, false, verbose, files_count, dirs_count);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
@@ -422,7 +421,7 @@ int main(int argc, char *argv[]) {
     if (argc >= 2) {
         for (int i = 1; i < argc; ++i) {
             std::string arg(argv[i]);
-            if (arg == "-v" || arg == "--verbose_enabled") {
+            if (arg == "-v" || arg == "--verbose") {
                 verbose_enabled = true;
             } else if (arg == "-h" || arg == "--help") {
                 print_help();
@@ -521,11 +520,11 @@ int main(int argc, char *argv[]) {
     }
 
     if (rename_parents) {
-        rename_path(paths, case_input, true);
+        rename_path(paths, case_input, verbose_enabled);
     } else if (rename_extensions) {
-        rename_extension_path(paths, case_input, false);
+        rename_extension_path(paths, case_input, verbose_enabled);
     } else {
-        rename_path(paths, case_input, false);
+        rename_path(paths, case_input, verbose_enabled);
     }
 
     std::cout << "\n\033[1mPress enter to exit...\033[0m";
