@@ -120,7 +120,7 @@ void print_help() {
 
 // Extension stuff
 
-void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count, int& dirs_count) {
+void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count) {
     static const std::regex lower_case("([a-zA-Z]+)");
     static const std::regex upper_case("([a-zA-Z]+)");
     static const std::regex reverse_case("([a-zA-Z])");
@@ -188,16 +188,24 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         depth = std::numeric_limits<int>::max();
     }
     
-bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
+    bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
+    // Get the maximum number of threads supported by the system
+    unsigned int max_threads = std::thread::hardware_concurrency();
+
     std::vector<std::thread> threads; // Vector to store threads
 
-    for (const auto& path : paths) {
-        threads.emplace_back([&path, &case_input, verbose_enabled, depth, &files_count, &depth_limit_reached_printed]() {
+    // Determine the number of threads to create (minimum of max_threads and paths.size())
+    unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
+
+    for (unsigned int i = 0; i < num_threads; ++i) {
+        threads.emplace_back([&paths, i, &case_input, verbose_enabled, depth, &files_count, &depth_limit_reached_printed]() {
+            // Each thread handles a subset of paths based on its index i
+            // Example: process paths[i], paths[i + num_threads], paths[i + 2*num_threads], ...
             std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
-            directories.push({path, 0}); // Push the initial path onto the queue with depth 0
+            directories.push({paths[i], 0}); // Push the initial path onto the queue with depth 0
 
             while (!directories.empty()) {
                 auto [current_path, current_depth] = directories.front();
@@ -221,11 +229,11 @@ bool depth_limit_reached_printed = false; // Flag to track if the depth limit re
                         if (fs::is_directory(entry)) {
                             directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                         } else if (fs::is_regular_file(entry)) {
-                            rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
+                            rename_extension(entry.path(), case_input, verbose_enabled, files_count);
                         }
                     }
                 } else if (fs::is_regular_file(current_fs_path)) {
-                    rename_extension(current_fs_path, case_input, verbose_enabled, files_count, files_count);
+                    rename_extension(current_fs_path, case_input, verbose_enabled, files_count);
                 } else {
                     print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
