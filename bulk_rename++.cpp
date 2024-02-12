@@ -126,7 +126,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
 }
 
 
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled = true) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-ce option is required)\n\033[0m");
@@ -523,7 +523,7 @@ int main(int argc, char *argv[]) {
     if (rename_parents) {
         rename_path(paths, case_input, true);
     } else if (rename_extensions) {
-        rename_extension_path(paths, case_input);
+        rename_extension_path(paths, case_input, false);
     } else {
         rename_path(paths, case_input, false);
     }
