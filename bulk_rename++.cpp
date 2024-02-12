@@ -9,6 +9,7 @@
 #include <chrono>
 #include <regex>
 #include <cctype>
+#include <queue>
 
 namespace fs = std::filesystem;
 
@@ -181,58 +182,60 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     }
 }
 
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, bool last_recursion, int& files_count) {
-    // Check if case_input is empty
-    if (case_input.empty()) {
-        print_error("\033[1;91mError: Case conversion mode not specified (-ce option is required)\n\033[0m");
-        return;
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
+    // If depth is negative (default value), set it to a very large number to effectively disable the depth limit
+    if (depth < 0) {
+        depth = std::numeric_limits<int>::max();
     }
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
-    bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
+    std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
 
     for (const auto& path : paths) {
-        fs::path current_path(path);
+        directories.push({path, 0}); // Push the initial paths onto the queue with depth 0
+    }
 
-        if (fs::exists(current_path)) {
-            if (fs::is_directory(current_path)) {
-                // For directories, recursively rename all files within the directory
-                if (depth != 0) {
-                    std::vector<std::string> sub_paths;
-                    for (const auto& entry : fs::directory_iterator(current_path)) {
-                        if (fs::is_directory(entry)) {
-                            sub_paths.push_back(entry.path().string());
-                        } else if (fs::is_regular_file(entry)) {
-                            rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
-                        }
-                    }
-                    rename_extension_path(sub_paths, case_input, verbose_enabled, depth - 1, false, files_count); // Not the last recursion
-                } else if (verbose_enabled && !depth_limit_reached_printed) {
-                    std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path.string() << "\033[0m" <<std::endl;
-                    depth_limit_reached_printed = true; // Set the flag to true after printing the message
+    while (!directories.empty()) {
+        auto [current_path, current_depth] = directories.front();
+        directories.pop();
+
+        if (current_depth >= depth) {
+            std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path << "\033[0m" << std::endl;
+            continue; // Skip processing this directory
+        }
+
+        fs::path current_fs_path(current_path);
+
+        if (!fs::exists(current_fs_path)) {
+            print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
+            continue;
+        }
+
+        if (fs::is_directory(current_fs_path)) {
+            for (const auto& entry : fs::directory_iterator(current_fs_path)) {
+                if (fs::is_directory(entry)) {
+                    directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+                } else if (fs::is_regular_file(entry)) {
+                    rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
                 }
-            } else if (fs::is_regular_file(current_path)) {
-                // For individual files, directly rename the file
-                rename_extension(current_path, case_input, verbose_enabled, files_count, files_count);
-            } else {
-                print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
+        } else if (fs::is_regular_file(current_fs_path)) {
+            rename_extension(current_fs_path, case_input, verbose_enabled, files_count, files_count);
         } else {
-            print_error("\033[1;91mError: path does not exist - " + path + "\033[0m\n");
+            print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
         }
     }
 
-    if (last_recursion) {
-        auto end_time = std::chrono::steady_clock::now(); // End time measurement
+    auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
-        std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
+    std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
-        std::cout << "\n\033[1mRenamed extensions to " << case_input << "_case: \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
-                  << " input path(s) \033[0m\033[1min " << std::setprecision(1)
-                  << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
-    }
+    std::cout << "\n\033[1mRenamed extensions to " << case_input << "_case: \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
+              << " input path(s) \033[0m\033[1min " << std::setprecision(1)
+              << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
+
 
 
 
@@ -673,7 +676,7 @@ int main(int argc, char *argv[]) {
         rename_path(paths, case_input, true, verbose_enabled, depth); // Pass true for rename_immediate_parent
     } else if (rename_extensions) {
 		int files_count = 0; // Declare files_count here
-        rename_extension_path(paths, case_input, verbose_enabled, depth, true, files_count);
+        rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
     } else {
         rename_path(paths, case_input, false, verbose_enabled, depth); // Pass false for rename_immediate_parent
     }
