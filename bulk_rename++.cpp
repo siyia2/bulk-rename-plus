@@ -238,7 +238,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
 
 
-
 // Rename file&directory stuff
 
 
@@ -622,6 +621,11 @@ int main(int argc, char *argv[]) {
                     }
 				}
         } else {
+            // Check for duplicate paths
+            if (std::find(paths.begin(), paths.end(), arg) != paths.end()) {
+                print_error("\033[1;91mError: Duplicate path detected - " + arg + "\033[0m\n");
+                return 1;
+            }
             paths.emplace_back(arg);
         }
     }
