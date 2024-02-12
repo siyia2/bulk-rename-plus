@@ -29,7 +29,6 @@ std::string to_camel_case(const std::string& input) {
         } else if (std::isspace(c)) {
             capitalizeNext = true;
         }
-        // You may add additional conditions to handle other cases (e.g., digits, special characters).
     }
 
     return result;
