@@ -327,9 +327,13 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count,int depth = -1) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count,int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
+    
+    if (depth <= 0) {
+        return; // Exit recursion if depth is reached
+    }
 
     // Static Regular expression patterns for transformations
     static const std::regex transformation_pattern("lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab|snake");
@@ -453,16 +457,17 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (entry.is_directory()) {
             if (threads.size() < max_threads) {
                 // Start a new thread for each subdirectory
-                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), std::ref(depth));
+                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), depth - 1);
             } else {
                 // Process directories in the main thread if max_threads is reached
-                rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+                rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count, depth - 1);
             }
         } else {
             // Process files in the main thread
             rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
         }
     }
+
 
     // Join all threads
     for (auto& thread : threads) {
@@ -501,13 +506,13 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 if (rename_immediate_parent) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count);
+                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count, depth - 1);
                 } else {
                     // Otherwise, rename the entire path
                     if (threads.size() < max_threads) {
                         threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose_enabled, std::ref(files_count), std::ref(dirs_count), std::ref(depth));
                     } else {
-                        rename_directory(current_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count);
+                        rename_directory(current_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count, depth - 1);
                     }
                 }
             } else if (fs::is_regular_file(current_path)) {
