@@ -18,6 +18,61 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
+std::string to_camel_case(const std::string& input) {
+    std::string result;
+    bool capitalizeNext = false;
+
+    for (char c : input) {
+        if (std::isalpha(c)) {
+            result += capitalizeNext ? std::toupper(c) : std::tolower(c);
+            capitalizeNext = false;
+        } else if (std::isspace(c)) {
+            capitalizeNext = true;
+        }
+        // You may add additional conditions to handle other cases (e.g., digits, special characters).
+    }
+
+    return result;
+}
+
+std::string to_kebab_case(const std::string& input) {
+    std::string result;
+    for (char c : input) {
+        if (std::isspace(c)) {
+            result += '-';
+        } else {
+            result += std::tolower(c);
+        }
+    }
+    return result;
+}
+
+std::string to_snake_case(const std::string& input) {
+    std::string result;
+    bool lastWasUnderscore = false;
+
+    for (char c : input) {
+        if (std::isalpha(c)) {
+            result += std::tolower(c);
+            lastWasUnderscore = false;
+        } else if (std::isspace(c)) {
+            if (!lastWasUnderscore) {
+                result += '_';
+                lastWasUnderscore = true;
+            }
+        } else {
+            result += '_';
+            lastWasUnderscore = true;
+        }
+    }
+    // Remove trailing underscores
+    while (!result.empty() && result.back() == '_') {
+        result.pop_back();
+    }
+    return result;
+}
+
+
 void print_message(const std::string& message) {
         std::lock_guard<std::mutex> lock(cout_mutex);
         std::cout << message << std::endl;
@@ -42,9 +97,9 @@ void print_help() {
               << "\n"
               << "Options:\n"
               << "  -h, --help           Print this message and exit\n"
-              << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore/rspecial) w/o parent dir(s)\n"
-              << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore/rspecial) w parent dir(s)\n"
-              << "  -ce [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
+              << "  -c  [MODE]           Set the case conversion mode (lower/upper/title/reverse/rspace/runderscore/rspecial) w/o parent dir(s)\n"
+              << "  -cp [MODE]           Set the case conversion mode (lower/upper/title/reverse/rspace/runderscore/rspecial) w parent dir(s)\n"
+              << "  -ce [MODE]           Set the case conversion mode (lower/upper/title/reverse) for file extension(s)\n"
               << "  -v, --verbose_enabled        Enable verbose_enabled mode\n"
               << "\n"
               << "Examples:\n"
@@ -66,7 +121,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     std::regex lower_case("([a-zA-Z]+)");
     std::regex upper_case("([a-zA-Z]+)");
     std::regex reverse_case("([a-zA-Z])");
-    std::regex fupper_case("([a-zA-Z])([a-zA-Z.]*)"); // Capture first letter separately for fupper
+    std::regex title_case("([a-zA-Z])([a-zA-Z.]*)"); // Capture first letter separately for title
 
     if (case_input == "lower") {
         std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::tolower);
@@ -83,9 +138,9 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
                 }
             }
         }
-    } else if (case_input == "fupper") {
+    } else if (case_input == "title") {
     std::smatch match;
-    if (std::regex_search(extension, match, fupper_case)) {
+    if (std::regex_search(extension, match, title_case)) {
         std::string rest_of_extension = match[2].str();
         std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
         new_extension = "." + std::string(1, std::toupper(match[1].str()[0])) + rest_of_extension;
@@ -169,7 +224,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|fupper|rspace|runderscore|rspecial|rnumeric|rbra|roperand)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|snake)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -190,7 +245,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
                 return std::islower(c) ? std::toupper(c) : std::tolower(c);
             });
-        } else if (transformation == "fupper") {
+        } else if (transformation == "title") {
             bool first_letter_encountered = true;
             for (char& c : new_name) {
                 if (std::isalpha(c)) {
@@ -226,6 +281,12 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
                 return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
             }), new_name.end());
+        } else if (transformation == "camel") {
+            new_name = to_camel_case(new_name);
+        } else if (transformation == "kebab") {
+            new_name = to_kebab_case(new_name);
+        } else if (transformation == "snake") {
+            new_name = to_snake_case(new_name);
         }
     }
 
@@ -261,7 +322,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string new_dirname; // Initialize with original name
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("lower|upper|reverse|fupper|rspace|runderscore|rspecial|rnumeric|rbra|roperand");
+    static const std::regex transformation_pattern("lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|snake");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -284,7 +345,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
                 return std::islower(c) ? std::toupper(c) : std::tolower(c);
             });
-        } else if (transformation == "fupper") {
+        } else if (transformation == "title") {
             bool first_letter = true;
             new_dirname.reserve(dirname.size()); // Reserve space for efficiency
             for (char c : dirname) {
@@ -329,6 +390,15 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                 return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
             }), new_dirname.end());
+        } else if (transformation == "camel") {
+			new_dirname = dirname;
+            new_dirname = to_camel_case(new_dirname);
+        } else if (transformation == "kebab") {
+			new_dirname = dirname;
+            new_dirname = to_kebab_case(new_dirname);
+        } else if (transformation == "snake") {
+			new_dirname = dirname;
+            new_dirname = to_snake_case(new_dirname);
         }
     }
 
@@ -381,6 +451,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         thread.join();
     }
 }
+
 
 
 
@@ -475,7 +546,7 @@ if (argc == 1) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebap" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
                         print_error("\033[1;91mError: Unspecified case mode. Run 'bulk_rename++ --help'.\n");
                         return 1;
                     }
@@ -488,7 +559,7 @@ if (argc == 1) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "kebap" && case_input != "snake" && case_input != "rspace" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "runderscore" && case_input != "rbra" && case_input != "roperand") {
                         print_error("\033[1;91mError: Unspecified case mode. Run 'bulk_rename++ --help'.\n");
                         return 1;
                     }
@@ -502,8 +573,8 @@ if (argc == 1) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'title'.\n");
                         return 1;
                     }
                 } else {
