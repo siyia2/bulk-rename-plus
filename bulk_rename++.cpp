@@ -186,7 +186,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     }
 }
 
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled = false, int depth = -1) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled = false, int depth = -1, bool last_recursion = true) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-ce option is required)\n\033[0m");
@@ -212,7 +212,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                             rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
                         }
                     }
-                    rename_extension_path(sub_paths, case_input, verbose_enabled, depth - 1);
+                    rename_extension_path(sub_paths, case_input, verbose_enabled, depth - 1, false); // Not the last recursion
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For individual files, directly rename the file
@@ -225,13 +225,15 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         }
     }
 
-    auto end_time = std::chrono::steady_clock::now(); // End time measurement
+    if (last_recursion) {
+        auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
-    std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
+        std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
-    std::cout << "\n\033[1mRenamed extensions to " << case_input << "_case: \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
-              << " input path(s) \033[0m\033[1min " << std::setprecision(1)
-              << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+        std::cout << "\n\033[1mRenamed extensions to " << case_input << "_case: \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
+                  << " input path(s) \033[0m\033[1min " << std::setprecision(1)
+                  << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+    }
 }
 
 
