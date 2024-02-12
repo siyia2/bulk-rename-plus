@@ -183,51 +183,59 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
 }
 
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
-    // If depth is negative (default value), set it to a very large number to effectively disable the depth limit
+    //If depth is negative (default value), set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
     }
     
-    bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
+bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
-    std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
+    std::vector<std::thread> threads; // Vector to store threads
 
     for (const auto& path : paths) {
-        directories.push({path, 0}); // Push the initial paths onto the queue with depth 0
-    }
+        threads.emplace_back([&path, &case_input, verbose_enabled, depth, &files_count, &depth_limit_reached_printed]() {
+            std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
+            directories.push({path, 0}); // Push the initial path onto the queue with depth 0
 
-    while (!directories.empty()) {
-        auto [current_path, current_depth] = directories.front();
-        directories.pop();
+            while (!directories.empty()) {
+                auto [current_path, current_depth] = directories.front();
+                directories.pop();
 
-        if (current_depth >= depth && !depth_limit_reached_printed) {
-        std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path << "\033[0m" << std::endl;
-        depth_limit_reached_printed = true; // Set the flag to true after printing the message
-        continue; // Skip processing this directory
-    }
+                if (current_depth >= depth && !depth_limit_reached_printed) {
+                    std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path << "\033[0m" << std::endl;
+                    depth_limit_reached_printed = true; // Set the flag to true after printing the message
+                    continue; // Skip processing this directory
+                }
 
-        fs::path current_fs_path(current_path);
+                fs::path current_fs_path(current_path);
 
-        if (verbose_enabled && !fs::exists(current_fs_path)) {
-            print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
-            continue;
-        }
+                if (verbose_enabled && !fs::exists(current_fs_path)) {
+                    print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
+                    continue;
+                }
 
-        if (fs::is_directory(current_fs_path)) {
-            for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                if (fs::is_directory(entry)) {
-                    directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
-                } else if (fs::is_regular_file(entry)) {
-                    rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
+                if (fs::is_directory(current_fs_path)) {
+                    for (const auto& entry : fs::directory_iterator(current_fs_path)) {
+                        if (fs::is_directory(entry)) {
+                            directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+                        } else if (fs::is_regular_file(entry)) {
+                            rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
+                        }
+                    }
+                } else if (fs::is_regular_file(current_fs_path)) {
+                    rename_extension(current_fs_path, case_input, verbose_enabled, files_count, files_count);
+                } else {
+                    print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
             }
-        } else if (fs::is_regular_file(current_fs_path)) {
-            rename_extension(current_fs_path, case_input, verbose_enabled, files_count, files_count);
-        } else {
-            print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
-        }
+        });
+    }
+
+    // Join all threads
+    for (auto& thread : threads) {
+        thread.join();
     }
 
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
@@ -578,10 +586,10 @@ int main(int argc, char *argv[]) {
         print_help();
         return 0;
     }
-    if (depth < 0) {
-            print_error("\033[1;91mError: Invalid depth value. Depth must be a non-negative integer.\n");
+   if (depth < -1) {
+        print_error("\033[1;91mError: Invalid depth value. Depth must be a non-negative integer.\n");
             return 1;
-        }
+       }
 
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
