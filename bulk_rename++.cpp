@@ -171,7 +171,10 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     std::string name = item_path.filename().string();
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
-    
+
+    static const std::regex transformation_pattern("(lower|upper|reverse|fupper|rspace|runderscore)");
+    std::smatch match;
+
     if (fs::is_symlink(item_path)) {
         if (verbose) {
             print_verbose("\033[0m\033[93mSkipped\033[0m symlink " + item_path.string() + " (not supported)");
@@ -179,39 +182,34 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
         return;
     }
 
-    // Regular expression patterns for transformations
-    std::regex lower_pattern("lower");
-    std::regex upper_pattern("upper");
-    std::regex reverse_pattern("reverse");
-    std::regex fupper_pattern("fupper");
-    std::regex rspace_pattern("rspace");
-    std::regex runderscore_pattern("runderscore");
-
     // Apply case transformation using regex patterns
-    if (std::regex_match(case_input, lower_pattern)) {
-        std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
-    } else if (std::regex_match(case_input, upper_pattern)) {
-        std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::toupper);
-    } else if (std::regex_match(case_input, reverse_pattern)) {
-        std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
-            return std::islower(c) ? std::toupper(c) : std::tolower(c);
-        });
-    } else if (std::regex_match(case_input, fupper_pattern)) {
-        bool first_letter_encountered = true;
-        for (char& c : new_name) {
-            if (std::isalpha(c)) {
-                if (first_letter_encountered) {
-                    c = std::toupper(c);
-                    first_letter_encountered = false;
-                } else {
-                    c = std::tolower(c); // Convert subsequent letters to lowercase
+    if (std::regex_search(case_input, match, transformation_pattern)) {
+        const std::string& transformation = match[1].str();
+        if (transformation == "lower") {
+            std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
+        } else if (transformation == "upper") {
+            std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::toupper);
+        } else if (transformation == "reverse") {
+            std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
+                return std::islower(c) ? std::toupper(c) : std::tolower(c);
+            });
+        } else if (transformation == "fupper") {
+            bool first_letter_encountered = true;
+            for (char& c : new_name) {
+                if (std::isalpha(c)) {
+                    if (first_letter_encountered) {
+                        c = std::toupper(c);
+                        first_letter_encountered = false;
+                    } else {
+                        c = std::tolower(c); // Convert subsequent letters to lowercase
+                    }
                 }
             }
+        } else if (transformation == "rspace") {
+            std::replace(new_name.begin(), new_name.end(), ' ', '_');
+        } else if (transformation == "runderscore") {
+            std::replace(new_name.begin(), new_name.end(), '_', ' ');
         }
-    } else if (std::regex_match(case_input, rspace_pattern)) {
-        std::regex_replace(std::back_inserter(new_name), new_name.begin(), new_name.end(), std::regex(" "), "_");
-    } else if (std::regex_match(case_input, runderscore_pattern)) {
-        std::regex_replace(std::back_inserter(new_name), new_name.begin(), new_name.end(), std::regex("_"), " ");
     }
 
     // Skip renaming if the new name is the same as the old name
