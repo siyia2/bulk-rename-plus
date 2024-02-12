@@ -179,7 +179,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
 }
 
 
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled = false,int max_depth = -1) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled = false,int depth = -1) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-ce option is required)\n\033[0m");
@@ -327,7 +327,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count,int max_depth = -1) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count,int depth = -1) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
 
@@ -453,7 +453,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (entry.is_directory()) {
             if (threads.size() < max_threads) {
                 // Start a new thread for each subdirectory
-                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), std::ref(max_depth));
+                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), std::ref(depth));
             } else {
                 // Process directories in the main thread if max_threads is reached
                 rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
@@ -473,7 +473,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
 
 
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false,int max_depth = -1) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false,int depth = -1) {
 		
     // Check if case_input is empty
     if (case_input.empty()) {
@@ -505,7 +505,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 } else {
                     // Otherwise, rename the entire path
                     if (threads.size() < max_threads) {
-                        threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose_enabled, std::ref(files_count), std::ref(dirs_count), std::ref(max_depth));
+                        threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose_enabled, std::ref(files_count), std::ref(dirs_count), std::ref(depth));
                     } else {
                         rename_directory(current_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count);
                     }
