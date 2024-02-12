@@ -167,7 +167,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|fupper|rspace|runderscore)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|fupper|rspace|runderscore|rspecial)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -204,6 +204,11 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
             std::replace(new_name.begin(), new_name.end(), ' ', '_');
         } else if (transformation == "runderscore") {
             std::replace(new_name.begin(), new_name.end(), '_', ' ');
+        } else if (transformation == "rspecial") {
+            // Remove special characters from the name
+            new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
+                return !std::isalnum(c) && c != '.' && c != '_'; // Retain alphanumeric characters, period, and underscore
+            }), new_name.end());
         }
     }
 
@@ -247,6 +252,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::regex fupper_pattern("fupper");
     std::regex rspace_pattern("rspace");
     std::regex runderscore_pattern("runderscore");
+    std::regex rspecial_pattern("rspecial"); // Added rspecial pattern
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -288,6 +294,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     } else if (std::regex_match(case_input, runderscore_pattern)) {
         std::replace(dirname.begin(), dirname.end(), '_', ' ');
         new_dirname = dirname;
+    } else if (std::regex_match(case_input, rspecial_pattern)) {
+        // Remove special characters from the directory name
+        new_dirname = dirname;
+        new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+            return !std::isalnum(c) && c != '.' && c != '_'; // Retain alphanumeric characters, period, and underscore
+        }), new_dirname.end());
     }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
@@ -339,6 +351,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         thread.join();
     }
 }
+
 
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false) {
@@ -428,8 +441,8 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "runderscore") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace', or 'runderscore'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "rspecial" && case_input != "runderscore") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace','rspecial', or 'runderscore'.\n");
                         return 1;
                     }
                 } else {
@@ -441,8 +454,8 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                     // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "runderscore") {
-                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace', or 'runderscore'.\n");
+                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "fupper" && case_input != "rspace" && case_input != "rspecial" && case_input != "runderscore") {
+                        print_error("\033[1;91mError: Unspecified case mode. Please specify 'lower', 'upper', 'reverse', 'fupper', 'rspace','rspecial', or 'runderscore'.\n");
                         return 1;
                     }
                 } else {
