@@ -41,8 +41,8 @@ void print_help() {
               << "\n"
               << "Options:\n"
               << "  -h, --help           Print this message and exit\n"
-              << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore) w/o parent dir(s)\n"
-              << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore) w parent dir(s)\n"
+              << "  -c  [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore/rspecial) w/o parent dir(s)\n"
+              << "  -cp [MODE]           Set the case conversion mode (lower/upper/fupper/reverse/rspace/runderscore/rspecial) w parent dir(s)\n"
               << "  -ce [MODE]           Set the case conversion mode (lower/upper/fupper/reverse) for file extension(s)\n"
               << "  -v, --verbose_enabled        Enable verbose_enabled mode\n"
               << "\n"
@@ -245,14 +245,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
 
-    // Regular expression patterns for transformations
-    std::regex lower_pattern("lower");
-    std::regex upper_pattern("upper");
-    std::regex reverse_pattern("reverse");
-    std::regex fupper_pattern("fupper");
-    std::regex rspace_pattern("rspace");
-    std::regex runderscore_pattern("runderscore");
-    std::regex rspecial_pattern("rspecial"); // Added rspecial pattern
+    // Static Regular expression patterns for transformations
+    static const std::regex lower_pattern("lower");
+    static const std::regex upper_pattern("upper");
+    static const std::regex reverse_pattern("reverse");
+    static const std::regex fupper_pattern("fupper");
+    static const std::regex rspace_pattern("rspace");
+    static const std::regex runderscore_pattern("runderscore");
+    static const std::regex rspecial_pattern("rspecial");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -426,7 +426,11 @@ int main(int argc, char *argv[]) {
     bool verbose_enabled = false;
 
     bool case_specified = false;
-
+    
+if (argc == 1) {
+        print_help();
+        return 0;
+    }
     if (argc >= 2) {
         for (int i = 1; i < argc; ++i) {
             std::string arg(argv[i]);
