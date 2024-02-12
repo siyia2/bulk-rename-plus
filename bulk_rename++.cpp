@@ -237,6 +237,7 @@ void rename_item(const fs::path& item_path, const std::string& case_input, bool 
 }
 
 
+
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
