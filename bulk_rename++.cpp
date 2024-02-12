@@ -338,13 +338,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count,int depth=-1) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
-    
-    if (depth == 0 ) {
-    return; // Exit recursion if depth is reached
-}
 
     // Static Regular expression patterns for transformations
     static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab)");
@@ -397,9 +393,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (transformation == "rkebab") {
             std::replace(dirname.begin(), dirname.end(), '-', ' ');
             new_dirname = dirname;
-        }
-        
-		  else if (transformation == "rspecial") {
+        } else if (transformation == "rspecial") {
             // Remove special characters from the directory name
             new_dirname = dirname;
             new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
@@ -424,13 +418,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
             }), new_dirname.end());
         } else if (transformation == "camel") {
-			new_dirname = dirname;
+            new_dirname = dirname;
             new_dirname = to_camel_case(new_dirname);
-        }
-        else if (transformation == "rcamel") {
-			new_dirname = dirname;
+        } else if (transformation == "rcamel") {
+            new_dirname = dirname;
             new_dirname = from_camel_case(new_dirname);
         }
+    }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
@@ -452,6 +446,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (verbose_enabled) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)");
         }
+    }
+
+    if (depth == 0) {
+        if (verbose_enabled) {
+            print_verbose_enabled("\033[0m\n\033[1;95mDepth limit reached\033[0m at directory " + directory_path.string());
+        }
+        return; // Stop further recursion if depth limit reached
     }
 
     unsigned int max_threads = std::thread::hardware_concurrency();
@@ -476,12 +477,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 
-
     // Join all threads
     for (auto& thread : threads) {
         thread.join();
-		}
-	}
+    }
 }
 
 
