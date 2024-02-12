@@ -190,6 +190,8 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
+    bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
+
     for (const auto& path : paths) {
         fs::path current_path(path);
 
@@ -206,6 +208,9 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                         }
                     }
                     rename_extension_path(sub_paths, case_input, verbose_enabled, depth - 1, false, files_count); // Not the last recursion
+                } else if (verbose_enabled && !depth_limit_reached_printed) {
+                    std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path.string() << "\033[0m" <<std::endl;
+                    depth_limit_reached_printed = true; // Set the flag to true after printing the message
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For individual files, directly rename the file
@@ -341,6 +346,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
+    bool renaming_message_printed=false;
 
     // Static Regular expression patterns for transformations
     static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab)");
@@ -429,19 +435,21 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
     // Check if renaming is necessary
-    if (directory_path != new_path) {
-        try {
-            fs::rename(directory_path, new_path);
+if (directory_path != new_path) {
+    try {
+        fs::rename(directory_path, new_path);
 
-            if (verbose_enabled) {
-                print_verbose_enabled("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
-            }
-            std::lock_guard<std::mutex> lock(dirs_count_mutex);
-            ++dirs_count;
-        } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-            return; // Stop processing if renaming failed
+        if (verbose_enabled && !renaming_message_printed) {
+            print_verbose_enabled("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+            renaming_message_printed = true; // Set the flag to true after printing the message
         }
+        std::lock_guard<std::mutex> lock(dirs_count_mutex);
+        ++dirs_count;
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+        return; // Stop processing if renaming failed
+    }
+
     } else {
         if (verbose_enabled) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)");
@@ -452,7 +460,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         --depth; // Decrement depth only if it's greater than 0
     } else {
         if (verbose_enabled) {
-            print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached\033[0m at directory " + directory_path.string());
+            print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
         }
         return; // Stop further recursion if depth limit reached
     }
