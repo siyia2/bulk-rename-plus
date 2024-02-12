@@ -452,7 +452,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         --depth; // Decrement depth only if it's greater than 0
     } else {
         if (verbose_enabled) {
-            print_verbose_enabled("\033[0m\033[93mDepth limit reached\033[0m for directory " + directory_path.string());
+            print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached\033[0m at directory " + directory_path.string());
         }
         return; // Stop further recursion if depth limit reached
     }
