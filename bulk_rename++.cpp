@@ -179,17 +179,13 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
 }
 
 
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled = false,int depth = -1) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled = false, int depth = -1) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-ce option is required)\n\033[0m");
         return;
     }
-    
-        if (depth == 0 ) {
-    return; // Exit recursion if depth is reached
-}
-    
+
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     int files_count = 0; // Initialize files count
@@ -200,10 +196,16 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         if (fs::exists(current_path)) {
             if (fs::is_directory(current_path)) {
                 // For directories, recursively rename all files within the directory
-                for (const auto& entry : fs::recursive_directory_iterator(current_path)) {
-                    if (fs::is_regular_file(entry.path())) {
-                        rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
+                if (depth != 0) {
+                    std::vector<std::string> sub_paths;
+                    for (const auto& entry : fs::directory_iterator(current_path)) {
+                        if (fs::is_directory(entry)) {
+                            sub_paths.push_back(entry.path().string());
+                        } else if (fs::is_regular_file(entry)) {
+                            rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
+                        }
                     }
+                    rename_extension_path(sub_paths, case_input, verbose_enabled, depth - 1);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For individual files, directly rename the file
@@ -224,6 +226,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
+
 
 // Rename file&directory stuff
 
