@@ -34,31 +34,21 @@ std::string to_camel_case(const std::string& input) {
     return result;
 }
 
-
-std::string to_snake_case(const std::string& input) {
+std::string from_camel_case(const std::string& input) {
     std::string result;
-    bool lastWasUnderscore = false;
-
+    
     for (char c : input) {
-        if (std::isalpha(c)) {
+        if (std::isupper(c)) {
+            result += ' ';
             result += std::tolower(c);
-            lastWasUnderscore = false;
-        } else if (std::isspace(c)) {
-            if (!lastWasUnderscore) {
-                result += '_';
-                lastWasUnderscore = true;
-            }
         } else {
-            result += '_';
-            lastWasUnderscore = true;
+            result += c;
         }
     }
-    // Remove trailing underscores
-    while (!result.empty() && result.back() == '_') {
-        result.pop_back();
-    }
+
     return result;
 }
+
 
 
 void print_message(const std::string& message) {
@@ -85,8 +75,8 @@ void print_help() {
               << "\n"
               << "Options:\n"
               << "  -h, --help           Print this message and exit\n"
-              << "  -c  [MODE]           Set the case conversion mode for file and directory names (lower/upper/title/reverse/rspace/runderscore/kebab/rkebab/rspecial/rnumeric/rbra/roperand/camel/snake)\n"
-              << "  -cp [MODE]           Set the case conversion mode for file and directory names including parent directories (lower/upper/title/reverse/rspace/runderscore/kebab/rkebab/rspecial/rnumeric/rbra/roperand/camel/snake)\n"
+              << "  -c  [MODE]           Set the case conversion mode for file and directory names (lower/upper/title/reverse/snake/rsnake/kebab/rkebab/rspecial/rnumeric/rbra/roperand/camel/snake)\n"
+              << "  -cp [MODE]           Set the case conversion mode for file and directory names including parent directories (lower/upper/title/reverse/snake/rsnake/kebab/rkebab/rspecial/rnumeric/rbra/roperand/camel/snake)\n"
               << "  -ce [MODE]           Set the case conversion mode for file extensions (lower/upper/title/reverse)\n"
               << "  -v, --verbose_enabled        Enable verbose_enabled mode\n"
               << "\n"
@@ -95,8 +85,8 @@ void print_help() {
               << "  upper          Convert names to UPPERCASE\n"
               << "  title          Convert names to Title Case\n"
               << "  reverse        Reverse the case of characters in names\n"
-              << "  rspace         Replace spaces with underscores\n"
-              << "  runderscore    Replace underscores with spaces\n"
+              << "  snake         Replace spaces with underscores\n"
+              << "  rsnake    Replace underscores with spaces\n"
               << "  kebab          Convert names to kebab-case\n"
               << "  rkebab         Convert kebab-case names to normal names\n"
               << "  rspecial       Remove special characters from names\n"
@@ -238,7 +228,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab|snake)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -272,9 +262,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 }
             }
             
-        } else if (transformation == "rspace") {
+        } else if (transformation == "snake") {
             std::replace(new_name.begin(), new_name.end(), ' ', '_');
-        } else if (transformation == "runderscore") {
+        } else if (transformation == "rsnake") {
             std::replace(new_name.begin(), new_name.end(), '_', ' ');
         } else if (transformation == "kebab") {
             std::replace(new_name.begin(), new_name.end(), ' ', '-');
@@ -304,8 +294,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             }), new_name.end());
         } else if (transformation == "camel") {
             new_name = to_camel_case(new_name);
-        }    else if (transformation == "snake") {
-            new_name = to_snake_case(new_name);
         }
     }
 
@@ -345,7 +333,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("lower|upper|reverse|title|rspace|runderscore|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab|snake");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|kebab|rkebab)");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -383,14 +371,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname.push_back(c);
                 }
             }
-        } else if (transformation == "rspace") {
+        } else if (transformation == "snake") {
             std::replace(dirname.begin(), dirname.end(), ' ', '_');
             new_dirname = dirname;
-        } else if (transformation == "runderscore") {
+        } else if (transformation == "rsnake") {
             std::replace(dirname.begin(), dirname.end(), '_', ' ');
-            new_dirname = dirname;
-        }  else if (transformation == "rspaceh") {
-            std::replace(dirname.begin(), dirname.end(), ' ', '-');
             new_dirname = dirname;
         } else if (transformation == "kebab") {
             std::replace(dirname.begin(), dirname.end(), ' ', '-');
@@ -427,11 +412,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (transformation == "camel") {
 			new_dirname = dirname;
             new_dirname = to_camel_case(new_dirname);
-        } else if (transformation == "snake") {
-			new_dirname = dirname;
-            new_dirname = to_snake_case(new_dirname);
-        
-    }
+        }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
@@ -618,7 +599,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::system("clear");
-    if (case_input != "rspace" && case_input != "runderscore"){
+    if (case_input != "snake" && case_input != "rsnake"){
         std::cout << "\033[1;93m!!! WARNING OPERATION IRREVERSIBLE !!!\033[0m\n\n";
     }
 
