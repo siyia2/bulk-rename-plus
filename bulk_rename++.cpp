@@ -10,7 +10,6 @@
 #include <regex>
 #include <cctype>
 #include <queue>
-#include <limits>
 
 namespace fs = std::filesystem;
 
@@ -121,23 +120,21 @@ void print_help() {
 
 // Extension stuff
 
-// Function to rename the extension of a file
 void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count, int& dirs_count) {
     static const std::regex lower_case("([a-zA-Z]+)");
     static const std::regex upper_case("([a-zA-Z]+)");
     static const std::regex reverse_case("([a-zA-Z])");
-    static const std::regex title_case("([a-zA-Z])([a-zA-Z.]*)");
+    static const std::regex title_case("([a-zA-Z])([a-zA-Z.]*)"); 
 
     if (!fs::is_regular_file(item_path)) {
         if (verbose_enabled) {
-            std::lock_guard<std::mutex> lock(dirs_count_mutex);
-            std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path << " (not a regular file)" << std::endl << std::endl;
+            std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
         }
         return;
     }
-
+    
     std::string extension = item_path.extension().string();
-    std::string new_extension = extension;
+    std::string new_extension = extension; 
 
     if (case_input == "lower") {
         std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::tolower);
@@ -152,33 +149,30 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             }
             new_extension = oss.str();
         }
-    } else if (case_input == "title") {
-        std::smatch match;
-        if (std::regex_search(extension, match, title_case)) {
-            std::string rest_of_extension = match[2].str();
-            std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
-            char first_letter = std::toupper(match[1].str()[0]);
-            new_extension = "." + std::string(1, first_letter) + rest_of_extension;
-        }
+} else if (case_input == "title") {
+    std::smatch match;
+    if (std::regex_search(extension, match, title_case)) {
+        std::string rest_of_extension = match[2].str();
+        std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
+        char first_letter = std::toupper(match[1].str()[0]);
+        new_extension = "." + std::string(1, first_letter) + rest_of_extension;
     }
+}
 
     if (extension != new_extension) {
         fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
         try {
             fs::rename(item_path, new_path);
-            {
+            if (verbose_enabled) {
                 std::lock_guard<std::mutex> lock(files_count_mutex);
                 ++files_count;
-                if (verbose_enabled) {
-                    std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
-                }
+                std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
             }
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     } else {
         if (verbose_enabled) {
-            std::lock_guard<std::mutex> lock(files_count_mutex);
             if (extension.empty()) {
                 std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string() << " (no extension)" << std::endl;
             } else {
@@ -188,13 +182,12 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     }
 }
 
-// Main function to rename extension of files in specified directories
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, int& dirs_count) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
     // If depth is negative (default value), set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
     }
-
+    
     bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
@@ -210,10 +203,10 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         directories.pop();
 
         if (current_depth >= depth && !depth_limit_reached_printed) {
-            std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path << "\033[0m" << std::endl;
-            depth_limit_reached_printed = true; // Set the flag to true after printing the message
-            continue; // Skip processing this directory
-        }
+        std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path << "\033[0m" << std::endl;
+        depth_limit_reached_printed = true; // Set the flag to true after printing the message
+        continue; // Skip processing this directory
+    }
 
         fs::path current_fs_path(current_path);
 
@@ -226,16 +219,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
             for (const auto& entry : fs::directory_iterator(current_fs_path)) {
                 if (fs::is_directory(entry)) {
                     directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
-                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
-                    ++dirs_count;
                 } else if (fs::is_regular_file(entry)) {
-                    // Process regular files
-                    rename_extension(entry.path(), case_input, verbose_enabled, files_count, dirs_count);
+                    rename_extension(entry.path(), case_input, verbose_enabled, files_count, files_count);
                 }
             }
         } else if (fs::is_regular_file(current_fs_path)) {
-            // Process regular files
-            rename_extension(current_fs_path, case_input, verbose_enabled, files_count, dirs_count);
+            rename_extension(current_fs_path, case_input, verbose_enabled, files_count, files_count);
         } else {
             print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
         }
@@ -589,6 +578,10 @@ int main(int argc, char *argv[]) {
         print_help();
         return 0;
     }
+    if (depth < 0) {
+            print_error("\033[1;91mError: Invalid depth value. Depth must be a non-negative integer.\n");
+            return 1;
+        }
 
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
@@ -694,8 +687,7 @@ int main(int argc, char *argv[]) {
         rename_path(paths, case_input, true, verbose_enabled, depth); // Pass true for rename_immediate_parent
     } else if (rename_extensions) {
 		int files_count = 0; // Declare files_count here
-		int dirs_count = 0;
-        rename_extension_path(paths, case_input, verbose_enabled, depth, files_count,dirs_count);
+        rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
     } else {
         rename_path(paths, case_input, false, verbose_enabled, depth); // Pass false for rename_immediate_parent
     }
