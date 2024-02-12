@@ -543,7 +543,7 @@ int main(int argc, char *argv[]) {
     bool rename_parents = false;
     bool rename_extensions = false;
     bool verbose_enabled = false;
-
+	int depth = -1;
     bool case_specified = false;
     
 if (argc == 1) {
@@ -551,13 +551,15 @@ if (argc == 1) {
         return 0;
     }
     if (argc >= 2) {
-        for (int i = 1; i < argc; ++i) {
-            std::string arg(argv[i]);
-            if (arg == "-v" || arg == "--verbose_enabled") {
-                verbose_enabled = true;
-            } else if (arg == "-h" || arg == "--help") {
-                print_help();
-                return 0;
+            for (int i = 1; i < argc; ++i) {
+        std::string arg(argv[i]);
+        if (arg == "-d" && i + 1 < argc) {
+            depth = std::atoi(argv[++i]);
+        } else if (arg == "-v" || arg == "--verbose_enabled") {
+            verbose_enabled = true;
+        } else if (arg == "-h" || arg == "--help") {
+            print_help();
+            return 0;
             } else if (arg == "-cp") {
                 rename_parents = true;
                 if (i + 1 < argc) {
@@ -652,11 +654,11 @@ if (argc == 1) {
     }
 
     if (rename_parents) {
-    rename_path(paths, case_input, true, verbose_enabled); // Pass true for rename_immediate_parent
+    rename_path(paths, case_input, true, verbose_enabled,depth); // Pass true for rename_immediate_parent
 	} else if (rename_extensions) {
-    rename_extension_path(paths, case_input, verbose_enabled);
+    rename_extension_path(paths, case_input, verbose_enabled,depth);
 	} else {
-    rename_path(paths, case_input, false, verbose_enabled); // Pass false for rename_immediate_parent
+    rename_path(paths, case_input, false, verbose_enabled,depth); // Pass false for rename_immediate_parent
 	}
 
     std::cout << "\n\033[1mPress enter to exit...\033[0m";
