@@ -34,8 +34,8 @@ void print_error(const std::string& error) {
 }
 
 
-void print_verbose_enabled(const std::string& message, bool verbose_enabled_enabled) {
-    if (verbose_enabled_enabled) {
+void print_verbose_enabled(const std::string& message, bool verbose_enabled) {
+    if (verbose_enabled) {
         std::lock_guard<std::mutex> lock(cout_mutex);
         std::cout << message << std::endl;
     }
