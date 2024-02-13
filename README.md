@@ -10,10 +10,10 @@ Options: `-d` stands for recursion depth level,`-fi` stands for file renaming,`-
 ### Current suported case modes: 
 
 #### Common Regular CASE Modes:
-- title      Convert names to Title Case (e.g., test => Test)\n"
-- upper      Convert names to UPPERCASE (e.g., Test => TEST)\n"
-- lower      Convert names to lowercase (e.g., Test => test)\n"
-- reverse    Reverse current case in names (e.g., Test => tEST)\n"
+- title      Convert names to Title Case (e.g., test => Test)
+- upper      Convert names to UPPERCASE (e.g., Test => TEST)
+- lower      Convert names to lowercase (e.g., Test => test)
+- reverse    Reverse current case in names (e.g., Test => tEST)
 #### Common Special CASE Modes:
 - snake      Convert spaces to underscores in names (e.g., Te st => Te_st)
 - rsnake     Convert underscores to spaces in names (e.g., Te_st => Te st)
