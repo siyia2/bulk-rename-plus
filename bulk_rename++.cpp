@@ -165,7 +165,9 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     } else if (case_input == "rbak") {
         if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
             new_extension = extension.substr(0, extension.length() - 4);
-        }
+        } else if (case_input == "noext") { // New block for removing extension
+        new_extension = "";
+		}
     }
 
     if (extension != new_extension) {
@@ -625,7 +627,6 @@ int main(int argc, char *argv[]) {
     bool verbose_enabled = false;
     int depth = -1;
     bool case_specified = false;
-    bool ce_specified = false; // Flag to track if -ce option is specified
 
     if (argc == 1) {
         print_help();
@@ -682,7 +683,6 @@ int main(int argc, char *argv[]) {
             if (i + 1 < argc) {
                 case_input = argv[++i];
                 case_specified = true;
-                ce_specified = true;
             } else {
                 print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
                 return 1;
@@ -704,6 +704,18 @@ int main(int argc, char *argv[]) {
 
     if (!case_specified) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n");
+        return 1;
+    }
+
+    // Check for valid case modes
+    std::vector<std::string> valid_modes;
+    if (cp_flag || c_flag) { // Valid modes for -cp and -ce
+        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand"};
+    } else { // Valid modes for -c
+        valid_modes = {"lower", "upper", "reverse", "title", "rbak", "bak", "noext"};
+    }
+    if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
+        print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\n");
         return 1;
     }
 
