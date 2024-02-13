@@ -514,6 +514,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         for (auto& thread : threads) {
             thread.join();
         }
+        
     } else if (rename_immediate_parent && depth != 0) {
         // Process directories and files of immediate parent in the main thread
         for (const auto& entry : fs::directory_iterator(new_path)) {
@@ -522,8 +523,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else {
                 rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
             }
+            
         }
     }
+   if (verbose_enabled && depth > 0) {
+            print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
+        }
 }
 
 
