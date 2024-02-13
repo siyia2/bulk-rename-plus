@@ -127,7 +127,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     static const std::regex lower_case("([a-zA-Z]+)");
     static const std::regex upper_case("([a-zA-Z]+)");
     static const std::regex reverse_case("([a-zA-Z])");
-    static const std::regex title_case("([a-zA-Z])([a-zA-Z.]*)"); 
+    static const std::regex title_case("([a-zA-Z])([a-zA-Z.]*)");
 
     if (!fs::is_regular_file(item_path)) {
         if (verbose_enabled) {
@@ -152,15 +152,21 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             }
             new_extension = oss.str();
         }
-} else if (case_input == "title") {
-    std::smatch match;
-    if (std::regex_search(extension, match, title_case)) {
-        std::string rest_of_extension = match[2].str();
-        std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
-        char first_letter = std::toupper(match[1].str()[0]);
-        new_extension = "." + std::string(1, first_letter) + rest_of_extension;
+    } else if (case_input == "title") {
+        std::smatch match;
+        if (std::regex_search(extension, match, title_case)) {
+            std::string rest_of_extension = match[2].str();
+            std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
+            char first_letter = std::toupper(match[1].str()[0]);
+            new_extension = "." + std::string(1, first_letter) + rest_of_extension;
+        }
+    } else if (case_input == "bak") {
+        new_extension += ".bak";
+    } else if (case_input == "rbak") {
+        if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
+            new_extension = extension.substr(0, extension.length() - 4);
+        }
     }
-}
 
     if (extension != new_extension) {
         fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
@@ -184,7 +190,6 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         }
     }
 }
-
 
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
     //If depth is negative (default value), set it to a very large number to effectively disable the depth limit
@@ -620,6 +625,7 @@ int main(int argc, char *argv[]) {
     bool verbose_enabled = false;
     int depth = -1;
     bool case_specified = false;
+    bool ce_specified = false; // Flag to track if -ce option is specified
 
     if (argc == 1) {
         print_help();
@@ -635,34 +641,20 @@ int main(int argc, char *argv[]) {
         } else if (arg == "-h" || arg == "--help") {
             print_help();
             return 0;
-        } else if (arg == "-cp" || arg == "-c" || arg == "-ce") {
+        } else if (arg == "-cp" || arg == "-c") {
             if (i + 1 < argc) {
                 case_input = argv[++i];
                 case_specified = true;
-                // Check if the case modes are valid
+                // Handle case modes for -c and -cp
                 std::vector<std::string> valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand"};
-                std::vector<std::string> modes;
-                std::string mode;
-                std::size_t pos = 0;
-                while ((pos = case_input.find(';')) != std::string::npos) {
-                    mode = case_input.substr(0, pos);
-                    if (std::find(valid_modes.begin(), valid_modes.end(), mode) != valid_modes.end()) {
-                        modes.push_back(mode);
-                    } else {
-                        print_error("\033[1;91mError: Unspecified or invalid case mode - " + mode + ". Run 'bulk_rename++ --help'.\n");
-                        return 1;
-                    }
-                    case_input.erase(0, pos + 1);
-                }
-                if (std::find(valid_modes.begin(), valid_modes.end(), case_input) != valid_modes.end()) {
-                    modes.push_back(case_input);
-                } else {
+                if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
                     print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\n");
                     return 1;
                 }
-                case_input = modes[0];
-                for (std::size_t j = 1; j < modes.size(); ++j) {
-                    case_input += ";" + modes[j];
+                // Check for conflicting modes
+                if (ce_specified && (case_input == "bak" || case_input == "rbak")) {
+                    print_error("\033[1;91mError: Case mode 'bak' and 'rbak' are exclusive to '-ce' option.\n");
+                    return 1;
                 }
             } else {
                 print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
@@ -670,9 +662,23 @@ int main(int argc, char *argv[]) {
             }
             if (arg == "-cp") {
                 rename_parents = true;
-            } else if (arg == "-ce") {
-                rename_extensions = true;
             }
+        } else if (arg == "-ce") {
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
+                ce_specified = true;
+                // Handle case modes specific to -ce
+                std::vector<std::string> valid_modes_ce = {"lower", "upper", "reverse", "title","bak","rbak"};
+                if (std::find(valid_modes_ce.begin(), valid_modes_ce.end(), case_input) == valid_modes_ce.end()) {
+                    print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\n");
+                    return 1;
+                }
+            } else {
+                print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
+                return 1;
+            }
+            rename_extensions = true; // Always set rename_extensions to true for -ce
         } else {
             // Check for duplicate paths
             if (std::find(paths.begin(), paths.end(), arg) != paths.end()) {
