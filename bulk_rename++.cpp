@@ -632,6 +632,10 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    bool c_flag = false;
+    bool cp_flag = false;
+    bool ce_flag = false;
+
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
         if (arg == "-d" && i + 1 < argc) {
@@ -641,44 +645,48 @@ int main(int argc, char *argv[]) {
         } else if (arg == "-h" || arg == "--help") {
             print_help();
             return 0;
-        } else if (arg == "-cp" || arg == "-c") {
+        } else if (arg == "-c") {
+            if (c_flag || cp_flag || ce_flag) {
+                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
+                return 1;
+            }
+            c_flag = true;
             if (i + 1 < argc) {
                 case_input = argv[++i];
                 case_specified = true;
-                // Handle case modes for -c and -cp
-                std::vector<std::string> valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand"};
-                if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
-                    print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\n");
-                    return 1;
-                }
-                // Check for conflicting modes
-                if (ce_specified && (case_input == "bak" || case_input == "rbak")) {
-                    print_error("\033[1;91mError: Case mode 'bak' and 'rbak' are exclusive to '-ce' option.\n");
-                    return 1;
-                }
             } else {
                 print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
                 return 1;
             }
-            if (arg == "-cp") {
-                rename_parents = true;
+        } else if (arg == "-cp") {
+            if (c_flag || cp_flag || ce_flag) {
+                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
+                return 1;
+            }
+            cp_flag = true;
+            rename_parents = true;
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
+            } else {
+                print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
+                return 1;
             }
         } else if (arg == "-ce") {
+            if (c_flag || cp_flag || ce_flag) {
+                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
+                return 1;
+            }
+            ce_flag = true;
+            rename_extensions = true;
             if (i + 1 < argc) {
                 case_input = argv[++i];
                 case_specified = true;
                 ce_specified = true;
-                // Handle case modes specific to -ce
-                std::vector<std::string> valid_modes_ce = {"lower", "upper", "reverse", "title","bak","rbak"};
-                if (std::find(valid_modes_ce.begin(), valid_modes_ce.end(), case_input) == valid_modes_ce.end()) {
-                    print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\n");
-                    return 1;
-                }
             } else {
                 print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
                 return 1;
             }
-            rename_extensions = true; // Always set rename_extensions to true for -ce
         } else {
             // Check for duplicate paths
             if (std::find(paths.begin(), paths.end(), arg) != paths.end()) {
@@ -687,6 +695,11 @@ int main(int argc, char *argv[]) {
             }
             paths.emplace_back(arg);
         }
+    }
+
+    if (c_flag && cp_flag && ce_flag) {
+        print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
+        return 1;
     }
 
     if (!case_specified) {
