@@ -272,7 +272,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|number|rnumber)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequencial|rsequencial)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -316,7 +316,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         } else if (transformation == "rspecial") {
             // Remove special characters from the name
             new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
-                return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>'; // Retain
+                return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
             }), new_name.end());
         } else if (transformation == "rnumeric") {
             // Remove numeric characters from the name
@@ -337,7 +337,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             new_name = to_camel_case(new_name);
         } else if (transformation == "rcamel") {
             new_name = from_camel_case(new_name);
-        } else if (transformation == "number") {
+        } else if (transformation == "sequencial") {
     // Check if the filename is already numbered
     if (!std::isdigit(new_name.front())) {
         static int counter = 1;
@@ -345,7 +345,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         oss << std::setw(3) << std::setfill('0') << counter++;
         new_name = oss.str() + "_" + new_name;
 		}
-	}else if (transformation == "rnumber") {
+	} else if (transformation == "rsequencial") {
     // Find the position of the first non-digit character
     size_t pos = new_name.find_first_not_of("0123456789");
     
@@ -357,8 +357,8 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     else if (pos != std::string::npos && pos > 0) {
         // Remove only the number
         new_name.erase(0, pos);
-    }
-}
+		}
+	}
 
 }
     // Skip renaming if the new name is the same as the old name
@@ -394,7 +394,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed = false;
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|number|rnumber)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequencial|rsequencial)");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -448,7 +448,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             // Remove special characters from the directory name
             new_dirname = dirname;
             new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>'; // Retain
+                return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
             }), new_dirname.end());
         } else if (transformation == "rnumeric") {
             // Remove numeric characters from the directory name
@@ -474,10 +474,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (transformation == "rcamel") {
             new_dirname = dirname;
             new_dirname = from_camel_case(new_dirname);
-        } else if (transformation == "number") {
+        } else if (transformation == "sequencial") {
             // Do nothing for directories
             new_dirname = dirname;
-        } else if (transformation == "rnumber") {
+        } else if (transformation == "rsequencial") {
             // Do nothing for directories
             new_dirname = dirname;
         }
@@ -725,7 +725,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "number","rnumber","fnumber"};
+        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequencial", "rsequencial"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "rbak", "bak", "noext"};
     }
