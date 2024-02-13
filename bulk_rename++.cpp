@@ -105,7 +105,9 @@ std::cout << "Usage: bulk_rename++ [OPTIONS] [PATHS]\n"
           << "  rsnake     Convert underscores to spaces in names (e.g., Te_st => Te st)\n"
           << "  kebab      Convert spaces to hyphens in names (e.g., Te st => Te-st)\n"
           << "  rkebab     Convert hyphens to spaces in names (e.g., Te-st => Te st)\n"
-          << "  rspecial   Remove special characters from names (e.g., '@T|e/s&t' => Test)\n"
+          << "  sequence   Sequential number of files only (e.g. Test => 001_Test)\n"
+          << "  rsequence  Remoce sequential numbering of files (e.g. 001_Test => Test)\n"
+          << "  rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'"";? => Test)\n"
           << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
@@ -272,7 +274,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequencial|rsequencial)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -337,7 +339,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             new_name = to_camel_case(new_name);
         } else if (transformation == "rcamel") {
             new_name = from_camel_case(new_name);
-        } else if (transformation == "sequencial") {
+        } else if (transformation == "sequence") {
     // Check if the filename is already numbered
     if (!std::isdigit(new_name.front())) {
         static int counter = 1;
@@ -345,7 +347,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         oss << std::setw(3) << std::setfill('0') << counter++;
         new_name = oss.str() + "_" + new_name;
 		}
-	} else if (transformation == "rsequencial") {
+	} else if (transformation == "rsequence") {
     // Find the position of the first non-digit character
     size_t pos = new_name.find_first_not_of("0123456789");
     
@@ -394,7 +396,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed = false;
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequencial|rsequencial)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence)");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -474,10 +476,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (transformation == "rcamel") {
             new_dirname = dirname;
             new_dirname = from_camel_case(new_dirname);
-        } else if (transformation == "sequencial") {
+        } else if (transformation == "sequence") {
             // Do nothing for directories
             new_dirname = dirname;
-        } else if (transformation == "rsequencial") {
+        } else if (transformation == "rsequence") {
             // Do nothing for directories
             new_dirname = dirname;
         }
@@ -725,7 +727,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequencial", "rsequencial"};
+        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "rbak", "bak", "noext"};
     }
