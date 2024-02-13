@@ -274,7 +274,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
-    std::cout << "\n\033[1mRenamed extensions to " << case_input << "_case: \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
+    std::cout << "\n\033[1mRenamed \033[4mextensions\033[0m\033[1m to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
@@ -678,7 +678,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
-    std::cout << "\n\033[1mRenamed to " << case_input << "_case: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
+    std::cout << "\n\033[1mRenamed to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
               << dirs_count << " dir(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
@@ -827,17 +827,17 @@ int main(int argc, char *argv[]) {
 
     std::string confirmation;
     if (rename_parents) {
-        std::cout << "\033[1mThe following path(s), along with their parent dir(s), will be recursively renamed to \033[1;92m" << case_input << "_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[1mThe following path(s), along with their \033[4mparent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
     } else if (rename_extensions) {
-        std::cout << "\033[1mThe following path(s) file \033[1;95mextensions\033[0m \033[1mwill be recursively renamed to \033[1;92m" << case_input << "_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
     } else {
-        std::cout << "\033[1mThe following path(s) will be recursively renamed to \033[1;92m" << case_input << "_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
