@@ -92,7 +92,7 @@ std::cout << "Usage: bulk_rename++ [OPTIONS] [PATHS]\n"
           << "  -c [MODE]                Set the case conversion mode for file and dir name(s).\n"
           << "  -cp [MODE]               Set the case conversion mode for file and dir name(s), including parent dir(s).\n"
           << "  -ce [MODE]               Set the case conversion mode for file extension(s).\n"
-          << "  -v, --verbose_enabled   Enable verbose mode.\n"
+          << "  -v, --verbose            Enable verbose mode.\n"
           << "\n"
           << "Modes for file and directory names:\n"
           << "  lower      Convert names to lowercase (e.g., Test => test)\n"
@@ -661,7 +661,7 @@ int main(int argc, char *argv[]) {
         std::string arg(argv[i]);
         if (arg == "-d" && i + 1 < argc) {
             depth = std::atoi(argv[++i]);
-        } else if (arg == "-v" || arg == "--verbose_enabled") {
+        } else if (arg == "-v" || arg == "--verbose") {
             verbose_enabled = true;
         } else if (arg == "-h" || arg == "--help") {
             print_help();
