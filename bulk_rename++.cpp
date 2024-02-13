@@ -694,20 +694,20 @@ int main(int argc, char *argv[]) {
     bool verbose_enabled = false;
     int depth = -1;
     bool case_specified = false;
-    bool transform_dirs=true;
-    bool transform_files=true;
+    bool transform_dirs = true;
+    bool transform_files = true;
 
     if (argc == 1) {
         print_help();
         return 0;
     }
-    
-	bool fi_flag = false;
+
+    bool fi_flag = false;
     bool fo_flag = false;
     bool c_flag = false;
     bool cp_flag = false;
     bool ce_flag = false;
-    
+
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
         if (arg == "-fi") {
@@ -717,19 +717,26 @@ int main(int argc, char *argv[]) {
             transform_files = false;
             fo_flag = true;
         } else if (arg == "-d" && i + 1 < argc) {
+            // Check if the depth value is empty or not a number
+            if (argv[i + 1] == nullptr || std::string(argv[i + 1]).empty() || !isdigit(argv[i + 1][0])) {
+                print_error("\033[1;91mError: Depth value must be a non-negative integer.\033[0m\n");
+                return 1;
+            }
             depth = std::atoi(argv[++i]);
-        } else if (depth < -1) {
-        print_error("\033[1;91mError: Depth value must be -1 or greater.\033[0m\n");
-        return 1;
+            if (depth < -1) {
+                print_error("\033[1;91mError: Depth value must be -1 or greater.\033[0m\n");
+                return 1;
+            }
         } else if (arg == "-v" || arg == "--verbose") {
             verbose_enabled = true;
         } else if (arg == "-h" || arg == "--help") {
-			std::system("clear");
+            std::system("clear");
             print_help();
             return 0;
         } else if (arg == "-c") {
+            // Check if -c, -cp, -ce options are mixed
             if (c_flag || cp_flag || ce_flag) {
-                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
+                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
                 return 1;
             }
             c_flag = true;
@@ -737,12 +744,13 @@ int main(int argc, char *argv[]) {
                 case_input = argv[++i];
                 case_specified = true;
             } else {
-                print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
+                print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
                 return 1;
             }
         } else if (arg == "-cp") {
+            // Check if -c, -cp, -ce options are mixed
             if (c_flag || cp_flag || ce_flag) {
-                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
+                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
                 return 1;
             }
             cp_flag = true;
@@ -751,12 +759,13 @@ int main(int argc, char *argv[]) {
                 case_input = argv[++i];
                 case_specified = true;
             } else {
-                print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
+                print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
                 return 1;
             }
         } else if (arg == "-ce") {
+            // Check if -c, -cp, -ce options are mixed
             if (c_flag || cp_flag || ce_flag) {
-                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
+                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
                 return 1;
             }
             ce_flag = true;
@@ -765,7 +774,7 @@ int main(int argc, char *argv[]) {
                 case_input = argv[++i];
                 case_specified = true;
             } else {
-                print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
+                print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
                 return 1;
             }
         } else {
@@ -777,10 +786,10 @@ int main(int argc, char *argv[]) {
             paths.emplace_back(arg);
         }
     }
-    
+
     // Perform renaming based on flags and options
     if (fi_flag && fo_flag) {
-        print_error("\033[1;91mError: Cannot mix -fi and -fo options.\n");
+        print_error("\033[1;91mError: Cannot mix -fi and -fo options.\033[0m\n");
         return 1;
     }
 
@@ -796,9 +805,9 @@ int main(int argc, char *argv[]) {
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "rbak", "bak", "noext"};
     }
-    
+
     if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
-        print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\n");
+        print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\033[0m\n");
         return 1;
     }
 
@@ -834,9 +843,6 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
     std::getline(std::cin, confirmation);
-    if (confirmation == "y") {
-    std::cout << " " << std::endl;
-}
     if (confirmation != "y") {
         std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
         std::cout << "\n" << std::endl;
@@ -847,7 +853,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (rename_parents) {
-        rename_path(paths, case_input, true, verbose_enabled,transform_dirs, transform_files, depth); // Pass true for rename_immediate_parent
+        rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth); // Pass true for rename_immediate_parent
     } else if (rename_extensions) {
         int files_count = 0; // Declare files_count here
         rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
