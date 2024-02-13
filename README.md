@@ -1,5 +1,5 @@
 # bulk-rename-plus
-Tiny but powerful C++ cmd tool to rename recursively paths on Linux, useful for batch renaming.
+Tiny and powerful C++ CMD tool to rename recursively paths on Linux, useful for batch renaming.
 
 Default and recommended installation path is `~/.local/bin/bulk_rename++`, no need to run it as `ROOT` unless of course you know what you are doing.
 
@@ -9,15 +9,30 @@ Options: `-c` option stands for case set, `-ce` option stands for case set for f
 
 Current suported case modes: 
 
-- `lower` for lower case.
-- `upper` for upper case.
-- `fupper` for converting every first character to upper case and the rest to lower.
-- `reverse` for reversing existing case status.
-- `rspace` and `runderscore` replace spaces with underscores and vice versa.
-
-e.g. with -c lower: Test => test, upper: Test=> TEST, reverse: Test => tEST fupper: test => Test.
-
-e.g. with -ce lower: Test.txt => Test.txt upper: Test.txt => Test.TXT reverse: Test => Test.TXT fupper: test.txt => test.Txt
+### Common Regular:
+- title      Convert names to Title Case (e.g., test => Test)\n"
+- upper      Convert names to UPPERCASE (e.g., Test => TEST)\n"
+- lower      Convert names to lowercase (e.g., Test => test)\n"
+- reverse    Reverse current case in names (e.g., Test => tEST)\n"
+### Common Special:
+- snake      Convert spaces to underscores in names (e.g., Te st => Te_st)
+- rsnake     Convert underscores to spaces in names (e.g., Te_st => Te st)
+- kebab      Convert spaces to hyphens in names (e.g., Te st => Te-st)
+- rkebab     Convert hyphens to spaces in names (e.g., Te-st => Te st)
+- camel      Convert names to camelCase (e.g., Te st => TeSt)
+- rcamel     Reverse camelCase in names (e.g., TeSt => Te st)
+### Extension exclusive:\n"
+- bak        Add .bak at file extension names (e.g., Test.txt => Test.txt.bak)
+- rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
+- noext      Remove extensions (e.g., Test.txt => Test)\n"
+### Numbering:
+- sequence   Apply sequential numbering to files only (e.g. Test => 001_Test)
+- rsequence  Remove sequential numbering of files (e.g. 001_Test => Test)
+- rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)
+- "Custom:\n"
+- rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)
+- roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
+- rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
 
 for help:
 
