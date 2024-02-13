@@ -370,10 +370,10 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count, int depth) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count, int depth = -1) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
-    bool renaming_message_printed=false;
+    bool renaming_message_printed = false;
 
     // Static Regular expression patterns for transformations
     static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab)");
@@ -462,20 +462,20 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
     // Check if renaming is necessary
-if (directory_path != new_path) {
-    try {
-        fs::rename(directory_path, new_path);
+    if (directory_path != new_path) {
+        try {
+            fs::rename(directory_path, new_path);
 
-        if (verbose_enabled && !renaming_message_printed) {
-            print_verbose_enabled("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
-            renaming_message_printed = true; // Set the flag to true after printing the message
+            if (verbose_enabled && !renaming_message_printed) {
+                print_verbose_enabled("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+                renaming_message_printed = true; // Set the flag to true after printing the message
+            }
+            std::lock_guard<std::mutex> lock(dirs_count_mutex);
+            ++dirs_count;
+        } catch (const fs::filesystem_error& e) {
+            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+            return; // Stop processing if renaming failed
         }
-        std::lock_guard<std::mutex> lock(dirs_count_mutex);
-        ++dirs_count;
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-        return; // Stop processing if renaming failed
-    }
 
     } else {
         if (verbose_enabled) {
@@ -483,52 +483,49 @@ if (directory_path != new_path) {
         }
     }
 
-    if (depth > 0) {
-        --depth; // Decrement depth only if it's greater than 0
-    } else {
-        if (verbose_enabled) {
-            print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
+    // Continue recursion if depth limit not reached
+    if (!rename_immediate_parent && depth != 0) {
+        // Decrement depth only if it's not an immediate renaming and depth limit is positive
+        --depth;
+
+        // Process items within the directory
+        unsigned int max_threads = std::thread::hardware_concurrency();
+        if (max_threads == 0) {
+            max_threads = 1; // If hardware concurrency is not available, default to 1 thread
         }
-        return; // Stop further recursion if depth limit reached
+
+        std::vector<std::thread> threads;
+        for (const auto& entry : fs::directory_iterator(new_path)) {
+            if (entry.is_directory()) {
+                if (threads.size() < max_threads) {
+                    // Start a new thread for each subdirectory
+                    threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), depth);
+                } else {
+                    // Process directories in the main thread if max_threads is reached
+                    rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count, depth);
+                }
+            } else {
+                // Process files in the main thread
+                rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+            }
+        }
+
+        // Join all threads
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    } else if (rename_immediate_parent) {
+        // Process directories and files of immediate parent in the main thread
+        for (const auto& entry : fs::directory_iterator(new_path)) {
+            if (entry.is_directory()) {
+                rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count, depth);
+            } else {
+                rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+            }
+        }
     }
-
-    unsigned int max_threads = std::thread::hardware_concurrency();
-if (max_threads == 0) {
-    max_threads = 1; // If hardware concurrency is not available, default to 1 thread
 }
 
-// Process items within the directory
-std::vector<std::thread> threads;
-std::vector<fs::path> subdirectories;
-
-// Collect subdirectories
-for (const auto& entry : fs::directory_iterator(new_path)) {
-    if (entry.is_directory()) {
-        subdirectories.push_back(entry.path());
-    } else {
-        // Process files in the main thread
-        rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
-    }
-}
-
-// Calculate num_threads as the minimum of max_threads and the number of subdirectories
-unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(subdirectories.size()));
-
-// Process subdirectories in separate threads
-for (unsigned int i = 0; i < num_threads; ++i) {
-    threads.emplace_back(rename_directory, subdirectories[i], case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), depth);
-}
-
-// Process remaining subdirectories in the main thread
-for (unsigned int i = num_threads; i < subdirectories.size(); ++i) {
-    rename_directory(subdirectories[i], case_input, false, verbose_enabled, files_count, dirs_count, depth);
-}
-
-// Join all threads
-for (auto& thread : threads) {
-    thread.join();
-}
-}
 
 
 
@@ -634,10 +631,6 @@ int main(int argc, char *argv[]) {
         print_help();
         return 0;
     }
-   if (depth < -1) {
-        print_error("\033[1;91mError: Invalid depth value. Depth must be a non-negative integer.\n");
-            return 1;
-       }
 
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
@@ -648,41 +641,44 @@ int main(int argc, char *argv[]) {
         } else if (arg == "-h" || arg == "--help") {
             print_help();
             return 0;
-            } else if (arg == "-cp") {
-                rename_parents = true;
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                    // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "rcamel" && case_input != "kebab" && case_input != "rkebab" && case_input != "rsnake" && case_input != "snake" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "rbra" && case_input != "roperand") {
-                        print_error("\033[1;91mError: Unspecified or invalid case mode. Run 'bulk_rename++ --help'.\n");
+        } else if (arg == "-cp" || arg == "-c" || arg == "-ce") {
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
+                // Check if the case modes are valid
+                std::vector<std::string> valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand"};
+                std::vector<std::string> modes;
+                std::string mode;
+                std::size_t pos = 0;
+                while ((pos = case_input.find(';')) != std::string::npos) {
+                    mode = case_input.substr(0, pos);
+                    if (std::find(valid_modes.begin(), valid_modes.end(), mode) != valid_modes.end()) {
+                        modes.push_back(mode);
+                    } else {
+                        print_error("\033[1;91mError: Unspecified or invalid case mode - " + mode + ". Run 'bulk_rename++ --help'.\n");
                         return 1;
                     }
+                    case_input.erase(0, pos + 1);
+                }
+                if (std::find(valid_modes.begin(), valid_modes.end(), case_input) != valid_modes.end()) {
+                    modes.push_back(case_input);
                 } else {
-                    print_error("\033[1;91mError: Missing argument for option -cp\n");
+                    print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\n");
                     return 1;
                 }
-        } else if (arg == "-c") {
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                    // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title" && case_input != "camel" && case_input != "rcamel" && case_input != "kebab" && case_input != "rkebab" && case_input != "rsnake" && case_input != "snake" && case_input != "rnumeric" && case_input != "rspecial" && case_input != "rbra" && case_input != "roperand") {
-                        print_error("\033[1;91mError: Unspecified or invalid case mode. Run 'bulk_rename++ --help'.\n");
-                        return 1;
-                    }
-				}
-        } else if (arg == "-ce") {
+                case_input = modes[0];
+                for (std::size_t j = 1; j < modes.size(); ++j) {
+                    case_input += ";" + modes[j];
+                }
+            } else {
+                print_error("\033[1;91mError: Missing argument for option " + arg + "\n");
+                return 1;
+            }
+            if (arg == "-cp") {
+                rename_parents = true;
+            } else if (arg == "-ce") {
                 rename_extensions = true;
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                    // Check if the case mode is valid
-                    if (case_input != "lower" && case_input != "upper" && case_input != "reverse" && case_input != "title") {
-                        print_error("\033[1;91mError: Unspecified or invalid case mode. Please specify 'lower', 'upper', 'reverse', 'title'.\n");
-                        return 1;
-                    }
-				}
+            }
         } else {
             // Check for duplicate paths
             if (std::find(paths.begin(), paths.end(), arg) != paths.end()) {
@@ -698,6 +694,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Check if paths exist
     for (const auto& path : paths) {
         if (!fs::exists(path)) {
             print_error("\033[1;91mError: Path does not exist - " + path + "\033[0m\n");
@@ -706,7 +703,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::system("clear");
-    if (case_input != "snake" && case_input != "rsnake"){
+    if (case_input != "snake" && case_input != "rsnake") {
         std::cout << "\033[1;93m!!! WARNING OPERATION IRREVERSIBLE !!!\033[0m\n\n";
     }
 
@@ -742,7 +739,7 @@ int main(int argc, char *argv[]) {
     if (rename_parents) {
         rename_path(paths, case_input, true, verbose_enabled, depth); // Pass true for rename_immediate_parent
     } else if (rename_extensions) {
-		int files_count = 0; // Declare files_count here
+        int files_count = 0; // Declare files_count here
         rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
     } else {
         rename_path(paths, case_input, false, verbose_enabled, depth); // Pass false for rename_immediate_parent
