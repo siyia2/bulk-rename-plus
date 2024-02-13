@@ -272,7 +272,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
 // Rename file&directory stuff
 
-void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, int& files_count, int& dirs_count) {
+void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count)  {
     std::string name = item_path.filename().string();
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
@@ -393,7 +393,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count, int depth = -1) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
     bool renaming_message_printed = false;
@@ -527,9 +527,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             // Process subdirectories without spawning threads
             for (const auto& entry : fs::directory_iterator(new_path)) {
                 if (entry.is_directory()) {
-                    rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count, depth);
+                    rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
                 } else {
-                    rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+                    rename_file(entry.path(), case_input, false, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count);
                 }
             }
         } else {
@@ -538,14 +538,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 if (entry.is_directory()) {
                     if (threads.size() < max_threads) {
                         // Start a new thread for each subdirectory
-                        threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), depth);
+                        threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, true, true, std::ref(files_count), std::ref(dirs_count), depth);
                     } else {
                         // Process directories in the main thread if max_threads is reached
-                        rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count, depth);
+                        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
                     }
                 } else {
                     // Process files in the main thread
-                    rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
                 }
             }
 
@@ -569,7 +569,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
 
 
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false, int depth = -1) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false,bool transform_dirs = true, bool transform_files = true, int depth = -1)  {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
@@ -600,14 +600,14 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 if (rename_immediate_parent) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count, depth);
+                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
                 } else {
                     // Otherwise, rename the entire path
-                    threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose_enabled, std::ref(files_count), std::ref(dirs_count), std::ref(depth));
+                    threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
-                rename_file(current_path, case_input, false, verbose_enabled, files_count, dirs_count);
+                rename_file(current_path, case_input, false, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
@@ -625,14 +625,14 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 if (rename_immediate_parent) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count, depth);
+                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
                 } else {
                     // Otherwise, rename the entire path in the main thread
-                    rename_directory(current_path, case_input, rename_immediate_parent, verbose_enabled, files_count, dirs_count, depth);
+                    rename_directory(current_path, case_input, rename_immediate_parent, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
-                rename_file(current_path, case_input, false, verbose_enabled, files_count, dirs_count);
+                rename_file(current_path, case_input, false, verbose_enabled, true, true, files_count, dirs_count);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
@@ -666,6 +666,8 @@ int main(int argc, char *argv[]) {
     bool verbose_enabled = false;
     int depth = -1;
     bool case_specified = false;
+    bool transform_dirs=true;
+    bool transform_files=true;
 
     if (argc == 1) {
         print_help();
@@ -801,12 +803,12 @@ int main(int argc, char *argv[]) {
     }
 
     if (rename_parents) {
-        rename_path(paths, case_input, true, verbose_enabled, depth); // Pass true for rename_immediate_parent
+        rename_path(paths, case_input, true, verbose_enabled,transform_dirs, transform_files, depth); // Pass true for rename_immediate_parent
     } else if (rename_extensions) {
         int files_count = 0; // Declare files_count here
         rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
     } else {
-        rename_path(paths, case_input, false, verbose_enabled, depth); // Pass false for rename_immediate_parent
+        rename_path(paths, case_input, false, verbose_enabled, transform_dirs, transform_files, depth); // Pass false for rename_immediate_parent
     }
 
     std::cout << "\n\033[1mPress enter to exit...\033[0m";
