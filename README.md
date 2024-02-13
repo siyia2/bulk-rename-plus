@@ -9,7 +9,7 @@ Options: `-c` option stands for case set, `-ce` option stands for case set for f
 
 Current suported case modes: 
 
-### Common Regular:
+#### Common Regular:
 - title      Convert names to Title Case (e.g., test => Test)\n"
 - upper      Convert names to UPPERCASE (e.g., Test => TEST)\n"
 - lower      Convert names to lowercase (e.g., Test => test)\n"
@@ -21,7 +21,7 @@ Current suported case modes:
 - rkebab     Convert hyphens to spaces in names (e.g., Te-st => Te st)
 - camel      Convert names to camelCase (e.g., Te st => TeSt)
 - rcamel     Reverse camelCase in names (e.g., TeSt => Te st)
-### Extension exclusive:\n"
+### Extension exclusive:
 - bak        Add .bak at file extension names (e.g., Test.txt => Test.txt.bak)
 - rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
 - noext      Remove extensions (e.g., Test.txt => Test)\n"
