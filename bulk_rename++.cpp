@@ -590,7 +590,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
         if (verbose_enabled && depth == 0 && !depth_limit_reached_printed) {
             depth_limit_reached_printed = true;
-            usleep(500000);
+            usleep(1000000);
             print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
         }
     }
@@ -844,7 +844,7 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
     std::getline(std::cin, confirmation);
-    if (verbose_enabled){
+    if (verbose_enabled && confirmation == "y"){
     std::cout << " " << std::endl;
 	}
     if (confirmation != "y") {
