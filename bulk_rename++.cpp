@@ -540,11 +540,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         for (auto& thread : threads) {
             thread.join();
         }
+        static bool depth_limit_reached_printed = false; // Declare a static boolean flag
+
+	if (verbose_enabled && depth == 0 && !depth_limit_reached_printed) {
+		print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
+		depth_limit_reached_printed = true;
+	}
     }
 
-    if (verbose_enabled && depth > 0) {
-        print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
-    }
 }
 
 
