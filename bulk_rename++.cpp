@@ -542,7 +542,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 
-    if (verbose_enabled && depth >= 0) {
+    if (verbose_enabled && depth > 0) {
         print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
     }
 }
