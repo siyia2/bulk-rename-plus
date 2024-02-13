@@ -83,7 +83,7 @@ void print_verbose_enabled(const std::string& message) {
 
 void print_help() {
 
-std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [PATHS]\n"
+std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODES] [PATHS]\n"
           << "Renames all files and folders under the specified path(s).\n"
           << "\n"
           << "Options:\n"
