@@ -706,7 +706,7 @@ int main(int argc, char *argv[]) {
     bool c_flag = false;
     bool cp_flag = false;
     bool ce_flag = false;
-
+    
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
         if (arg == "-fi") {
@@ -717,6 +717,9 @@ int main(int argc, char *argv[]) {
             fo_flag = true;
         } else if (arg == "-d" && i + 1 < argc) {
             depth = std::atoi(argv[++i]);
+        } else if (depth < -1) {
+        print_error("\033[1;91mError: Depth value must be -1 or greater.\033[0m\n");
+        return 1;
         } else if (arg == "-v" || arg == "--verbose") {
             verbose_enabled = true;
         } else if (arg == "-h" || arg == "--help") {
