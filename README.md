@@ -41,7 +41,7 @@ Options:
 - roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
 - rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
 
-for more help and example uses:
+for more help and usage examples:
 
 bulk_rename++ -h or bulk_rename++ --help.
 
