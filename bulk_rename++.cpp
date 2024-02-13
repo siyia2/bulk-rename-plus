@@ -296,6 +296,14 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         return;
     }
 
+    std::vector<std::pair<std::string, size_t>> transformations;
+    std::sregex_iterator iter(case_input.begin(), case_input.end(), transformation_pattern);
+    std::sregex_iterator end;
+    for (; iter != end; ++iter) {
+        transformations.emplace_back((*iter)[1].str(), (*iter).position());
+    }
+
+
     if (transform_files) {
         // Apply case transformation using regex patterns
         if (std::regex_search(case_input, match, transformation_pattern)) {
@@ -327,7 +335,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             } else if (transformation == "kebab") {
                 std::replace(new_name.begin(), new_name.end(), ' ', '-');
             } else if (transformation == "rkebab") {
-                std::replace(new_name.begin(), new_name.end(), ' ', '-');
+                std::replace(new_name.begin(), new_name.end(), '-', ' ');
             } else if (transformation == "rspecial") {
                 // Remove special characters from the name
                 new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
@@ -379,7 +387,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
     // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
-        new_path = item_path.parent_path() / new_name; // Assign new_path here
+        fs::path new_path = item_path.parent_path() / std::move(new_name);
 
         try {
             fs::rename(item_path, new_path);
