@@ -811,8 +811,8 @@ int main(int argc, char *argv[]) {
     }
 
     std::system("clear");
-    if (case_input != "snake" && case_input != "rsnake") {
-        std::cout << "\033[1;93m!!! WARNING OPERATION IRREVERSIBLE !!!\033[0m\n\n";
+    if (case_input == "rnumeric" || case_input == "rspecial" || case_input == "rbra" || case_input == "roperand" || case_input == "bak" || case_input == "bak") {
+        std::cout << "\033[1;93m!!! WARNING SELECTED OPERATION IRREVERSIBLE !!!\033[0m\n\n";
     }
 
     std::string confirmation;
@@ -834,11 +834,12 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
     std::getline(std::cin, confirmation);
-    if (verbose_enabled){
+    if (confirmation == "y") {
     std::cout << " " << std::endl;
 }
     if (confirmation != "y") {
-        std::cout << "\n\033[1;91mOperation aborted by user.\n\033[0m\n";
+        std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
+        std::cout << "\n" << std::endl;
         std::cout << "\033[1mPress enter to exit...";
         std::cin.get();
         std::system("clear");
