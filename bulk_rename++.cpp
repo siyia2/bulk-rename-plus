@@ -137,21 +137,16 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     }
     
     std::string extension = item_path.extension().string();
-    std::string new_extension = extension; 
+    std::string new_extension; 
 
     if (case_input == "lower") {
-        std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::tolower);
+        std::transform(extension.begin(), extension.end(), std::back_inserter(new_extension), ::tolower);
     } else if (case_input == "upper") {
-        std::transform(new_extension.begin(), new_extension.end(), new_extension.begin(), ::toupper);
+        std::transform(extension.begin(), extension.end(), std::back_inserter(new_extension), ::toupper);
     } else if (case_input == "reverse") {
-        std::smatch match;
-        if (std::regex_search(extension, match, reverse_case)) {
-            std::ostringstream oss;
-            for (auto& c : match[1].str()) {
-                oss << (std::islower(c) ? std::toupper(c) : std::tolower(c));
-            }
-            new_extension = oss.str();
-        }
+        std::transform(extension.begin(), extension.end(), std::back_inserter(new_extension), [](char c) {
+            return std::islower(c) ? std::toupper(c) : std::tolower(c);
+        });
     } else if (case_input == "title") {
         std::smatch match;
         if (std::regex_search(extension, match, title_case)) {
@@ -161,13 +156,13 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             new_extension = "." + std::string(1, first_letter) + rest_of_extension;
         }
     } else if (case_input == "bak") {
-        new_extension += ".bak";
+        new_extension = ".bak";
     } else if (case_input == "rbak") {
         if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
             new_extension = extension.substr(0, extension.length() - 4);
-        } else if (case_input == "noext") { // New block for removing extension
-        new_extension = "";
-		}
+        }
+    } else if (case_input == "noext") {
+        new_extension = ""; // Setting new_extension to empty string effectively removes the extension
     }
 
     if (extension != new_extension) {
@@ -192,6 +187,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         }
     }
 }
+
 
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
     //If depth is negative (default value), set it to a very large number to effectively disable the depth limit
