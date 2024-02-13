@@ -11,7 +11,7 @@ Options:
 - `-fo` stands for exclusive folder renaming (optional).
 - `-c` option stands for case set.
 - `-ce` option stands for case set for file extensions.
-- `-cp` option stands for case set including parent dir(s).
+- `-cp` option stands for case set including the lowest parent dir(s).
 - `-v` or `--verbose` option stands for enabling verbose output (optional).
 
 ### Current suported case modes: 
