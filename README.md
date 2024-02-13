@@ -6,13 +6,13 @@ Default and recommended installation path is `~/.local/bin/bulk_rename++`, no ne
 ## How to use:
 
 Options: 
-- `-d` stands for recursion depth level.
-- `-fi` stands for file renaming.
-- `-fo` stands for folder renaming.
+- `-d` stands for recursion depth level (optional).
+- `-fi` stands for file renaming (optional).
+- `-fo` stands for folder renaming (optional).
 - `-c` option stands for case set.
 - `-ce` option stands for case set for file extensions.
 - `-cp` option stands for case set including parent dir(s).
-- `-v` or `--verbose` option stands for enabling verbose output.
+- `-v` or `--verbose` option stands for enabling verbose output (optional).
 
 ### Current suported case modes: 
 
