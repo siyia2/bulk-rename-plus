@@ -83,48 +83,57 @@ void print_verbose_enabled(const std::string& message) {
 
 void print_help() {
 
-std::cout << "Usage: bulk_rename++ [OPTIONS] [PATHS]\n"
+std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [PATHS]\n"
           << "Renames all files and folders under the specified path(s).\n"
           << "\n"
           << "Options:\n"
           << "  -h, --help               Print this message and exit\n"
-          << "  -d [DEPTH]               Set traverse depth level otherwise maximum depth is used. -cp and -d 0 together rename only parent dir(s).\n"
-          << "  -c [MODE]                Set the case conversion mode for file and dir name(s).\n"
+          << "  -v, --verbose            Enable verbose mode.\n"
+          << "  -fi                      Only files will be renamed, by default everything is renamed.\n"
+          << "  -fo                      Only folders will be renamed, by default everything is renamed.\n"
+          << "  -d  [DEPTH]              Set traverse depth level otherwise maximum (-1) is used. -cp and -d 0 together rename only parent dir(s).\n"
+          << "  -c  [MODE]               Set the case conversion mode for file and dir name(s).\n"
           << "  -cp [MODE]               Set the case conversion mode for file and dir name(s), including parent dir(s).\n"
           << "  -ce [MODE]               Set the case conversion mode for file extension(s).\n"
-          << "  -v, --verbose            Enable verbose mode.\n"
           << "\n"
-          << "Modes for file and directory names:\n"
-          << "  lower      Convert names to lowercase (e.g., Test => test)\n"
-          << "  upper      Convert names to UPPERCASE (e.g., Test => TEST)\n"
+          << "Modes for file, directory and extension renaming:\n"
+          << "Common Regular:\n"
           << "  title      Convert names to Title Case (e.g., test => Test)\n"
+          << "  upper      Convert names to UPPERCASE (e.g., Test => TEST)\n"
+          << "  lower      Convert names to lowercase (e.g., Test => test)\n"
           << "  reverse    Reverse current case in names (e.g., Test => tEST)\n"
-          << "  camel      Convert names to camelCase (e.g., Te_st => TeSt)\n"
-          << "  bak        Add .bak at file extension names (e.g., Test.txt => Test.txt.bak)\n"
-          << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
-          << "  noext      Remove extension names (e.g., Test.txt => Test)\n"
-          << "  rcamel     Reverse camelCase in names (e.g., TeSt => Te_st)\n"
+          << "Common Special:\n"
           << "  snake      Convert spaces to underscores in names (e.g., Te st => Te_st)\n"
           << "  rsnake     Convert underscores to spaces in names (e.g., Te_st => Te st)\n"
           << "  kebab      Convert spaces to hyphens in names (e.g., Te st => Te-st)\n"
           << "  rkebab     Convert hyphens to spaces in names (e.g., Te-st => Te st)\n"
-          << "  sequence   Apply sequential numbering to files only (e.g. Test => 001_Test)\n"
+          << "  camel      Convert names to camelCase (e.g., Te_st => TeSt)\n"
+          << "  rcamel     Reverse camelCase in names (e.g., TeSt => Te_st)\n"
+          << "Extension exclusive:\n"
+          << "  bak        Add .bak at file extension names (e.g., Test.txt => Test.txt.bak)\n"
+          << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
+          << "  noext      Remove extensions (e.g., Test.txt => Test)\n"
+		  << "Numbering:\n"
+		  << "  sequence   Apply sequential numbering to files only (e.g. Test => 001_Test)\n"
           << "  rsequence  Remove sequential numbering of files (e.g. 001_Test => Test)\n"
-          << "  rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'"";? => Test)\n"
-          << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
+		  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
+          << "Custom:\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
+          << "  rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)\n"
           << "\n"
           << "Examples:\n"
           << "  bulk_rename++ [path1] [path2]... -c lower\n"
           << "  bulk_rename++ [path1] -cp upper\n"
           << "  bulk_rename++ [path1] -cp upper -d 0\n"
-          << "  bulk_rename++ [path1] -ce upper -v\n"
           << "  bulk_rename++ [path1] -v -cp upper\n"
           << "  bulk_rename++ [path1] -c upper -v\n"
           << "  bulk_rename++ [path1] -d 2 -c upper -v\n"
+          << "  bulk_rename++ [path1] -fi -c lower -v\n"
+          << "  bulk_rename++ [path1] [path2] -fo upper\n"
+          << "  bulk_rename++ [path1] -ce noext -v\n"
           << "\n";
-	  }
+}
 
 // Extension stuff
 
@@ -698,6 +707,7 @@ int main(int argc, char *argv[]) {
         } else if (arg == "-v" || arg == "--verbose") {
             verbose_enabled = true;
         } else if (arg == "-h" || arg == "--help") {
+			std::system("clear");
             print_help();
             return 0;
         } else if (arg == "-c") {
