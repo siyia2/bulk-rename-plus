@@ -408,7 +408,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     } else {
         if (verbose_enabled && transform_dirs && !transform_files) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (skipped by -fo)");
-        } else { 
+        } else if (verbose_enabled) { 
 			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (name unchanged)");
 		}
     }
@@ -537,7 +537,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (verbose_enabled && !transform_dirs && transform_files) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (skipped by -fi)");
             }
-         else {
+         else if (verbose_enabled) {
 			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)");
 		}
 			
