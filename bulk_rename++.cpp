@@ -272,7 +272,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|number)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -305,7 +305,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                     }
                 }
             }
-            
         } else if (transformation == "snake") {
             std::replace(new_name.begin(), new_name.end(), ' ', '_');
         } else if (transformation == "rsnake") {
@@ -314,8 +313,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             std::replace(new_name.begin(), new_name.end(), ' ', '-');
         } else if (transformation == "rkebab") {
             std::replace(new_name.begin(), new_name.end(), ' ', '-');
-		
-        
         } else if (transformation == "rspecial") {
             // Remove special characters from the name
             new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
@@ -338,12 +335,18 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             }), new_name.end());
         } else if (transformation == "camel") {
             new_name = to_camel_case(new_name);
-        
         } else if (transformation == "rcamel") {
             new_name = from_camel_case(new_name);
-        }
+        } else if (transformation == "number") {
+    // Check if the filename is already numbered
+    if (!std::isdigit(new_name.front())) {
+        static int counter = 1;
+        std::ostringstream oss;
+        oss << std::setw(3) << std::setfill('0') << counter++;
+        new_name = oss.str() + "_" + new_name;
     }
-
+}
+}
     // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
         new_path = item_path.parent_path() / new_name; // Assign new_path here
@@ -371,14 +374,13 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count, int depth = -1) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
     bool renaming_message_printed = false;
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|number)");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -458,6 +460,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (transformation == "rcamel") {
             new_dirname = dirname;
             new_dirname = from_camel_case(new_dirname);
+        } else if (transformation == "number") {
+            // Do nothing for directories
+            new_dirname = dirname;
         }
     }
 
@@ -517,7 +522,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         for (auto& thread : threads) {
             thread.join();
         }
-        
+
     }
 
     if (verbose_enabled && depth > 0) {
@@ -706,7 +711,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand"};
+        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "number"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "rbak", "bak", "noext"};
     }
