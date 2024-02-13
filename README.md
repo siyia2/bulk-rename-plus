@@ -34,7 +34,7 @@ Current suported case modes:
 - roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
 - rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
 
-for help:
+for more help and example uses:
 
 bulk_rename++ -h or bulk_rename++ --help.
 
