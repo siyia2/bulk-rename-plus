@@ -821,8 +821,9 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
     std::getline(std::cin, confirmation);
+    if (verbose_enabled){
     std::cout << " " << std::endl;
-
+}
     if (confirmation != "y") {
         std::cout << "\n\033[1;91mOperation aborted by user.\n\033[0m\n";
         std::cout << "\033[1mPress enter to exit...";
