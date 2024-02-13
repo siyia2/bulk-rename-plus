@@ -272,7 +272,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
 
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|number)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|number|rnumber)");
     std::smatch match;
 
     if (fs::is_symlink(item_path)) {
@@ -344,8 +344,22 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         std::ostringstream oss;
         oss << std::setw(3) << std::setfill('0') << counter++;
         new_name = oss.str() + "_" + new_name;
+		}
+	}else if (transformation == "rnumber") {
+    // Find the position of the first non-digit character
+    size_t pos = new_name.find_first_not_of("0123456789");
+    
+    // Check if the filename is already numbered and contains an underscore after numbering
+    if (pos != std::string::npos && pos > 0 && new_name[pos] == '_') {
+        // Remove the number and the first underscore
+        new_name.erase(0, pos + 1);
+    }
+    else if (pos != std::string::npos && pos > 0) {
+        // Remove only the number
+        new_name.erase(0, pos);
     }
 }
+
 }
     // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
@@ -380,7 +394,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed = false;
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|number)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|number|rnumber)");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -461,6 +475,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             new_dirname = dirname;
             new_dirname = from_camel_case(new_dirname);
         } else if (transformation == "number") {
+            // Do nothing for directories
+            new_dirname = dirname;
+        } else if (transformation == "rnumber") {
             // Do nothing for directories
             new_dirname = dirname;
         }
@@ -711,7 +728,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "number"};
+        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "number","rnumber"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "rbak", "bak", "noext"};
     }
