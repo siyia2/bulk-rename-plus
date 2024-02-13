@@ -7,29 +7,29 @@ Default and recommended installation path is `~/.local/bin/bulk_rename++`, no ne
 
 Options: `-d` stands for recursion depth level,`-fi` stands for file renaming,`-fo` stands for folder renaming, `-c` option stands for case set, `-ce` option stands for case set for file extensions, `-cp` option stands for case ste including parent dir(s) and `-v` or `--verbose` option stands for enabling verbose output.
 
-##### Current suported case modes: 
+### Current suported case modes: 
 
-##### Common Regular CASE Modes:
+#### Common Regular CASE Modes:
 - title      Convert names to Title Case (e.g., test => Test)\n"
 - upper      Convert names to UPPERCASE (e.g., Test => TEST)\n"
 - lower      Convert names to lowercase (e.g., Test => test)\n"
 - reverse    Reverse current case in names (e.g., Test => tEST)\n"
-### Common Special CASE Modes:
+#### Common Special CASE Modes:
 - snake      Convert spaces to underscores in names (e.g., Te st => Te_st)
 - rsnake     Convert underscores to spaces in names (e.g., Te_st => Te st)
 - kebab      Convert spaces to hyphens in names (e.g., Te st => Te-st)
 - rkebab     Convert hyphens to spaces in names (e.g., Te-st => Te st)
 - camel      Convert names to camelCase (e.g., Te st => TeSt)
 - rcamel     Reverse camelCase in names (e.g., TeSt => Te st)
-### Extension exclusive CASE Modes:
+#### Extension exclusive CASE Modes:
 - bak        Add .bak at file extension names (e.g., Test.txt => Test.txt.bak)
 - rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
 - noext      Remove extensions (e.g., Test.txt => Test)\n"
-### Numbering CASE Modes:
+#### Numbering CASE Modes:
 - sequence   Apply sequential numbering to files only (e.g. Test => 001_Test)
 - rsequence  Remove sequential numbering of files (e.g. 001_Test => Test)
 - rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)
-### Custom CASE Modes:
+#### Custom CASE Modes:
 - rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)
 - roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
 - rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
