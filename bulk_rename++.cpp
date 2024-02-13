@@ -272,7 +272,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
 // Rename file&directory stuff
 
-void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count)  {
+void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count) {
     std::string name = item_path.filename().string();
     std::string new_name = name; // Initialize with original name
     fs::path new_path; // Declare new_path here to make it accessible in both branches
@@ -287,85 +287,87 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         return;
     }
 
-    // Apply case transformation using regex patterns
-    if (std::regex_search(case_input, match, transformation_pattern)) {
-        const std::string& transformation = match[1].str();
-        if (transformation == "lower") {
-            std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
-        } else if (transformation == "upper") {
-            std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::toupper);
-        } else if (transformation == "reverse") {
-            std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
-                return std::islower(c) ? std::toupper(c) : std::tolower(c);
-            });
-        } else if (transformation == "title") {
-            bool first_letter_encountered = true;
-            for (char& c : new_name) {
-                if (std::isalpha(c)) {
-                    if (first_letter_encountered) {
-                        c = std::toupper(c);
-                        first_letter_encountered = false;
-                    } else {
-                        c = std::tolower(c); // Convert subsequent letters to lowercase
+    if (transform_files) {
+        // Apply case transformation using regex patterns
+        if (std::regex_search(case_input, match, transformation_pattern)) {
+            const std::string& transformation = match[1].str();
+            if (transformation == "lower") {
+                std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
+            } else if (transformation == "upper") {
+                std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::toupper);
+            } else if (transformation == "reverse") {
+                std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
+                    return std::islower(c) ? std::toupper(c) : std::tolower(c);
+                });
+            } else if (transformation == "title") {
+                bool first_letter_encountered = true;
+                for (char& c : new_name) {
+                    if (std::isalpha(c)) {
+                        if (first_letter_encountered) {
+                            c = std::toupper(c);
+                            first_letter_encountered = false;
+                        } else {
+                            c = std::tolower(c); // Convert subsequent letters to lowercase
+                        }
                     }
                 }
+            } else if (transformation == "snake") {
+                std::replace(new_name.begin(), new_name.end(), ' ', '_');
+            } else if (transformation == "rsnake") {
+                std::replace(new_name.begin(), new_name.end(), '_', ' ');
+            } else if (transformation == "kebab") {
+                std::replace(new_name.begin(), new_name.end(), ' ', '-');
+            } else if (transformation == "rkebab") {
+                std::replace(new_name.begin(), new_name.end(), ' ', '-');
+            } else if (transformation == "rspecial") {
+                // Remove special characters from the name
+                new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
+                    return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
+                }), new_name.end());
+            } else if (transformation == "rnumeric") {
+                // Remove numeric characters from the name
+                new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
+                    return std::isdigit(c);
+                }), new_name.end());
+            } else if (transformation == "rbra") {
+                // Remove [ ] { } from the name
+                new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
+                    return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
+                }), new_name.end());
+            } else if (transformation == "roperand") {
+                // Remove - + > < = * from the name
+                new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
+                    return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
+                }), new_name.end());
+            } else if (transformation == "camel") {
+                new_name = to_camel_case(new_name);
+            } else if (transformation == "rcamel") {
+                new_name = from_camel_case(new_name);
+            } else if (transformation == "sequence") {
+                // Check if the filename is already numbered
+                if (!std::isdigit(new_name.front())) {
+                    static int counter = 1;
+                    std::ostringstream oss;
+                    oss << std::setw(3) << std::setfill('0') << counter++;
+                    new_name = oss.str() + "_" + new_name;
+                }
+            } else if (transformation == "rsequence") {
+                // Find the position of the first non-digit character
+                size_t pos = new_name.find_first_not_of("0123456789");
+                
+                // Check if the filename is already numbered and contains an underscore after numbering
+                if (pos != std::string::npos && pos > 0 && new_name[pos] == '_') {
+                    // Remove the number and the first underscore
+                    new_name.erase(0, pos + 1);
+                }
+                else if (pos != std::string::npos && pos > 0) {
+                    // Remove only the number
+                    new_name.erase(0, pos);
+                }
             }
-        } else if (transformation == "snake") {
-            std::replace(new_name.begin(), new_name.end(), ' ', '_');
-        } else if (transformation == "rsnake") {
-            std::replace(new_name.begin(), new_name.end(), '_', ' ');
-        } else if (transformation == "kebab") {
-            std::replace(new_name.begin(), new_name.end(), ' ', '-');
-        } else if (transformation == "rkebab") {
-            std::replace(new_name.begin(), new_name.end(), ' ', '-');
-        } else if (transformation == "rspecial") {
-            // Remove special characters from the name
-            new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
-                return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
-            }), new_name.end());
-        } else if (transformation == "rnumeric") {
-            // Remove numeric characters from the name
-            new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
-                return std::isdigit(c);
-            }), new_name.end());
-        } else if (transformation == "rbra") {
-            // Remove [ ] { } from the name
-            new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
-                return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
-            }), new_name.end());
-        } else if (transformation == "roperand") {
-            // Remove - + > < = * from the name
-            new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
-                return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
-            }), new_name.end());
-        } else if (transformation == "camel") {
-            new_name = to_camel_case(new_name);
-        } else if (transformation == "rcamel") {
-            new_name = from_camel_case(new_name);
-        } else if (transformation == "sequence") {
-    // Check if the filename is already numbered
-    if (!std::isdigit(new_name.front())) {
-        static int counter = 1;
-        std::ostringstream oss;
-        oss << std::setw(3) << std::setfill('0') << counter++;
-        new_name = oss.str() + "_" + new_name;
-		}
-	} else if (transformation == "rsequence") {
-    // Find the position of the first non-digit character
-    size_t pos = new_name.find_first_not_of("0123456789");
-    
-    // Check if the filename is already numbered and contains an underscore after numbering
-    if (pos != std::string::npos && pos > 0 && new_name[pos] == '_') {
-        // Remove the number and the first underscore
-        new_name.erase(0, pos + 1);
+        }
     }
-    else if (pos != std::string::npos && pos > 0) {
-        // Remove only the number
-        new_name.erase(0, pos);
-		}
-	}
 
-}
     // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
         new_path = item_path.parent_path() / new_name; // Assign new_path here
@@ -408,84 +410,89 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         return;
     }
 
-    // Apply case transformation using regex patterns
-    if (std::regex_match(case_input, transformation_pattern)) {
-        const std::string& transformation = case_input;
-        if (transformation == "lower") {
-            new_dirname = dirname;
-            std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
-        } else if (transformation == "upper") {
-            new_dirname = dirname;
-            std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
-        } else if (transformation == "reverse") {
-            new_dirname = dirname;
-            std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
-                return std::islower(c) ? std::toupper(c) : std::tolower(c);
-            });
-        } else if (transformation == "title") {
-            bool first_letter = true;
-            new_dirname.reserve(dirname.size()); // Reserve space for efficiency
-            for (char c : dirname) {
-                if (std::isalpha(c)) {
-                    if (first_letter) {
-                        new_dirname.push_back(std::toupper(c));
-                        first_letter = false;
+    if (transform_dirs) {
+        // Apply case transformation using regex patterns
+        if (std::regex_match(case_input, transformation_pattern)) {
+            const std::string& transformation = case_input;
+            if (transformation == "lower") {
+                new_dirname = dirname;
+                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
+            } else if (transformation == "upper") {
+                new_dirname = dirname;
+                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
+            } else if (transformation == "reverse") {
+                new_dirname = dirname;
+                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
+                    return std::islower(c) ? std::toupper(c) : std::tolower(c);
+                });
+            } else if (transformation == "title") {
+                bool first_letter = true;
+                new_dirname.reserve(dirname.size()); // Reserve space for efficiency
+                for (char c : dirname) {
+                    if (std::isalpha(c)) {
+                        if (first_letter) {
+                            new_dirname.push_back(std::toupper(c));
+                            first_letter = false;
+                        } else {
+                            new_dirname.push_back(std::tolower(c));
+                        }
                     } else {
-                        new_dirname.push_back(std::tolower(c));
+                        new_dirname.push_back(c);
                     }
-                } else {
-                    new_dirname.push_back(c);
                 }
+            } else if (transformation == "snake") {
+                std::replace(dirname.begin(), dirname.end(), ' ', '_');
+                new_dirname = dirname;
+            } else if (transformation == "rsnake") {
+                std::replace(dirname.begin(), dirname.end(), '_', ' ');
+                new_dirname = dirname;
+            } else if (transformation == "kebab") {
+                std::replace(dirname.begin(), dirname.end(), ' ', '-');
+                new_dirname = dirname;
+            } else if (transformation == "rkebab") {
+                std::replace(dirname.begin(), dirname.end(), '-', ' ');
+                new_dirname = dirname;
+            } else if (transformation == "rspecial") {
+                // Remove special characters from the directory name
+                new_dirname = dirname;
+                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                    return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
+                }), new_dirname.end());
+            } else if (transformation == "rnumeric") {
+                // Remove numeric characters from the directory name
+                new_dirname = dirname;
+                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                    return std::isdigit(c);
+                }), new_dirname.end());
+            } else if (transformation == "rbra") {
+                // Remove [ ] { } from the name
+                new_dirname = dirname;
+                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                    return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
+                }), new_dirname.end());
+            } else if (transformation == "roperand") {
+                // Remove - + > < = * from the name
+                new_dirname = dirname;
+                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                    return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
+                }), new_dirname.end());
+            } else if (transformation == "camel") {
+                new_dirname = dirname;
+                new_dirname = to_camel_case(new_dirname);
+            } else if (transformation == "rcamel") {
+                new_dirname = dirname;
+                new_dirname = from_camel_case(new_dirname);
+            } else if (transformation == "sequence") {
+                // Do nothing for directories
+                new_dirname = dirname;
+            } else if (transformation == "rsequence") {
+                // Do nothing for directories
+                new_dirname = dirname;
             }
-        } else if (transformation == "snake") {
-            std::replace(dirname.begin(), dirname.end(), ' ', '_');
-            new_dirname = dirname;
-        } else if (transformation == "rsnake") {
-            std::replace(dirname.begin(), dirname.end(), '_', ' ');
-            new_dirname = dirname;
-        } else if (transformation == "kebab") {
-            std::replace(dirname.begin(), dirname.end(), ' ', '-');
-            new_dirname = dirname;
-        } else if (transformation == "rkebab") {
-            std::replace(dirname.begin(), dirname.end(), '-', ' ');
-            new_dirname = dirname;
-        } else if (transformation == "rspecial") {
-            // Remove special characters from the directory name
-            new_dirname = dirname;
-            new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
-            }), new_dirname.end());
-        } else if (transformation == "rnumeric") {
-            // Remove numeric characters from the directory name
-            new_dirname = dirname;
-            new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                return std::isdigit(c);
-            }), new_dirname.end());
-        } else if (transformation == "rbra") {
-            // Remove [ ] { } from the name
-            new_dirname = dirname;
-            new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
-            }), new_dirname.end());
-        } else if (transformation == "roperand") {
-            // Remove - + > < = * from the name
-            new_dirname = dirname;
-            new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
-            }), new_dirname.end());
-        } else if (transformation == "camel") {
-            new_dirname = dirname;
-            new_dirname = to_camel_case(new_dirname);
-        } else if (transformation == "rcamel") {
-            new_dirname = dirname;
-            new_dirname = from_camel_case(new_dirname);
-        } else if (transformation == "sequence") {
-            // Do nothing for directories
-            new_dirname = dirname;
-        } else if (transformation == "rsequence") {
-            // Do nothing for directories
-            new_dirname = dirname;
         }
+    } else {
+        // If transform_dirs is false, keep the original directory name
+        new_dirname = dirname;
     }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
@@ -529,7 +536,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 if (entry.is_directory()) {
                     rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
                 } else {
-                    rename_file(entry.path(), case_input, false, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count);
+                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
                 }
             }
         } else {
@@ -564,9 +571,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 }
-
-
-
 
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false,bool transform_dirs = true, bool transform_files = true, int depth = -1)  {
