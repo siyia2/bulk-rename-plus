@@ -517,43 +517,52 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         // Decrement depth only if depth limit is positive
         if (depth > 0)
             --depth;
+        
+        unsigned int max_threads = std::thread::hardware_concurrency();
+        if (max_threads == 0) {
+            max_threads = 1; // If hardware concurrency is not available, default to 1 thread
         }
 
-        unsigned int max_threads = std::thread::hardware_concurrency();
-    if (max_threads == 0) {
-        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
-    }
-
-    std::vector<std::thread> threads;
-    for (const auto& entry : fs::directory_iterator(new_path)) {
-        if (entry.is_directory()) {
-            if (threads.size() < max_threads) {
-                // Start a new thread for each subdirectory
-                threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), depth);
-            } else {
-                // Process directories in the main thread if max_threads is reached
-                rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count, depth);
+        if (rename_immediate_parent) {
+            // Process subdirectories without spawning threads
+            for (const auto& entry : fs::directory_iterator(new_path)) {
+                if (entry.is_directory()) {
+                    rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count, depth);
+                } else {
+                    rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+                }
             }
         } else {
-            // Process files in the main thread
-            rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
-        }
-    }
+            std::vector<std::thread> threads;
+            for (const auto& entry : fs::directory_iterator(new_path)) {
+                if (entry.is_directory()) {
+                    if (threads.size() < max_threads) {
+                        // Start a new thread for each subdirectory
+                        threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, std::ref(files_count), std::ref(dirs_count), depth);
+                    } else {
+                        // Process directories in the main thread if max_threads is reached
+                        rename_directory(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count, depth);
+                    }
+                } else {
+                    // Process files in the main thread
+                    rename_file(entry.path(), case_input, false, verbose_enabled, files_count, dirs_count);
+                }
+            }
 
-    // Join all threads
-        for (auto& thread : threads) {
-            thread.join();
+            // Join all threads
+            for (auto& thread : threads) {
+                thread.join();
+            }
         }
+
         static bool depth_limit_reached_printed = false; // Declare a static boolean flag
 
-	if (verbose_enabled && depth == 0 && !depth_limit_reached_printed) {
-		depth_limit_reached_printed = true;
-		usleep(500000);
-		print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
-
-	}
-    
-
+        if (verbose_enabled && depth == 0 && !depth_limit_reached_printed) {
+            depth_limit_reached_printed = true;
+            //usleep(500000);
+            print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
+        }
+    }
 }
 
 
