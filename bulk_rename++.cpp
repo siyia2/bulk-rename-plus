@@ -708,7 +708,6 @@ int main(int argc, char *argv[]) {
     bool cp_flag = false;
     bool ce_flag = false;
     
-    
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
         if (arg == "-fi") {
@@ -729,7 +728,6 @@ int main(int argc, char *argv[]) {
             print_help();
             return 0;
         } else if (arg == "-c") {
-			c_flag=true;
             if (c_flag || cp_flag || ce_flag) {
                 print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
                 return 1;
@@ -743,7 +741,6 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         } else if (arg == "-cp") {
-			cp_flag=true;
             if (c_flag || cp_flag || ce_flag) {
                 print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
                 return 1;
@@ -758,7 +755,6 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         } else if (arg == "-ce") {
-			ce_flag=true;
             if (c_flag || cp_flag || ce_flag) {
                 print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
                 return 1;
@@ -780,21 +776,6 @@ int main(int argc, char *argv[]) {
             }
             paths.emplace_back(arg);
         }
-    }
-    
-    if (c_flag && cp_flag && ce_flag) {
-        print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
-        return 1;
-    }
-    
-    if (c_flag && cp_flag) {
-        print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
-        return 1;
-    }
-    
-    if ( cp_flag && ce_flag) {
-        print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
-        return 1;
     }
     
     // Perform renaming based on flags and options
