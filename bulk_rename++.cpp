@@ -409,11 +409,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
         return;
     }
-
+	
     if (transform_dirs) {
         // Apply case transformation using regex patterns
-        if (std::regex_match(case_input, transformation_pattern)) {
-            const std::string& transformation = case_input;
+            std::smatch match;
+        if (std::regex_match(case_input, match, transformation_pattern)) {
+        const std::string& transformation = match[1].str();
             if (transformation == "lower") {
                 new_dirname = dirname;
                 std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
@@ -545,7 +546,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 if (entry.is_directory()) {
                     if (threads.size() < max_threads) {
                         // Start a new thread for each subdirectory
-                        threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, true, true, std::ref(files_count), std::ref(dirs_count), depth);
+                        threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
                     } else {
                         // Process directories in the main thread if max_threads is reached
                         rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
