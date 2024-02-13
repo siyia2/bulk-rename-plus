@@ -673,14 +673,22 @@ int main(int argc, char *argv[]) {
         print_help();
         return 0;
     }
-
+    
+	bool fi_flag = false;
+    bool fo_flag = false;
     bool c_flag = false;
     bool cp_flag = false;
     bool ce_flag = false;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
-        if (arg == "-d" && i + 1 < argc) {
+        if (arg == "-fi") {
+            transform_dirs = false;
+            fi_flag = true;
+        } else if (arg == "-fo") {
+            transform_files = false;
+            fo_flag = true;
+        } else if (arg == "-d" && i + 1 < argc) {
             depth = std::atoi(argv[++i]);
         } else if (arg == "-v" || arg == "--verbose") {
             verbose_enabled = true;
@@ -740,6 +748,12 @@ int main(int argc, char *argv[]) {
 
     if (c_flag && cp_flag && ce_flag) {
         print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\n");
+        return 1;
+    }
+    
+    // Perform renaming based on flags and options
+    if (fi_flag && fo_flag) {
+        print_error("\033[1;91mError: Cannot mix -fi and -fo options.\n");
         return 1;
     }
 
