@@ -406,9 +406,11 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     } else {
-        if (verbose_enabled) {
+        if (verbose_enabled && !transform_files) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (name unchanged)");
-        }
+        } else { 
+			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (skipped by -fi)");
+		}
     }
 }
 
@@ -532,9 +534,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
 
     } else {
-        if (verbose_enabled) {
+        if (verbose_enabled && !transform_dirs) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)");
-        }
+        } else {
+			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (skipped by -fo)");
+		}
+			
     }
 
     // Continue recursion if depth limit not reached
