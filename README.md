@@ -14,6 +14,8 @@ Options:
 - `-cp` option stands for case set including the lowest parent dir(s).
 - `-v` or `--verbose` option stands for enabling verbose output (optional).
 
+Usage: bulk_rename++ [OPTIONS] [MODES] [PATHS]
+
 ### Current suported case modes: 
 
 #### Common Regular CASE Modes:
