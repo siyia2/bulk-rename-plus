@@ -88,7 +88,7 @@ std::cout << "Usage: bulk_rename++ [OPTIONS] [PATHS]\n"
           << "\n"
           << "Options:\n"
           << "  -h, --help               Print this message and exit\n"
-          << "  -d [DEPTH]               Specify the directory depth level otherwise maximum depth is used. -cp and -d 0 together rename only parent dir(s).\n"
+          << "  -d [DEPTH]               Set traverse depth level otherwise maximum depth is used. -cp and -d 0 together rename only parent dir(s).\n"
           << "  -c [MODE]                Set the case conversion mode for file and dir name(s).\n"
           << "  -cp [MODE]               Set the case conversion mode for file and dir name(s), including parent dir(s).\n"
           << "  -ce [MODE]               Set the case conversion mode for file extension(s).\n"
@@ -185,6 +185,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     }
 }
 
+
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
     //If depth is negative (default value), set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
@@ -261,10 +262,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
 
-
-
 // Rename file&directory stuff
-
 
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, int& files_count, int& dirs_count) {
     std::string name = item_path.filename().string();
@@ -369,6 +367,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         }
     }
 }
+
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, int& files_count, int& dirs_count, int depth = -1) {
     std::string dirname = directory_path.filename().string();
@@ -525,8 +524,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 }
-
-
 
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false, int depth = -1) {
