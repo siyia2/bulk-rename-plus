@@ -827,7 +827,7 @@ int main(int argc, char *argv[]) {
 
     std::string confirmation;
     if (rename_parents) {
-        std::cout << "\033[1mThe following path(s), along with their \033[4mparent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[1mThe following path(s), along with their \033[4mLowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
