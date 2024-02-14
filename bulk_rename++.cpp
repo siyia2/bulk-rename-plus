@@ -540,51 +540,64 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
             
     }
+    // Container to hold directories and their depths
+    std::queue<std::pair<fs::path, int>> directories;
+    directories.push({directory_path, 0}); // Push the initial path onto the queue with depth 0
 
-    // Container to hold threads
+
+    
+
+    // Get the maximum number of threads supported by the system
+    unsigned int max_threads = std::thread::hardware_concurrency();
+    if (max_threads == 0) {
+        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
+    }
+
+    // Determine the number of threads to create (minimum of max_threads and paths.size())
+    unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(directories.size()));
+// Container to hold threads
     std::vector<std::thread> threads;
-
     // Continue recursion if depth limit not reached
     if (depth != 0) {
         // Decrement depth only if depth limit is positive
         if (depth > 0)
             --depth;
 
-        // Initialize a queue to store directories and their depths
-        std::queue<std::pair<fs::path, int>> directories;
-        directories.push({new_path, 0}); // Push the initial path onto the queue with depth 0
-
         // While there are directories in the queue
         while (!directories.empty()) {
-            auto [current_path, current_depth] = directories.front();
-            directories.pop();
+            // Create threads up to the maximum allowed
+            for (unsigned int i = 0; i < num_threads && !directories.empty(); ++i) {
+                auto [current_path, current_depth] = directories.front();
+                directories.pop();
 
-            // Check if depth limit is reached
-            if (current_depth >= depth) {
-                static bool depth_limit_reached_printed = false; // Declare a static boolean flag
-                if (verbose_enabled && !depth_limit_reached_printed) {
-                    depth_limit_reached_printed = true;
-                    print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + current_path.string());
+                // Check if depth limit is reached
+                if (current_depth >= depth) {
+                    static bool depth_limit_reached_printed = false; // Declare a static boolean flag
+                    if (verbose_enabled && !depth_limit_reached_printed) {
+                        depth_limit_reached_printed = true;
+                        print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + current_path.string());
+                    }
+                    continue; // Skip processing this directory
                 }
-                continue; // Skip processing this directory
+
+                // Iterate over subdirectories and files
+                for (const auto& entry : fs::directory_iterator(current_path)) {
+                    if (entry.is_directory()) {
+                        // Push subdirectories onto the queue with incremented depth
+                        directories.push({entry.path(), current_depth + 1});
+                    } else {
+                        // Process files concurrently using threads
+                        threads.emplace_back(std::thread(rename_file, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count)));
+                    }
+                }
             }
 
-            // Iterate over subdirectories and files
-            for (const auto& entry : fs::directory_iterator(current_path)) {
-                if (entry.is_directory()) {
-                    // Push subdirectories onto the queue with incremented depth
-                    directories.push({entry.path(), current_depth + 1});
-                } else {
-                    // Process files concurrently using threads
-                    threads.emplace_back(std::thread(rename_file, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count)));
-                }
+            // Join all threads to wait for their completion before continuing
+            for (auto& thread : threads) {
+                thread.join();
             }
+            threads.clear(); // Clear the vector for the next iteration
         }
-    }
-
-    // Join all threads to wait for their completion
-    for (auto& thread : threads) {
-        thread.join();
     }
 }
 
