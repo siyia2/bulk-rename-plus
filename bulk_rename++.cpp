@@ -206,24 +206,24 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
     }
-    
-    bool depth_limit_reached_printed = false; // Flag to track if the depth limit reached message is printed
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     // Get the maximum number of threads supported by the system
     unsigned int max_threads = std::thread::hardware_concurrency();
-		if (max_threads == 0) {
-			max_threads = 1; // If hardware concurrency is not available, default to 1 thread
-		}
+    if (max_threads == 0) {
+        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
+    }
 
     std::vector<std::thread> threads; // Vector to store threads
 
     // Determine the number of threads to create (minimum of max_threads and paths.size())
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
 
+    std::string depth_limit_reached_path; // Store the path where depth limit is reached
+
     for (unsigned int i = 0; i < num_threads; ++i) {
-        threads.emplace_back([&paths, i, &case_input, verbose_enabled, depth, &files_count, &depth_limit_reached_printed]() {
+        threads.emplace_back([&paths, i, &case_input, verbose_enabled, depth, &files_count, &depth_limit_reached_path]() {
             // Each thread handles a subset of paths based on its index i
             // Example: process paths[i], paths[i + num_threads], paths[i + 2*num_threads], ...
             std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
@@ -233,9 +233,8 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                 auto [current_path, current_depth] = directories.front();
                 directories.pop();
 
-                if (current_depth >= depth && !depth_limit_reached_printed) {
-                    std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << current_path << "\033[0m" << std::endl;
-                    depth_limit_reached_printed = true; // Set the flag to true after printing the message
+                if (current_depth >= depth && depth_limit_reached_path.empty()) {
+                    depth_limit_reached_path = current_path; // Store the path where depth limit is reached
                     continue; // Skip processing this directory
                 }
 
@@ -272,10 +271,16 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
+    // Print depth limit reached message if it's not empty
+    if (!depth_limit_reached_path.empty()) {
+        std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << depth_limit_reached_path << "\033[0m" << std::endl;
+    }
+
     std::cout << "\n\033[1mRenamed \033[4mextensions\033[0m\033[1m to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
+
 
 // Rename file&directory stuff
 
