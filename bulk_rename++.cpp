@@ -829,22 +829,47 @@ int main(int argc, char *argv[]) {
     }
 
     std::string confirmation;
-    if (rename_parents) {
-        std::cout << "\033[0m\033[1mThe following path(s), along with their \033[4mLowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
-        for (const auto& path : paths) {
-            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
-        }
-    } else if (rename_extensions) {
-        std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
-        for (const auto& path : paths) {
-            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
-        }
-    } else {
-        std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
-        for (const auto& path : paths) {
-            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
-        }
+if (rename_parents) {
+    std::cout << "\033[0m\033[1mThe following path(s), along with their \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m";
+    if (depth != -1) {
+        std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
     }
+    if (!transform_dirs) {
+        std::cout << "\033[0m\033[1m (excluding directories)";
+    }
+    if (!transform_files) {
+        std::cout << "\033[0m\033[1m (excluding files)";
+    }
+    std::cout << ":\033[1m\n\n";
+    for (const auto& path : paths) {
+        std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+    }
+} else if (rename_extensions) {
+    std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m";
+    if (depth != -1) {
+        std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
+    }
+    std::cout << ":\033[1m\n\n";
+    for (const auto& path : paths) {
+        std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+    }
+} else {
+    std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m";
+    if (depth != -1) {
+        std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
+    }
+    if (!transform_dirs && rename_parents) {
+        std::cout << "\033[0m\033[1m (excluding both files and directories)";
+    } else if (!transform_dirs) {
+        std::cout << "\033[0m\033[1m (excluding directories)";
+    } else if (!transform_files) {
+        std::cout << "\033[0m\033[1m (excluding files)";
+    }
+    std::cout << ":\033[1m\n\n";
+    for (const auto& path : paths) {
+        std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+    }
+}
     std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
     std::getline(std::cin, confirmation);
     if (verbose_enabled && confirmation == "y"){
