@@ -521,7 +521,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             fs::rename(directory_path, new_path);
 
             if (verbose_enabled && !renaming_message_printed) {
-                print_verbose_enabled("\033[0m\033[94mRenamed\033[0m directory " + directory_path.string() + " to " + new_path.string());
+                print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + directory_path.string() + " to " + new_path.string());
                 renaming_message_printed = true; // Set the flag to true after printing the message
             }
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
@@ -533,10 +533,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
     } else {
         if (verbose_enabled && !transform_dirs && transform_files) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (skipped by -fi)");
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (skipped by -fi)");
             }
          else if (verbose_enabled) {
-			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m directory " + directory_path.string() + " (name unchanged)");
+			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
 		}
 			
     }
@@ -676,7 +676,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
-    std::cout << "\n\033[1mRenamed to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
+    std::cout << "\n\033[0m\033[1mRenamed to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
               << dirs_count << " dir(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
