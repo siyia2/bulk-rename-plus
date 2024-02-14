@@ -47,7 +47,7 @@ for more help and usage examples:
 
 bulk_rename++ -h or bulk_rename++ --help.
 ##### Tips:
-For improving the performance and compatibility of windows apps in a case sensitive linux file system with wine, use `lower` case mode exclusively.
+To improve the performance and compatibility of windows apps in a case sensitive linux file system with wine, use `lower` case mode exclusively.
 
 ### Ways to install:
 
