@@ -426,7 +426,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
         return;
     }
-    
+
     if (transform_dirs) {
         // Apply case transformation using regex patterns
         std::smatch match;
@@ -541,6 +541,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             
     }
 
+    // Container to hold threads
+    std::vector<std::thread> threads;
+
     // Continue recursion if depth limit not reached
     if (depth != 0) {
         // Decrement depth only if depth limit is positive
@@ -572,11 +575,16 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     // Push subdirectories onto the queue with incremented depth
                     directories.push({entry.path(), current_depth + 1});
                 } else {
-                    // Process files in the main thread
-                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
+                    // Process files concurrently using threads
+                    threads.emplace_back(std::thread(rename_file, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count)));
                 }
             }
         }
+    }
+
+    // Join all threads to wait for their completion
+    for (auto& thread : threads) {
+        thread.join();
     }
 }
 
