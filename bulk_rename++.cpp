@@ -579,7 +579,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     }
                     continue; // Skip processing this directory
                 }
-
+                
+                // Check if we are processing the parent directory and the flag is on
+    if (current_depth == 0 && rename_immediate_parent) {
+        // Check if the parent directory exists before attempting to rename it
+        if (!fs::exists(current_path)) {
+            continue; // Skip processing if the parent directory does not exist
+        }
+}
                 // Iterate over subdirectories and files
                 for (const auto& entry : fs::directory_iterator(current_path)) {
                     if (entry.is_directory()) {
