@@ -553,22 +553,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
 
         if (rename_immediate_parent) {
-    int thread_count = 1; // Track the number of spawned threads
-    for (const auto& entry : fs::directory_iterator(new_path)) {
-        if (entry.is_directory()) {
-            if (thread_count < max_threads) {
-                // Start a new thread for each subdirectory, limited to two threads
-                std::thread(rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth).detach();
-                ++thread_count;
-            } else {
-                // Process directories in the main thread if the thread count limit is reached
-                rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+            // Process subdirectories without spawning threads
+            for (const auto& entry : fs::directory_iterator(new_path)) {
+                if (entry.is_directory()) {
+                    rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+                } else {
+                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
+                }
             }
-        } else {
-            // Process files in the main thread
-            rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
-        }
-    }
         } else {
             std::vector<std::thread> threads;
             for (const auto& entry : fs::directory_iterator(new_path)) {
@@ -589,16 +581,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             // Join all threads
             for (auto& thread : threads) {
                 thread.join();
-                
             }
-            
         }
 
         static bool depth_limit_reached_printed = false; // Declare a static boolean flag
 
         if (verbose_enabled && depth == 0 && !depth_limit_reached_printed) {
             depth_limit_reached_printed = true;
-            usleep(1000000);
             print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
         }
     }
@@ -686,7 +675,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
-    std::cout << "\n\033[0m\033[1mRenamed to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
+    std::cout << "\n\033[1mRenamed to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
               << dirs_count << " dir(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
@@ -835,17 +824,17 @@ int main(int argc, char *argv[]) {
 
     std::string confirmation;
     if (rename_parents) {
-        std::cout << "\033[1mThe following path(s), along with their \033[4mLowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[0m\033[1mThe following path(s), along with their \033[4mLowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
     } else if (rename_extensions) {
-        std::cout << "\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
     } else {
-        std::cout << "\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
+        std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m:\033[1m\n\n";
         for (const auto& path : paths) {
             std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
         }
