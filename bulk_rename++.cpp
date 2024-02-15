@@ -89,6 +89,35 @@ std::string append_date_sequence(const std::string& new_name) {
     }
 }
 
+std::string remove_date_sequence(const std::string& filename) {
+    size_t dot_position = filename.find_last_of('.');
+    size_t underscore_position = filename.find_last_of('_');
+    
+    if (underscore_position != std::string::npos) {
+        // Check if there's a dot after the underscore
+        if (dot_position != std::string::npos && dot_position > underscore_position) {
+            std::string date_sequence = filename.substr(underscore_position + 1, dot_position - underscore_position - 1);
+            // Check if the substring between underscore and dot is a valid date sequence
+            if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
+                // Valid date sequence found, remove it
+                return filename.substr(0, underscore_position) + filename.substr(dot_position);
+            }
+        } else {
+            // No dot found after underscore, consider the substring from underscore to the end as potential date sequence
+            std::string date_sequence = filename.substr(underscore_position + 1);
+            // Check if the substring after underscore is a valid date sequence
+            if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
+                // Valid date sequence found, remove it
+                return filename.substr(0, underscore_position);
+            }
+        }
+    }
+    
+    // No valid date sequence found, return original filename
+    return filename;
+}
+
+
 std::string swag_transform(const std::string& input) {
     std::string transformed;
     bool capitalize = true; // Start by capitalizing
@@ -503,6 +532,10 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 				new_name = swag_transform(new_name);
 				
 			} 
+			else if (transformation == "rdate") {
+				new_name = remove_date_sequence(new_name);
+				
+			} 
 			}
 
 		}
@@ -627,6 +660,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 // Do nothing for directories
                 new_dirname = dirname;
             } else if (transformation == "date") {
+				new_dirname = dirname;
+			}
+			else if (transformation == "rdate") {
 				new_dirname = dirname;
 			}
 			else if (transformation == "swag") {
