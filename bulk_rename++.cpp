@@ -1011,6 +1011,10 @@ if (rename_parents) {
         int files_count = 0; // Declare files_count here
         rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
     }
+		else {
+			rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth);
+		}
+			
 
     std::cout << "\n\033[1mPress enter to exit...\033[0m";
     std::cin.get();
