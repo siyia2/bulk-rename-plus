@@ -20,10 +20,49 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
+std::string sandwich(const std::string& input) {
+    // Find the position of the last dot (.)
+    auto dotPos = input.find_last_of('.');
+    
+    std::string transformed;
+    
+    if (dotPos == std::string::npos) {
+        // No extension found, transform the entire string
+        transformed += std::toupper(input.front()); // Capitalize first letter
+        
+        // Copy the middle part unchanged
+        std::transform(input.begin() + 1, input.end() - 1, std::back_inserter(transformed),
+                       [](char c) { return c; });
+        
+        transformed += std::toupper(input.back()); // Capitalize last letter
+    } else {
+        // Extension found, transform only the part before the extension
+        transformed += std::toupper(input.front()); // Capitalize first letter
+        
+        // Copy the middle part unchanged
+        std::transform(input.begin() + 1, input.begin() + dotPos, std::back_inserter(transformed),
+                       [](char c) { return c; });
+        
+        transformed += std::toupper(input[dotPos]); // Capitalize last letter of main part
+        
+        // Append the extension unchanged
+        std::transform(input.begin() + dotPos, input.end(), std::back_inserter(transformed),
+                       [](char c) { return c; });
+    }
+    
+    return transformed;
+}
+
+
 std::string append_numbered_prefix(const fs::path& parent_path, const std::string& new_name) {
     // Retrieve the counter for the current directory from the map
     static std::unordered_map<fs::path, int> counter_map;
     int& counter = counter_map[parent_path];
+
+    // Check if new_name already starts with a number
+    if (!new_name.empty() && std::isdigit(new_name[0])) {
+        return new_name; // If already numbered, return new_name unchanged
+    }
 
     // Increment the counter for the current directory
     int current_counter = counter++;
@@ -35,6 +74,7 @@ std::string append_numbered_prefix(const fs::path& parent_path, const std::strin
     // Append the counter and underscore to the new name
     return oss.str() + "_" + new_name;
 }
+
 
 std::string remove_numbered_prefix(const std::string& new_name) {
     // Find the position of the first non-digit character
@@ -50,6 +90,7 @@ std::string remove_numbered_prefix(const std::string& new_name) {
     }
     return new_name; // Return the original name if no number found
 }
+
 
 std::string append_date_sequence(const std::string& new_name) {
     // Check if the filename already contains a date sequence
@@ -88,6 +129,7 @@ std::string append_date_sequence(const std::string& new_name) {
         return new_name + "_" + date_sequence;
     }
 }
+
 
 std::string remove_date_sequence(const std::string& filename) {
     size_t dot_position = filename.find_last_of('.');
@@ -299,6 +341,8 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         new_extension.clear(); // Clearing extension removes it
     } else if (case_input == "swag") {
         new_extension = swag_transform(extension);
+    } else if (case_input == "sandwich") {
+        new_extension = sandwich(extension);
     }
 
     if (extension != new_extension) {
@@ -439,7 +483,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path new_path;
 
     // Static regex pattern for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag|sandwich)");
     std::smatch match;
 
     // If the item is a symbolic link, skip it
@@ -517,21 +561,20 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             } else if (transformation == "sequence") {
                 // Check if the filename is already numbered
                 new_name = append_numbered_prefix(parent_path, new_name);
-              
             } else if (transformation == "rsequence") {
                 new_name = remove_numbered_prefix(new_name);
             } else if (transformation == "date") {
 				new_name = append_date_sequence(new_name);
-			
 			} 
 			else if (transformation == "swag") {
-				new_name = swag_transform(new_name);
-				
+				new_name = swag_transform(new_name);	
 			} 
 			else if (transformation == "rdate") {
-				new_name = remove_date_sequence(new_name);
-				
-			} 
+				new_name = remove_date_sequence(new_name);	
+			}
+			else if (transformation == "sandwich") {
+				new_name = sandwich(new_name);	
+			}  
 			}
 
 		}
@@ -567,7 +610,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed=false;
 
     // Pre-compile transformation pattern
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sandwich)");
 
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
@@ -632,10 +675,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname = to_camel_case(new_dirname);
             } else if (transformation == "rcamel") {
                 new_dirname = from_camel_case(new_dirname);
-            } else if (transformation == "sequence" || transformation == "date" || transformation == "rsequence" || transformation == "rdate") {
-                // Do nothing for these transformations
             } else if (transformation == "swag") {
                 new_dirname = swag_transform(new_dirname);
+            }
+            else if (transformation == "sandwich") {
+                new_dirname = sandwich(new_dirname);
             }
         }
     }
@@ -929,9 +973,9 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "sandwich", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
     } else { // Valid modes for -c
-        valid_modes = {"lower", "upper", "reverse", "title","swag", "rbak", "bak", "noext"};
+        valid_modes = {"lower", "upper", "reverse", "title", "swag", "sandwich", "rbak", "bak", "noext"};
     }
 
     if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
@@ -948,7 +992,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::system("clear");
-    if (case_input == "rnumeric" || case_input == "rspecial" || case_input == "rbra" || case_input == "roperand" || case_input == "bak" || case_input == "bak") {
+    if (case_input == "rnumeric" || case_input == "rspecial" || case_input == "rbra" || case_input == "roperand" || case_input == "noext") {
         std::cout << "\033[1;93m!!! WARNING SELECTED OPERATION IRREVERSIBLE !!!\033[0m\n\n";
     }
 
