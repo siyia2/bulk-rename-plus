@@ -58,20 +58,20 @@ std::string remove_numbered_prefix(const std::string& new_name) {
 }
 
 
-std::string append_date_sequence(const std::string& new_name) {
-    // Check if the filename already contains a date sequence
+std::string append_date_sequencial(const std::string& new_name) {
+    // Check if the filename already contains a date sequencial
     size_t dot_position = new_name.find_last_of('.');
     size_t underscore_position = new_name.find_last_of('_');
     if (dot_position != std::string::npos && underscore_position != std::string::npos && dot_position > underscore_position) {
-        std::string date_sequence = new_name.substr(underscore_position + 1, dot_position - underscore_position - 1);
-        if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
-            // Filename already contains a valid date sequence, no need to append
+        std::string date_sequencial = new_name.substr(underscore_position + 1, dot_position - underscore_position - 1);
+        if (date_sequencial.size() == 8 && std::all_of(date_sequencial.begin(), date_sequencial.end(), ::isdigit)) {
+            // Filename already contains a valid date sequencial, no need to append
             return new_name;
         }
     } else if (underscore_position != std::string::npos) {
-        std::string date_sequence = new_name.substr(underscore_position + 1);
-        if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
-            // Filename already contains a valid date sequence, no need to append
+        std::string date_sequencial = new_name.substr(underscore_position + 1);
+        if (date_sequencial.size() == 8 && std::all_of(date_sequencial.begin(), date_sequencial.end(), ::isdigit)) {
+            // Filename already contains a valid date sequencial, no need to append
             return new_name;
         }
     }
@@ -84,44 +84,44 @@ std::string append_date_sequence(const std::string& new_name) {
     // Format date as YYYYMMDD
     std::ostringstream oss;
     oss << std::put_time(local_tm, "%Y%m%d");
-    std::string date_sequence = oss.str();
+    std::string date_sequencial = oss.str();
 
     // Find the position of the last dot in the filename
     if (dot_position != std::string::npos) {
-        // Insert date sequence before the last dot
-        return new_name.substr(0, dot_position) + "_" + date_sequence + new_name.substr(dot_position);
+        // Insert date sequencial before the last dot
+        return new_name.substr(0, dot_position) + "_" + date_sequencial + new_name.substr(dot_position);
     } else {
-        // If no dot found, append date sequence at the end
-        return new_name + "_" + date_sequence;
+        // If no dot found, append date sequencial at the end
+        return new_name + "_" + date_sequencial;
     }
 }
 
 
-std::string remove_date_sequence(const std::string& filename) {
+std::string remove_date_sequencial(const std::string& filename) {
     size_t dot_position = filename.find_last_of('.');
     size_t underscore_position = filename.find_last_of('_');
     
     if (underscore_position != std::string::npos) {
         // Check if there's a dot after the underscore
         if (dot_position != std::string::npos && dot_position > underscore_position) {
-            std::string date_sequence = filename.substr(underscore_position + 1, dot_position - underscore_position - 1);
-            // Check if the substring between underscore and dot is a valid date sequence
-            if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
-                // Valid date sequence found, remove it
+            std::string date_sequencial = filename.substr(underscore_position + 1, dot_position - underscore_position - 1);
+            // Check if the substring between underscore and dot is a valid date sequencial
+            if (date_sequencial.size() == 8 && std::all_of(date_sequencial.begin(), date_sequencial.end(), ::isdigit)) {
+                // Valid date sequencial found, remove it
                 return filename.substr(0, underscore_position) + filename.substr(dot_position);
             }
         } else {
-            // No dot found after underscore, consider the substring from underscore to the end as potential date sequence
-            std::string date_sequence = filename.substr(underscore_position + 1);
-            // Check if the substring after underscore is a valid date sequence
-            if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
-                // Valid date sequence found, remove it
+            // No dot found after underscore, consider the substring from underscore to the end as potential date sequencial
+            std::string date_sequencial = filename.substr(underscore_position + 1);
+            // Check if the substring after underscore is a valid date sequencial
+            if (date_sequencial.size() == 8 && std::all_of(date_sequencial.begin(), date_sequencial.end(), ::isdigit)) {
+                // Valid date sequencial found, remove it
                 return filename.substr(0, underscore_position);
             }
         }
     }
     
-    // No valid date sequence found, return original filename
+    // No valid date sequencial found, return original filename
     return filename;
 }
 
@@ -265,8 +265,8 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
           << "  noext      Remove extensions (e.g., Test.txt => Test)\n"
 		  << "Numbering:\n"
-		  << "  sequence   Apply sequential numbering to files only (e.g., Test => 001_Test)\n"
-          << "  rsequence  Remove sequential numbering of files (e.g., 001_Test => Test)\n"
+		  << "  sequencial   Apply sequential numbering to files only (e.g., Test => 001_Test)\n"
+          << "  rsequencial  Remove sequential numbering of files (e.g., 001_Test => Test)\n"
 		  << "  date       Apply current date to files only (e.g., Test => Test_20240215)\n"
 		  << "  rdate      Remove date from files (e.g., Test_20240215 => Test)\n"
 		  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
@@ -472,7 +472,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path new_path;
 
     // Static regex pattern for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequencial|rsequencial|date|rdate|swag)");
     std::smatch match;
 
     // If the item is a symbolic link, skip it
@@ -547,19 +547,19 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 new_name = to_camel_case(new_name);
             } else if (transformation == "rcamel") {
                 new_name = from_camel_case(new_name);
-            } else if (transformation == "sequence") {
+            } else if (transformation == "sequencial") {
                 // Check if the filename is already numbered
                 new_name = append_numbered_prefix(parent_path, new_name);
-            } else if (transformation == "rsequence") {
+            } else if (transformation == "rsequencial") {
                 new_name = remove_numbered_prefix(new_name);
             } else if (transformation == "date") {
-				new_name = append_date_sequence(new_name);
+				new_name = append_date_sequencial(new_name);
 			} 
 			else if (transformation == "swag") {
 				new_name = swag_transform(new_name);	
 			} 
 			else if (transformation == "rdate") {
-				new_name = remove_date_sequence(new_name);	
+				new_name = remove_date_sequencial(new_name);	
 			}
 		}
 
@@ -951,7 +951,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequencial", "rsequencial"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swag", "rbak", "bak", "noext"};
     }
