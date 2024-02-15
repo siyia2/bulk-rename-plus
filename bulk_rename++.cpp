@@ -47,14 +47,17 @@ std::string remove_numbered_prefix(const std::string& new_name) {
     size_t pos = new_name.find_first_not_of("0123456789");
 
     // Check if the filename is already numbered and contains an underscore after numbering
-    if (pos != std::string::npos && pos > 0 && new_name[pos] == '_') {
+    if (pos != std::string::npos && pos > 0 && new_name[pos] == '_' && new_name[pos - 1] != '_') {
         // Remove the number and the first underscore
         return new_name.substr(pos + 1);
-    } else if (pos != std::string::npos && pos > 0) {
-        // Remove only the number
-        return new_name.substr(pos);
+    } else if (pos == 0) {
+        // Remove only the number if it's at the beginning
+        size_t underscore_pos = new_name.find('_');
+        if (underscore_pos != std::string::npos && underscore_pos > 0) {
+            return new_name.substr(underscore_pos + 1);
+        }
     }
-    return new_name; // Return the original name if no number found
+    return new_name; // Return the original name if no number found or if number is not followed by an underscore
 }
 
 
