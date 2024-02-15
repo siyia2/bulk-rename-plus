@@ -152,7 +152,6 @@ for (size_t i = 0; i < input.length(); ++i) {
         }
     } else {
         transformed += c; // Keep characters after the folder delimiter unchanged
-         // Reset flag for next folder name
     }
 }
 
