@@ -37,11 +37,14 @@ Options:
 #### Numbering CASE Modes:
 - sequence   Apply sequential numbering to files only (e.g., Test => 001_Test)
 - rsequence  Remove sequential numbering of files (e.g., 001_Test => Test)
+- date       Apply current date to files only (e.g., Test => Test_20240215)\n"
+-	rdate      Remove date from files (e.g., Test_20240215 => Test)\n"
 - rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)
 #### Custom CASE Modes:
 - rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)
 - roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
 - rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
+- swap       Swap upper-lower case for names including extensions (e.g., Test.txt => TeSt.TxT)\n"
 
 for more help and usage examples:
 
