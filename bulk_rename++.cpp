@@ -147,55 +147,6 @@ std::string swag_transform(const std::string& input) {
 }
 
 
-std::string sandwich(const std::string& filename) {
-    if (filename.empty()) {
-        return filename; // Return empty string if input is empty
-    }
-
-    std::string result;
-    result.reserve(filename.size()); // Reserve memory for efficiency
-
-    size_t extensionIndex = filename.find_last_of('.');
-    std::string nameWithoutExtension;
-    if (extensionIndex != std::string::npos) {
-        nameWithoutExtension = filename.substr(0, extensionIndex);
-    } else {
-        nameWithoutExtension = filename;
-    }
-
-    // Check if the input is a folder name (ends with '/')
-    bool isFolder = !nameWithoutExtension.empty() && nameWithoutExtension.back() == '/';
-
-    // Convert first character to upper case if it's a regular letter and not already uppercase
-    if (!nameWithoutExtension.empty() && std::isalpha(nameWithoutExtension.front()) && !std::isupper(nameWithoutExtension.front())) {
-        result += std::toupper(nameWithoutExtension.front());
-    } else {
-        result += nameWithoutExtension.front(); // Add as is if not a regular letter or already uppercase
-    }
-
-    // Convert middle characters to lower case
-    for (size_t i = 1; i < nameWithoutExtension.size() - (isFolder ? 1 : 0); ++i) {
-        result += std::tolower(nameWithoutExtension[i]);
-    }
-
-    // Convert last character to upper case if it's a regular letter and not already uppercase
-    if (!nameWithoutExtension.empty() && std::isalpha(nameWithoutExtension.back()) && !std::isupper(nameWithoutExtension.back())) {
-        result.back() = std::toupper(nameWithoutExtension.back());
-    } else {
-        result.back() = nameWithoutExtension.back(); // Add as is if not a regular letter or already uppercase
-    }
-
-    // Append the extension if it exists
-    if (extensionIndex != std::string::npos) {
-        result += filename.substr(extensionIndex);
-    }
-
-    return result;
-}
-
-
-
-
 std::string to_camel_case(const std::string& input) {
     std::string result;
     bool capitalizeNext = false;
@@ -491,7 +442,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path new_path;
 
     // Static regex pattern for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag|sandwich)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
     std::smatch match;
 
     // If the item is a symbolic link, skip it
@@ -580,9 +531,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 			else if (transformation == "rdate") {
 				new_name = remove_date_sequence(new_name);	
 			}
-			else if (transformation == "sandwich") {
-				new_name = sandwich(new_name);	
-			}
 		}
 
 	}
@@ -618,7 +566,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed=false;
 
     // Pre-compile transformation pattern
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sandwich)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swag)");
 
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
@@ -686,9 +634,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else if (transformation == "swag") {
                 new_dirname = swag_transform(new_dirname);
             }
-            else if (transformation == "sandwich") {
-				new_dirname = sandwich(new_dirname);	
-			}
             
         }
     }
@@ -975,9 +920,9 @@ int main(int argc, char *argv[]) {
 
     // Check for valid case modes
     std::vector<std::string> valid_modes;
-    if (cp_flag || c_flag) { // Valid modes for -cp and -c
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence","sandwich"};
-    } else { // Valid modes for -ce
+    if (cp_flag || c_flag) { // Valid modes for -cp and -ce
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
+    } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swag", "rbak", "bak", "noext"};
     }
 
