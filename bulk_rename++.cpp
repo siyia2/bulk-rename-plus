@@ -174,6 +174,10 @@ std::string to_camel_case(const std::string& input) {
         } else if (c == ' ') {
             hasSpace = true;
         }
+        if (c == '.') {
+            // Stop processing after encountering a period
+            break;
+        }
     }
 
     // If there are no spaces and at least one uppercase letter, return input string as it is
@@ -185,18 +189,22 @@ std::string to_camel_case(const std::string& input) {
     result.reserve(input.size()); // Reserve memory for the result string
 
     bool capitalizeNext = false;
+    bool afterDot = false; // Track if we have encountered a period ('.')
     for (char c : input) {
         if (c == '.') {
-            // Stop processing after encountering a period
-            break;
+            afterDot = true;
         }
-        if (std::isalpha(c)) {
-            result += capitalizeNext ? std::toupper(c) : std::tolower(c);
-            capitalizeNext = false;
-        } else if (c == ' ') {
-            capitalizeNext = true;
+        if (afterDot) {
+            result += c; // Preserve characters after the first period
         } else {
-            result += c;
+            if (std::isalpha(c)) {
+                result += capitalizeNext ? std::toupper(c) : std::tolower(c);
+                capitalizeNext = false;
+            } else if (c == ' ') {
+                capitalizeNext = true;
+            } else {
+                result += c;
+            }
         }
     }
 
