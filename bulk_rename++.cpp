@@ -405,11 +405,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
-    // Print depth limit reached message if it's not empty
-    if (!depth_limit_reached_path.empty()) {
-        std::cout << "\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " << depth_limit_reached_path << "\033[0m" << std::endl;
-    }
-
     std::cout << "\n\033[1mRenamed \033[4mfile extensions\033[0m\033[1m to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: for \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
@@ -713,14 +708,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             for (auto& thread : threads) {
                 thread.join();
             }
-        }
+        
 
-        static bool depth_limit_reached_printed = false; // Declare a static boolean flag
-
-        if (verbose_enabled && depth == 0 && !depth_limit_reached_printed) {
-            depth_limit_reached_printed = true;
-            usleep(1000000);
-            print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
         }
     }
 }
