@@ -182,13 +182,6 @@ std::string from_camel_case(const std::string& input) {
 }
 
 
-
-void print_message(const std::string& message) {
-        std::lock_guard<std::mutex> lock(cout_mutex);
-        std::cout << message << std::endl;
-}
-
-
 void print_error(const std::string& error) {
     std::lock_guard<std::mutex> lock(cout_mutex);
     std::cerr << error << std::endl;
