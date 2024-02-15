@@ -128,32 +128,34 @@ std::string remove_date_sequence(const std::string& filename) {
 
 std::string swag_transform(const std::string& input) {
     std::string transformed;
-    bool capitalize = true; // Start by capitalizing
+    bool capitalize = false; // Start by capitalizing
     bool inFolderName = true; // Start within folder name
     size_t folderDelimiter = input.find_last_of("/\\"); // Find the last folder delimiter
 
-    for (size_t i = 0; i < input.length(); ++i) {
-        char c = input[i];
-        if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
-            if (inFolderName) {
-                transformed += std::toupper(c); // Capitalize first character in folder name
-                inFolderName = false; // Exit folder name after first character
-            } else {
-                if (std::isalpha(c)) {
-                    if (capitalize) {
-                        transformed += std::toupper(c);
-                    } else {
-                        transformed += std::tolower(c);
-                    }
-                    capitalize = !capitalize; // Toggle between upper and lower case
-                } else {
-                    transformed += c; // Keep non-alphabetic characters unchanged
-                }
-            }
+for (size_t i = 0; i < input.length(); ++i) {
+    char c = input[i];
+    if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
+        if (inFolderName) {
+            transformed += std::toupper(c); // Capitalize first character in folder name
+            inFolderName = false; // Exit folder name after first character
         } else {
-            transformed += c; // Keep characters after the folder delimiter unchanged
+            if (std::isalpha(c)) {
+                if (capitalize) {
+                    transformed += std::toupper(c);
+                } else {
+                    transformed += std::tolower(c);
+                }
+                capitalize = !capitalize; // Toggle between upper and lower case
+            } else {
+                transformed += c; // Keep non-alphabetic characters unchanged
+            }
         }
+    } else {
+        transformed += c; // Keep characters after the folder delimiter unchanged
+         // Reset flag for next folder name
     }
+}
+
     
     return transformed;
 }
