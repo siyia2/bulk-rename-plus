@@ -164,41 +164,18 @@ for (size_t i = 0; i < input.length(); ++i) {
 
 
 std::string to_camel_case(const std::string& input) {
-    // Check if the input string is already in camel case
-    bool foundUpperCase = false;
-    bool foundLowerCase = false;
-    for (char c : input) {
-        if (std::isupper(c)) {
-            foundUpperCase = true;
-        } else if (std::islower(c)) {
-            foundLowerCase = true;
-        }
-
-        if (foundUpperCase && foundLowerCase) {
-            // If both upper and lower case letters found, it's already camel case
-            return input;
-        }
-    }
-
-    // If input is not in camel case, perform the conversion
     std::string result;
+    result.reserve(input.size()); // Reserve memory for the result string
+
     bool capitalizeNext = false;
     for (char c : input) {
         if (std::isalpha(c)) {
             result += capitalizeNext ? std::toupper(c) : std::tolower(c);
             capitalizeNext = false;
-        } else if (std::isspace(c)) {
+        } else if (c == ' ' || c == '.') {
             capitalizeNext = true;
-        } else if (c == '.') {
-            // If the character is a period, add it to the result
-            // as it's part of the file extension
-            result += c;
-            capitalizeNext = false; // Prevent the next character from being capitalized
         } else {
-            // If the character is neither alphabetic nor a space,
-            // add it to the result without any modification
             result += c;
-            capitalizeNext = false;
         }
     }
 
