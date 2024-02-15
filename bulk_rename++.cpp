@@ -227,8 +227,8 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
 // Extension stuff
 
 void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count) {
-    static const std::regex lower_case("([a-zA-Z]+)");
-    static const std::regex upper_case("([a-zA-Z]+)");
+    static const std::regex lower_case("([a-z]+)");
+    static const std::regex upper_case("([A-Z]+)");
     static const std::regex reverse_case("([a-zA-Z])");
     static const std::regex title_case("([a-zA-Z])([a-zA-Z.]*)");
 
@@ -238,36 +238,41 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         }
         return;
     }
-    
+
     std::string extension = item_path.extension().string();
-    std::string new_extension; 
+    std::string new_extension = extension;
 
     if (case_input == "lower") {
-        std::transform(extension.begin(), extension.end(), std::back_inserter(new_extension), ::tolower);
+        std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
     } else if (case_input == "upper") {
-        std::transform(extension.begin(), extension.end(), std::back_inserter(new_extension), ::toupper);
+        std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
     } else if (case_input == "reverse") {
-        std::transform(extension.begin(), extension.end(), std::back_inserter(new_extension), [](char c) {
+        std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
     } else if (case_input == "title") {
-        std::smatch match;
-        if (std::regex_search(extension, match, title_case)) {
-            std::string rest_of_extension = match[2].str();
-            std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
-            char first_letter = std::toupper(match[1].str()[0]);
-            new_extension = "." + std::string(1, first_letter) + rest_of_extension;
-        }
-    } else if (case_input == "bak") {
-        new_extension = ".bak";
+        std::string temp_extension = extension;
+std::smatch match;
+if (std::regex_search(temp_extension, match, title_case)) {
+    std::string rest_of_extension = match[2].str();
+    std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
+    new_extension = "." + std::string(1, std::toupper(match[1].str()[0])) + rest_of_extension;
+}
+        
+   } else if (case_input == "bak") {
+    if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
+        new_extension = extension + ".bak";
+    } else {
+        new_extension = extension; // Keep the extension unchanged
+    }
+	
     } else if (case_input == "rbak") {
         if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
             new_extension = extension.substr(0, extension.length() - 4);
         }
     } else if (case_input == "noext") {
-        new_extension = ""; // Setting new_extension to empty string effectively removes the extension
-    }
-    else if (case_input == "swag") {
+        new_extension.clear(); // Clearing extension removes it
+    } else if (case_input == "swag") {
         new_extension = swag_transform(extension);
     }
 
@@ -285,11 +290,13 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         }
     } else {
         if (verbose_enabled) {
+            std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
             if (extension.empty()) {
-                std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string() << " (no extension)" << std::endl;
+                std::cout << " (no extension)";
             } else {
-                std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string() << " (extension unchanged)" << std::endl;
+                std::cout << " (extension unchanged)";
             }
+            std::cout << std::endl;
         }
     }
 }
