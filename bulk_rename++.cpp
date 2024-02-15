@@ -284,12 +284,12 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         });
     } else if (case_input == "title") {
         std::string temp_extension = extension;
-std::smatch match;
-if (std::regex_search(temp_extension, match, title_case)) {
-    std::string rest_of_extension = match[2].str();
-    std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
-    new_extension = "." + std::string(1, std::toupper(match[1].str()[0])) + rest_of_extension;
-}
+		std::smatch match;
+	if (std::regex_search(temp_extension, match, title_case)) {
+		std::string rest_of_extension = match[2].str();
+		std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
+		new_extension = "." + std::string(1, std::toupper(match[1].str()[0])) + rest_of_extension;
+	}
         
    } else if (case_input == "bak") {
     if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
