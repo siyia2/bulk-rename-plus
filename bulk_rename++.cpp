@@ -221,6 +221,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  title      Convert names to Title Case (e.g., test => Test)\n"
           << "  upper      Convert names to UPPERCASE (e.g., Test => TEST)\n"
           << "  lower      Convert names to lowercase (e.g., Test => test)\n"
+          << "  swag       Alternate between upper and lower case in names (e.g., Test => TeSt)\n"
           << "  reverse    Reverse current case in names (e.g., Test => tEST)\n"
           << "Common Special:\n"
           << "  snake      Convert spaces to underscores in names (e.g., Te st => Te_st)\n"
@@ -236,6 +237,8 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
 		  << "Numbering:\n"
 		  << "  sequence   Apply sequential numbering to files only (e.g., Test => 001_Test)\n"
           << "  rsequence  Remove sequential numbering of files (e.g., 001_Test => Test)\n"
+		  << "  date       Apply current date to files only (e.g., Test => Test_20240215)\n"
+		  << "  rdate      Remove date from files (e.g., Test_20240215 => Test)\n"
 		  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
           << "Custom:\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
@@ -567,38 +570,35 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
-    std::string new_dirname; // Initialize with original name
-    bool renaming_message_printed = false;
+    std::string new_dirname = dirname; // Initialize with original name
+    bool renaming_message_printed=false;
 
-    // Static Regular expression patterns for transformations
+    // Pre-compile transformation pattern
     static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
 
+    // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)");
         }
         return;
     }
-	
+
     if (transform_dirs) {
-        // Apply case transformation using regex patterns
-            std::smatch match;
+        std::smatch match;
         if (std::regex_match(case_input, match, transformation_pattern)) {
-        const std::string& transformation = match[1].str();
+            const std::string& transformation = match[1].str();
             if (transformation == "lower") {
-                new_dirname = dirname;
                 std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
             } else if (transformation == "upper") {
-                new_dirname = dirname;
                 std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
             } else if (transformation == "reverse") {
-                new_dirname = dirname;
                 std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
                     return std::islower(c) ? std::toupper(c) : std::tolower(c);
                 });
             } else if (transformation == "title") {
                 bool first_letter = true;
-                new_dirname.reserve(dirname.size()); // Reserve space for efficiency
+                new_dirname.reserve(dirname.size());
                 for (char c : dirname) {
                     if (std::isalpha(c)) {
                         if (first_letter) {
@@ -612,70 +612,43 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     }
                 }
             } else if (transformation == "snake") {
-                std::replace(dirname.begin(), dirname.end(), ' ', '_');
-                new_dirname = dirname;
+                std::replace(new_dirname.begin(), new_dirname.end(), ' ', '_');
             } else if (transformation == "rsnake") {
-                std::replace(dirname.begin(), dirname.end(), '_', ' ');
-                new_dirname = dirname;
+                std::replace(new_dirname.begin(), new_dirname.end(), '_', ' ');
             } else if (transformation == "kebab") {
-                std::replace(dirname.begin(), dirname.end(), ' ', '-');
-                new_dirname = dirname;
+                std::replace(new_dirname.begin(), new_dirname.end(), ' ', '-');
             } else if (transformation == "rkebab") {
-                std::replace(dirname.begin(), dirname.end(), '-', ' ');
-                new_dirname = dirname;
+                std::replace(new_dirname.begin(), new_dirname.end(), '-', ' ');
             } else if (transformation == "rspecial") {
-                // Remove special characters from the directory name
-                new_dirname = dirname;
                 new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
+                    return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' ';
                 }), new_dirname.end());
             } else if (transformation == "rnumeric") {
-                // Remove numeric characters from the directory name
-                new_dirname = dirname;
                 new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                     return std::isdigit(c);
                 }), new_dirname.end());
             } else if (transformation == "rbra") {
-                // Remove [ ] { } from the name
-                new_dirname = dirname;
                 new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                     return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
                 }), new_dirname.end());
             } else if (transformation == "roperand") {
-                // Remove - + > < = * from the name
-                new_dirname = dirname;
                 new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                     return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                 }), new_dirname.end());
             } else if (transformation == "camel") {
-                new_dirname = dirname;
                 new_dirname = to_camel_case(new_dirname);
             } else if (transformation == "rcamel") {
-                new_dirname = dirname;
                 new_dirname = from_camel_case(new_dirname);
-            } else if (transformation == "sequence") {
-                // Do nothing for directories
-                new_dirname = dirname;
-            } else if (transformation == "rsequence") {
-                // Do nothing for directories
-                new_dirname = dirname;
-            } else if (transformation == "date") {
-				new_dirname = dirname;
-			}
-			else if (transformation == "rdate") {
-				new_dirname = dirname;
-			}
-			else if (transformation == "swag") {
-				new_dirname = dirname;
-				new_dirname = swag_transform(new_dirname);
-			}  
-	}
-    } else {
-        // If transform_dirs is false, keep the original directory name
-        new_dirname = dirname;
+            } else if (transformation == "sequence" || transformation == "date" || transformation == "rsequence" || transformation == "rdate") {
+                // Do nothing for these transformations
+            } else if (transformation == "swag") {
+                new_dirname = swag_transform(new_dirname);
+            }
+        }
     }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
+
 
     // Check if renaming is necessary
     if (directory_path != new_path) {
