@@ -129,22 +129,36 @@ std::string remove_date_sequence(const std::string& filename) {
 std::string swag_transform(const std::string& input) {
     std::string transformed;
     bool capitalize = true; // Start by capitalizing
-    
-    for (char c : input) {
-        if (std::isalpha(c)) {
-            if (capitalize) {
-                transformed += std::toupper(c);
+    bool inFolderName = true; // Start within folder name
+    size_t folderDelimiter = input.find_last_of("/\\"); // Find the last folder delimiter
+
+    for (size_t i = 0; i < input.length(); ++i) {
+        char c = input[i];
+        if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
+            if (inFolderName) {
+                transformed += std::toupper(c); // Capitalize first character in folder name
+                inFolderName = false; // Exit folder name after first character
             } else {
-                transformed += std::tolower(c);
+                if (std::isalpha(c)) {
+                    if (capitalize) {
+                        transformed += std::toupper(c);
+                    } else {
+                        transformed += std::tolower(c);
+                    }
+                    capitalize = !capitalize; // Toggle between upper and lower case
+                } else {
+                    transformed += c; // Keep non-alphabetic characters unchanged
+                }
             }
-            capitalize = !capitalize; // Toggle between upper and lower case
         } else {
-            transformed += c; // Keep non-alphabetic characters unchanged
+            transformed += c; // Keep characters after the folder delimiter unchanged
         }
     }
     
     return transformed;
 }
+
+
 
 
 std::string to_camel_case(const std::string& input) {
