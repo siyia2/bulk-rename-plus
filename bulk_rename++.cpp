@@ -546,7 +546,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 			
     }
     
-    if (depth <= skip_depth) {
+    if (depth < skip_depth) {
         // If so, simply return without processing
         return;
     }
@@ -701,7 +701,7 @@ int main(int argc, char *argv[]) {
     bool rename_extensions = false;
     bool verbose_enabled = false;
     int depth = -1;
-    int skip_depth=1;
+    int skip_depth=-1;
     bool case_specified = false;
     bool transform_dirs = true;
     bool transform_files = true;
@@ -726,16 +726,19 @@ int main(int argc, char *argv[]) {
             transform_files = false;
             fo_flag = true;
         } else if (arg == "-d" && i + 1 < argc) {
-            // Check if the depth value is empty or not a number
-            if (argv[i + 1] == nullptr || std::string(argv[i + 1]).empty() || !isdigit(argv[i + 1][0])) {
-                print_error("\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n");
-                return 1;
-            }
-            depth = std::atoi(argv[++i]);
-            if (depth < -1) {
-                print_error("\033[1;91mError: Depth value if set must be -1 or greater.\033[0m\n");
-                return 1;
-            }
+    std::string depth_arg = argv[++i];
+    std::stringstream ss(depth_arg);
+    int start_depth, end_depth;
+    char dash;
+    // Parse the depth range
+    ss >> start_depth >> dash >> end_depth;
+    if (!ss || ss.peek() != EOF || dash != '-' || start_depth < 0 || end_depth < start_depth) {
+        print_error("\033[1;91mError: Invalid depth range format - " + depth_arg + "\033[0m\n");
+        return 1;
+    }
+    depth = end_depth;
+    skip_depth = start_depth; // Set skip_depth to the level after the end of the range
+
         } else if (arg == "-v" || arg == "--verbose") {
             verbose_enabled = true;
         } else if (arg == "-h" || arg == "--help") {
