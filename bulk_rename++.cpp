@@ -159,35 +159,27 @@ for (size_t i = 0; i < input.length(); ++i) {
     return transformed;
 }
 
-std::string to_lowerCamel_case(const std::string& input) {
-    std::string result;
-    bool capitalizeNext = false;
-    bool firstLetter = true;
 
+std::string to_camel_case(const std::string& input) {
+    // Check if the input string is already in camel case
+    bool foundUpperCase = false;
+    bool foundLowerCase = false;
     for (char c : input) {
-        if (std::isalpha(c)) {
-            if (firstLetter) {
-                result += std::tolower(c);
-                firstLetter = false;
-            } else {
-                result += capitalizeNext ? std::toupper(c) : std::tolower(c);
-            }
-            capitalizeNext = false;
-        } else if (std::isspace(c) || c == '.') {
-            capitalizeNext = true;
-        } else {
-            result += c;
+        if (std::isupper(c)) {
+            foundUpperCase = true;
+        } else if (std::islower(c)) {
+            foundLowerCase = true;
+        }
+
+        if (foundUpperCase && foundLowerCase) {
+            // If both upper and lower case letters found, it's already camel case
+            return input;
         }
     }
 
-    return result;
-}
-
-
-std::string to_upperCamel_case(const std::string& input) {
+    // If input is not in camel case, perform the conversion
     std::string result;
     bool capitalizeNext = false;
-
     for (char c : input) {
         if (std::isalpha(c)) {
             result += capitalizeNext ? std::toupper(c) : std::tolower(c);
@@ -210,27 +202,9 @@ std::string to_upperCamel_case(const std::string& input) {
     return result;
 }
 
-std::string from_lowerCamel_case(const std::string& input) {
-    std::string result;
-    bool previousWasLower = false;
 
-    for (char c : input) {
-        if (std::isupper(c)) {
-            if (previousWasLower) {
-                result += ' ';
-            }
-            result += std::tolower(c);
-            previousWasLower = false;
-        } else {
-            result += c;
-            previousWasLower = std::islower(c);
-        }
-    }
 
-    return result;
-}
-
-std::string from_upperCamel_case(const std::string& input) {
+std::string from_camel_case(const std::string& input) {
     std::string result;
     
     for (char c : input) {
@@ -284,8 +258,8 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rsnake     Convert underscores to spaces in names (e.g., Te_st => Te st)\n"
           << "  kebab      Convert spaces to hyphens in names (e.g., Te st => Te-st)\n"
           << "  rkebab     Convert hyphens to spaces in names (e.g., Te-st => Te st)\n"
-          << "  upperCamel      Convert names to upperCamelCase (e.g., Te st => TeSt)\n"
-          << "  rupperCamel     Reverse upperCamelCase in names (e.g., TeSt => Te st)\n"
+          << "  camel      Convert names to camelCase (e.g., Te st => TeSt)\n"
+          << "  rcamel     Reverse camelCase in names (e.g., TeSt => Te st)\n"
           << "Extension exclusive:\n"
           << "  bak        Add .bak at file extension names (e.g., Test.txt => Test.txt.bak)\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
@@ -498,7 +472,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path new_path;
 
     // Static regex pattern for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|ucamel|rucamel|lcamel|rlcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
     std::smatch match;
 
     // If the item is a symbolic link, skip it
@@ -569,14 +543,10 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
                     return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                 }), new_name.end());
-            } else if (transformation == "ucamel") {
-                new_name = to_upperCamel_case(new_name);
-            } else if (transformation == "rucamel") {
-                new_name = from_upperCamel_case(new_name);
-            }   else if (transformation == "lcamel") {
-				new_name =	to_lowerCamel_case(new_name);
-            } else if (transformation == "rlcamel") {
-				new_name =	from_lowerCamel_case(new_name);
+            } else if (transformation == "camel") {
+                new_name = to_camel_case(new_name);
+            } else if (transformation == "rcamel") {
+                new_name = from_camel_case(new_name);
             } else if (transformation == "sequence") {
                 // Check if the filename is already numbered
                 new_name = append_numbered_prefix(parent_path, new_name);
@@ -626,7 +596,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed=false;
 
     // Pre-compile transformation pattern
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|ucamel|rucamel|lcamel|rlcamel|kebab|rkebab|swag)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swag)");
 
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
@@ -687,14 +657,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                     return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                 }), new_dirname.end());
-            } else if (transformation == "ucamel") {
-                new_dirname = to_upperCamel_case(new_dirname);
-            } else if (transformation == "rucamel") {
-                new_dirname = from_upperCamel_case(new_dirname);
-            }    else if (transformation == "lcamel") {
-                new_dirname = to_lowerCamel_case(new_dirname);
-            } else if (transformation == "rlcamel") {
-                new_dirname = from_lowerCamel_case(new_dirname);
+            } else if (transformation == "camel") {
+                new_dirname = to_camel_case(new_dirname);
+            } else if (transformation == "rcamel") {
+                new_dirname = from_camel_case(new_dirname);
             } else if (transformation == "swag") {
                 new_dirname = swag_transform(new_dirname);
             }
@@ -985,7 +951,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "ucamel", "rucamel", "lcamel", "rlcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swag", "rbak", "bak", "noext"};
     }
