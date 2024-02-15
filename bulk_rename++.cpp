@@ -164,15 +164,36 @@ for (size_t i = 0; i < input.length(); ++i) {
 
 
 std::string to_camel_case(const std::string& input) {
+    bool hasUpperCase = false;
+    bool hasSpace = false;
+
+    // Check if there are any spaces and at least one uppercase letter
+    for (char c : input) {
+        if (std::isupper(c)) {
+            hasUpperCase = true;
+        } else if (c == ' ') {
+            hasSpace = true;
+        }
+    }
+
+    // If there are no spaces and at least one uppercase letter, return input string as it is
+    if (!hasSpace && hasUpperCase) {
+        return input;
+    }
+
     std::string result;
     result.reserve(input.size()); // Reserve memory for the result string
 
     bool capitalizeNext = false;
     for (char c : input) {
+        if (c == '.') {
+            // Stop processing after encountering a period
+            break;
+        }
         if (std::isalpha(c)) {
             result += capitalizeNext ? std::toupper(c) : std::tolower(c);
             capitalizeNext = false;
-        } else if (c == ' ' || c == '.') {
+        } else if (c == ' ') {
             capitalizeNext = true;
         } else {
             result += c;
