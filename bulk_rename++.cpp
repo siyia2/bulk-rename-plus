@@ -128,6 +128,36 @@ std::string remove_date_seq(const std::string& filename) {
     return filename;
 }
 
+std::string sequencialFolders(const std::string& input) {
+    std::string transformed;
+    bool inFolderName = true; // Start within folder name
+    int folderCount = 1; // Start folder numbering from 1
+    int subfolderCount = 1; // Start subfolder numbering from 1
+
+    for (size_t i = 0; i < input.length(); ++i) {
+        char c = input[i];
+        if (inFolderName && (i == 0 || input[i - 1] == '/' || input[i - 1] == '\\')) { // Check if it's the start of a folder name
+            std::stringstream folderNumber;
+            folderNumber << std::setw(3) << std::setfill('0') << folderCount; // Format folder number with leading zeros
+            transformed += folderNumber.str() + "_"; // Append formatted folder number followed by underscore
+            ++folderCount; // Increment folder count for next folder
+            inFolderName = false; // Exit folder name
+        } else if (c == '/' || c == '\\') { // Check if it's a folder delimiter
+            if (!inFolderName) {
+                std::stringstream subfolderNumber;
+                subfolderNumber << std::setw(3) << std::setfill('0') << subfolderCount; // Format subfolder number with leading zeros
+                transformed += subfolderNumber.str() + "_"; // Append formatted subfolder number followed by underscore
+                ++subfolderCount; // Increment subfolder count for next subfolder
+            }
+            transformed += c; // Keep folder delimiter unchanged
+            inFolderName = true; // Enter folder name
+        } else {
+            transformed += c; // Keep non-folder name characters unchanged
+        }
+    }
+
+    return transformed;
+}
 
 std::string swap_transform(const std::string& input) {
     std::string transformed;
@@ -607,7 +637,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool sequential=false;
 
     // Pre-compile transformation pattern
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swap)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swap|seq)");
 
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
@@ -674,6 +704,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname = from_camel_case(new_dirname);
             } else if (transformation == "swap") {
                 new_dirname = swap_transform(new_dirname);
+            }
+            else if (transformation == "seq") {
+                new_dirname = sequencialFolders(new_dirname);
             }
             
         }
