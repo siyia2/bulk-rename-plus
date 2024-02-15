@@ -603,6 +603,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with original name
     bool renaming_message_printed=false;
+    
+    bool sequential=false;
 
     // Pre-compile transformation pattern
     static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swap)");
@@ -717,7 +719,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             max_threads = 1; // If hardware concurrency is not available, default to 1 thread
         }
 
-        if (rename_parents) {
+        if (rename_parents || sequential) {
             // Process subdirectories without spawning threads
             for (const auto& entry : fs::directory_iterator(new_path)) {
                 if (entry.is_directory()) {
