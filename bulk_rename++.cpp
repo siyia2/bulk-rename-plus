@@ -130,28 +130,37 @@ std::string remove_date_seq(const std::string& filename) {
 
 std::string sequencialFolders(const std::string& input, int& subdirs_count) {
     std::string transformed;
-    bool inFolderName = true; // Start within folder name
+    int depth = 0; // Track the depth level
     int subfolderCount = subdirs_count + 1; // Start subfolder numbering from subdirs_count + 1
 
-    for (size_t i = 0; i < input.length(); ++i) {
+    std::regex folderNumberRegex(R"((\d{3})_)"); // Regular expression to match folder numbers
+
+    for (size_t i = 0; i < input.length();) {
         char c = input[i];
-        if (inFolderName && (i == 0 || input[i - 1] == '/' || input[i - 1] == '\\')) { // Check if it's the start of a folder name
-            std::stringstream folderNumber;
-            folderNumber << std::setw(3) << std::setfill('0') << subfolderCount; // Format folder number with leading zeros
-            transformed += folderNumber.str() + "_"; // Append formatted folder number followed by underscore
-            ++subfolderCount; // Increment folder count for next folder
-            inFolderName = false; // Exit folder name
-        } else if (c == '/' || c == '\\') { // Check if it's a folder delimiter
-            if (!inFolderName) {
-                std::stringstream subfolderNumber;
-                subfolderNumber << std::setw(3) << std::setfill('0') << subfolderCount; // Format subfolder number with leading zeros
-                transformed += subfolderNumber.str() + "_"; // Append formatted subfolder number followed by underscore
-                ++subfolderCount; // Increment subfolder count for next subfolder
+        if (i == 0 || input[i - 1] == '/' || input[i - 1] == '\\') { // Check if it's the start of a folder name
+            std::smatch match;
+            if (std::regex_search(input.begin() + i, input.end(), match, folderNumberRegex)) {
+                // If a folder number is found, extract it and use it
+                std::string folderNumberStr = match.str(1);
+                int folderNumber = std::stoi(folderNumberStr);
+                transformed += folderNumberStr + "_";
+                subfolderCount = folderNumber + 1;
+                i += match.position(0) + match.length(0);
+            } else {
+                // If no folder number is found, generate a new one
+                std::stringstream folderNumber;
+                folderNumber << std::setw(3) << std::setfill('0') << subfolderCount; // Format folder number with leading zeros
+                transformed += folderNumber.str() + "_"; // Append formatted folder number followed by underscore
+                ++subfolderCount; // Increment folder count for next folder
+                ++depth; // Increase depth level
+                ++i;
             }
-            transformed += c; // Keep folder delimiter unchanged
-            inFolderName = true; // Enter folder name
         } else {
-            transformed += c; // Keep non-folder name characters unchanged
+            transformed += c; // Keep characters unchanged
+            if (c == '/' || c == '\\') {
+                --depth; // Decrease depth level when encountering directory separator
+            }
+            ++i;
         }
     }
     
@@ -159,6 +168,8 @@ std::string sequencialFolders(const std::string& input, int& subdirs_count) {
 
     return transformed;
 }
+
+
 
 std::string swap_transform(const std::string& input) {
     std::string transformed;
@@ -635,7 +646,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string new_dirname = dirname; // Initialize with original name
     bool renaming_message_printed=false;
     
-    bool sequential=false;
+    bool sequential=true;
     
     // Pre-compile transformation pattern
     static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swap|seq)");
