@@ -545,11 +545,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 		}
 			
     }
-    
-    if (depth <= skip_depth) {
-        // If so, simply return without processing
-        return;
-    }
+		if (skip_depth > 0) {
+			if (depth <= skip_depth) {
+				// If so, process only initial depth
+				return;
+		}
+	}
 
     // Continue recursion if depth limit not reached
     if (depth != 0) {
@@ -605,7 +606,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
 
 
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false,bool transform_dirs = true, bool transform_files = true, int depth = -1, int skip_depth=1)  {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false,bool transform_dirs = true, bool transform_files = true, int depth = -1, int skip_depth=-1)  {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
@@ -701,7 +702,7 @@ int main(int argc, char *argv[]) {
     bool rename_extensions = false;
     bool verbose_enabled = false;
     int depth = -1;
-    int skip_depth=1;
+    int skip_depth=-1;
     bool case_specified = false;
     bool transform_dirs = true;
     bool transform_files = true;
@@ -726,16 +727,18 @@ int main(int argc, char *argv[]) {
             transform_files = false;
             fo_flag = true;
         } else if (arg == "-d" && i + 1 < argc) {
-            // Check if the depth value is empty or not a number
-            if (argv[i + 1] == nullptr || std::string(argv[i + 1]).empty() || !isdigit(argv[i + 1][0])) {
-                print_error("\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n");
-                return 1;
-            }
-            depth = std::atoi(argv[++i]);
-            if (depth < -1) {
-                print_error("\033[1;91mError: Depth value if set must be -1 or greater.\033[0m\n");
-                return 1;
-            }
+    std::string depth_arg = argv[++i];
+    std::stringstream ss(depth_arg);
+    int target_depth;
+    // Parse the target depth
+    ss >> target_depth;
+    if (!ss || ss.peek() != EOF || target_depth < 0) {
+        print_error("\033[1;91mError: Invalid depth value - " + depth_arg + "\033[0m\n");
+        return 1;
+    }
+    depth = target_depth;
+    skip_depth = target_depth - 1; // Set skip_depth to the level before the target depth
+
         } else if (arg == "-v" || arg == "--verbose") {
             verbose_enabled = true;
         } else if (arg == "-h" || arg == "--help") {
