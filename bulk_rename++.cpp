@@ -10,6 +10,7 @@
 #include <regex>
 #include <cctype>
 #include <queue>
+#include <unordered_map>
 
 namespace fs = std::filesystem;
 
@@ -390,14 +391,25 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 new_name = to_camel_case(new_name);
             } else if (transformation == "rcamel") {
                 new_name = from_camel_case(new_name);
-            } else if (transformation == "sequence") {
-                // Check if the filename is already numbered
-                if (!std::isdigit(new_name.front())) {
-                    static int counter = 1;
-                    std::ostringstream oss;
-                    oss << std::setw(3) << std::setfill('0') << counter++;
-                    new_name = oss.str() + "_" + new_name;
-                }
+} else if (transformation == "sequence") {
+    // Check if the filename is already numbered
+    if (!std::isdigit(new_name.front())) {
+        // Retrieve the counter for the current directory from the map
+        static std::unordered_map<fs::path, int> counter_map;
+        int& counter = counter_map[parent_path];
+        
+        // Increment the counter for the current directory
+        int current_counter = counter++;
+        
+        // Format the counter with leading zeros
+        std::ostringstream oss;
+        oss << std::setw(3) << std::setfill('0') << current_counter + 1;
+        
+        // Append the counter and underscore to the new name
+        new_name = oss.str() + "_" + new_name;
+    }
+
+
             } else if (transformation == "rsequence") {
                 // Find the position of the first non-digit character
                 size_t pos = new_name.find_first_not_of("0123456789");
