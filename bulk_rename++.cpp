@@ -602,7 +602,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with original name
-    bool renaming_message_printed=false;
+    bool renaming_message_printed = false;
 
     // Pre-compile transformation pattern
     static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swap)");
@@ -673,7 +673,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else if (transformation == "swap") {
                 new_dirname = swap_transform(new_dirname);
             }
-            
         }
     }
 
@@ -706,40 +705,41 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 			
     }
 
+    // Collect subdirectories first
+    std::vector<fs::path> subdirectories;
+    for (const auto& entry : fs::directory_iterator(new_path)) {
+        if (entry.is_directory()) {
+            subdirectories.push_back(entry.path());
+        } else {
+            rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
+        }
+    }
+
+    // Process subdirectories
+    for (const auto& subdirectory : subdirectories) {
+        rename_directory(subdirectory, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+    }
+
     // Continue recursion if depth limit not reached
     if (depth != 0) {
         // Decrement depth only if depth limit is positive
         if (depth > 0)
             --depth;
-        
+
         unsigned int max_threads = std::thread::hardware_concurrency();
         if (max_threads == 0) {
             max_threads = 1; // If hardware concurrency is not available, default to 1 thread
         }
 
-        if (rename_parents) {
-            // Process subdirectories without spawning threads
-            for (const auto& entry : fs::directory_iterator(new_path)) {
-                if (entry.is_directory()) {
-                    rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
-                } else {
-                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
-                }
-            }
-        } else {
+        if (!rename_parents) {
             std::vector<std::thread> threads;
-            for (const auto& entry : fs::directory_iterator(new_path)) {
-                if (entry.is_directory()) {
-                    if (threads.size() < max_threads) {
-                        // Start a new thread for each subdirectory
-                        threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
-                    } else {
-                        // Process directories in the main thread if max_threads is reached
-                        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
-                    }
+            for (const auto& entry : subdirectories) {
+                if (threads.size() < max_threads) {
+                    // Start a new thread for each subdirectory
+                    threads.emplace_back(rename_directory, entry, case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
                 } else {
-                    // Process files in the main thread
-                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
+                    // Process directories in the main thread if max_threads is reached
+                    rename_directory(entry, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
                 }
             }
 
@@ -747,11 +747,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             for (auto& thread : threads) {
                 thread.join();
             }
-        
-
         }
     }
 }
+
 
 
 
