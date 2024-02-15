@@ -33,7 +33,7 @@ Options:
 #### Extension exclusive CASE Modes:
 - `bak`        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)
 - `rbak`       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
-- `noext`      Remove extensions (e.g., Test.txt => Test)\n"
+- `noext`      Remove extensions (e.g., Test.txt => Test)
 #### Numbering CASE Modes:
 - `seq`  Apply sequential numbering to files only (e.g., Test => 001_Test)
 - `rseq` Remove sequential numbering from files (e.g., 001_Test => Test)
