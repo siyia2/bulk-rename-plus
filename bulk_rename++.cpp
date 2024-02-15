@@ -533,188 +533,125 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 }
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
-    std::string dirname = directory_path.filename().string();
-    std::string new_dirname; // Initialize with original name
-    bool renaming_message_printed = false;
-
-    // Static Regular expression patterns for transformations
     static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
 
-    if (fs::is_symlink(directory_path)) {
-        if (verbose_enabled) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)");
-        }
-        return;
-    }
-	
+    std::string dirname = directory_path.filename().string();
+    std::string new_dirname = dirname; // Initialize with original name
+
     if (transform_dirs) {
-        // Apply case transformation using regex patterns
-            std::smatch match;
+        std::smatch match;
         if (std::regex_match(case_input, match, transformation_pattern)) {
-        const std::string& transformation = match[1].str();
-            if (transformation == "lower") {
-                new_dirname = dirname;
-                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
-            } else if (transformation == "upper") {
-                new_dirname = dirname;
-                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
-            } else if (transformation == "reverse") {
-                new_dirname = dirname;
-                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
-                    return std::islower(c) ? std::toupper(c) : std::tolower(c);
-                });
-            } else if (transformation == "title") {
-                bool first_letter = true;
-                new_dirname.reserve(dirname.size()); // Reserve space for efficiency
-                for (char c : dirname) {
-                    if (std::isalpha(c)) {
-                        if (first_letter) {
-                            new_dirname.push_back(std::toupper(c));
-                            first_letter = false;
+            const std::string& transformation = match[1].str();
+            // Apply transformation if not already applied
+            if (transformation != "sequence" && transformation != "rsequence" && transformation != "date" && transformation != "swag") {
+                if (transformation == "lower") {
+                    std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
+                } else if (transformation == "upper") {
+                    std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
+                } else if (transformation == "reverse") {
+                    std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
+                        return std::islower(c) ? std::toupper(c) : std::tolower(c);
+                    });
+                } else if (transformation == "title") {
+                    bool first_letter = true;
+                    new_dirname.reserve(dirname.size()); // Reserve space for efficiency
+                    for (char c : dirname) {
+                        if (std::isalpha(c)) {
+                            if (first_letter) {
+                                new_dirname.push_back(std::toupper(c));
+                                first_letter = false;
+                            } else {
+                                new_dirname.push_back(std::tolower(c));
+                            }
                         } else {
-                            new_dirname.push_back(std::tolower(c));
+                            new_dirname.push_back(c);
                         }
-                    } else {
-                        new_dirname.push_back(c);
                     }
+                } else if (transformation == "snake") {
+                    std::replace(new_dirname.begin(), new_dirname.end(), ' ', '_');
+                } else if (transformation == "rsnake") {
+                    std::replace(new_dirname.begin(), new_dirname.end(), '_', ' ');
+                } else if (transformation == "kebab") {
+                    std::replace(new_dirname.begin(), new_dirname.end(), ' ', '-');
+                } else if (transformation == "rkebab") {
+                    std::replace(new_dirname.begin(), new_dirname.end(), '-', ' ');
+                } else if (transformation == "rspecial") {
+                    new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                        return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
+                    }), new_dirname.end());
+                } else if (transformation == "rnumeric") {
+                    new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                        return std::isdigit(c);
+                    }), new_dirname.end());
+                } else if (transformation == "rbra") {
+                    new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                        return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
+                    }), new_dirname.end());
+                } else if (transformation == "roperand") {
+                    new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                        return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
+                    }), new_dirname.end());
+                } else if (transformation == "camel") {
+                    new_dirname = to_camel_case(new_dirname);
+                } else if (transformation == "rcamel") {
+                    new_dirname = from_camel_case(new_dirname);
+                } else if (transformation == "swag") {
+                    new_dirname = swag_transform(new_dirname);
                 }
-            } else if (transformation == "snake") {
-                std::replace(dirname.begin(), dirname.end(), ' ', '_');
-                new_dirname = dirname;
-            } else if (transformation == "rsnake") {
-                std::replace(dirname.begin(), dirname.end(), '_', ' ');
-                new_dirname = dirname;
-            } else if (transformation == "kebab") {
-                std::replace(dirname.begin(), dirname.end(), ' ', '-');
-                new_dirname = dirname;
-            } else if (transformation == "rkebab") {
-                std::replace(dirname.begin(), dirname.end(), '-', ' ');
-                new_dirname = dirname;
-            } else if (transformation == "rspecial") {
-                // Remove special characters from the directory name
-                new_dirname = dirname;
-                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
-                }), new_dirname.end());
-            } else if (transformation == "rnumeric") {
-                // Remove numeric characters from the directory name
-                new_dirname = dirname;
-                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return std::isdigit(c);
-                }), new_dirname.end());
-            } else if (transformation == "rbra") {
-                // Remove [ ] { } from the name
-                new_dirname = dirname;
-                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
-                }), new_dirname.end());
-            } else if (transformation == "roperand") {
-                // Remove - + > < = * from the name
-                new_dirname = dirname;
-                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
-                }), new_dirname.end());
-            } else if (transformation == "camel") {
-                new_dirname = dirname;
-                new_dirname = to_camel_case(new_dirname);
-            } else if (transformation == "rcamel") {
-                new_dirname = dirname;
-                new_dirname = from_camel_case(new_dirname);
-            } else if (transformation == "sequence") {
-                // Do nothing for directories
-                new_dirname = dirname;
-            } else if (transformation == "rsequence") {
-                // Do nothing for directories
-                new_dirname = dirname;
-            } else if (transformation == "date") {
-				new_dirname = dirname;
-			}
-			else if (transformation == "swag") {
-				new_dirname = dirname;
-				new_dirname = swag_transform(new_dirname);
-			}  
-	}
-    } else {
-        // If transform_dirs is false, keep the original directory name
-        new_dirname = dirname;
+            }
+        }
     }
 
-    fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
+    fs::path new_path = directory_path.parent_path() / std::move(new_dirname);
 
-    // Check if renaming is necessary
     if (directory_path != new_path) {
         try {
             fs::rename(directory_path, new_path);
 
-            if (verbose_enabled && !renaming_message_printed) {
+            if (verbose_enabled) {
                 print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + directory_path.string() + " to " + new_path.string());
-                renaming_message_printed = true; // Set the flag to true after printing the message
             }
+
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-            return; // Stop processing if renaming failed
+            return;
         }
-
-    } else {
-        if (verbose_enabled && !transform_files) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
-            }
-         else if (verbose_enabled && transform_dirs && transform_files) {
-			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
-		}
-			
+    } else if (verbose_enabled && (!transform_files || transform_dirs)) {
+        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
     }
 
-    // Continue recursion if depth limit not reached
     if (depth != 0) {
-        // Decrement depth only if depth limit is positive
         if (depth > 0)
             --depth;
-        
+
         unsigned int max_threads = std::thread::hardware_concurrency();
         if (max_threads == 0) {
-            max_threads = 1; // If hardware concurrency is not available, default to 1 thread
+            max_threads = 1;
         }
 
-        if (rename_parents) {
-            // Process subdirectories without spawning threads
-            for (const auto& entry : fs::directory_iterator(new_path)) {
-                if (entry.is_directory()) {
+        std::vector<std::thread> threads;
+        for (const auto& entry : fs::directory_iterator(new_path)) {
+            if (entry.is_directory()) {
+                if (threads.size() < max_threads) {
+                    threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
+                } else {
                     rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
-                } else {
-                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
                 }
-            }
-        } else {
-            std::vector<std::thread> threads;
-            for (const auto& entry : fs::directory_iterator(new_path)) {
-                if (entry.is_directory()) {
-                    if (threads.size() < max_threads) {
-                        // Start a new thread for each subdirectory
-                        threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
-                    } else {
-                        // Process directories in the main thread if max_threads is reached
-                        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
-                    }
-                } else {
-                    // Process files in the main thread
-                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
-                }
-            }
-
-            // Join all threads
-            for (auto& thread : threads) {
-                thread.join();
+            } else {
+                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
             }
         }
 
-        static bool depth_limit_reached_printed = false; // Declare a static boolean flag
+        for (auto& thread : threads) {
+            thread.join();
+        }
 
+        static bool depth_limit_reached_printed = false;
         if (verbose_enabled && depth == 0 && !depth_limit_reached_printed) {
             depth_limit_reached_printed = true;
-            usleep(1000000);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             print_verbose_enabled("\n\033[0m\e[1;38;5;214mDepth limit reached at the level of:\033[1;94m " + directory_path.string());
         }
     }
