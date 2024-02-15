@@ -20,6 +20,94 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
+std::string append_numbered_prefix(const fs::path& parent_path, const std::string& new_name) {
+    // Retrieve the counter for the current directory from the map
+    static std::unordered_map<fs::path, int> counter_map;
+    int& counter = counter_map[parent_path];
+
+    // Increment the counter for the current directory
+    int current_counter = counter++;
+
+    // Format the counter with leading zeros
+    std::ostringstream oss;
+    oss << std::setw(3) << std::setfill('0') << current_counter + 1;
+
+    // Append the counter and underscore to the new name
+    return oss.str() + "_" + new_name;
+}
+
+std::string remove_numbered_prefix(const std::string& new_name) {
+    // Find the position of the first non-digit character
+    size_t pos = new_name.find_first_not_of("0123456789");
+
+    // Check if the filename is already numbered and contains an underscore after numbering
+    if (pos != std::string::npos && pos > 0 && new_name[pos] == '_') {
+        // Remove the number and the first underscore
+        return new_name.substr(pos + 1);
+    } else if (pos != std::string::npos && pos > 0) {
+        // Remove only the number
+        return new_name.substr(pos);
+    }
+    return new_name; // Return the original name if no number found
+}
+
+std::string append_date_sequence(const std::string& new_name) {
+    // Check if the filename already contains a date sequence
+    size_t dot_position = new_name.find_last_of('.');
+    size_t underscore_position = new_name.find_last_of('_');
+    if (dot_position != std::string::npos && underscore_position != std::string::npos && dot_position > underscore_position) {
+        std::string date_sequence = new_name.substr(underscore_position + 1, dot_position - underscore_position - 1);
+        if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
+            // Filename already contains a valid date sequence, no need to append
+            return new_name;
+        }
+    } else if (underscore_position != std::string::npos) {
+        std::string date_sequence = new_name.substr(underscore_position + 1);
+        if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
+            // Filename already contains a valid date sequence, no need to append
+            return new_name;
+        }
+    }
+    
+    // Get current date and time
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm* local_tm = std::localtime(&time_t_now);
+
+    // Format date as YYYYMMDD
+    std::ostringstream oss;
+    oss << std::put_time(local_tm, "%Y%m%d");
+    std::string date_sequence = oss.str();
+
+    // Find the position of the last dot in the filename
+    if (dot_position != std::string::npos) {
+        // Insert date sequence before the last dot
+        return new_name.substr(0, dot_position) + "_" + date_sequence + new_name.substr(dot_position);
+    } else {
+        // If no dot found, append date sequence at the end
+        return new_name + "_" + date_sequence;
+    }
+}
+
+
+std::string remove_last_date_sequence(const std::string& new_name) {
+    // Find the position of the last underscore followed by a sequence of digits
+    size_t underscore_position = new_name.find_last_of('_');
+    if (underscore_position != std::string::npos) {
+        std::string date_sequence = new_name.substr(underscore_position + 1);
+        if (date_sequence.size() == 8 && std::all_of(date_sequence.begin(), date_sequence.end(), ::isdigit)) {
+            // Check if the underscore is preceded by a dot
+            size_t dot_position = new_name.find_last_of('.');
+            if (dot_position != std::string::npos && dot_position > underscore_position) {
+                // Remove the date sequence and the underscore
+                return new_name.substr(0, underscore_position) + new_name.substr(dot_position);
+            }
+        }
+    }
+    return new_name; // If no valid date sequence found, return the original name
+}
+
+
 std::string to_camel_case(const std::string& input) {
     std::string result;
     bool capitalizeNext = false;
@@ -314,7 +402,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path new_path;
 
     // Static regex pattern for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate)");
     std::smatch match;
 
     // If the item is a symbolic link, skip it
@@ -332,8 +420,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     for (; iter != end; ++iter) {
         transformations.emplace_back((*iter)[1].str(), (*iter).position());
     }
-
-
 
     if (transform_files) {
         // Apply case transformation using regex patterns
@@ -391,42 +477,20 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 new_name = to_camel_case(new_name);
             } else if (transformation == "rcamel") {
                 new_name = from_camel_case(new_name);
-			} else if (transformation == "sequence") {
-				// Check if the filename is already numbered
-				if (!std::isdigit(new_name.front())) {
-					// Retrieve the counter for the current directory from the map
-					static std::unordered_map<fs::path, int> counter_map;
-					int& counter = counter_map[parent_path];
-        
-					// Increment the counter for the current directory
-					int current_counter = counter++;
-        
-					// Format the counter with leading zeros
-					std::ostringstream oss;
-					oss << std::setw(3) << std::setfill('0') << current_counter + 1;
-        
-					// Append the counter and underscore to the new name
-					new_name = oss.str() + "_" + new_name;
-				}
-
-
+            } else if (transformation == "sequence") {
+                // Check if the filename is already numbered
+                new_name = append_numbered_prefix(parent_path, new_name);
+              
             } else if (transformation == "rsequence") {
-                // Find the position of the first non-digit character
-                size_t pos = new_name.find_first_not_of("0123456789");
-                
-                // Check if the filename is already numbered and contains an underscore after numbering
-                if (pos != std::string::npos && pos > 0 && new_name[pos] == '_') {
-                    // Remove the number and the first underscore
-                    new_name.erase(0, pos + 1);
-                }
-                else if (pos != std::string::npos && pos > 0) {
-                    // Remove only the number
-                    new_name.erase(0, pos);
-                }
-            }
-        }
-    }
+                new_name = remove_numbered_prefix(new_name);
+            } else if (transformation == "date") {
+				new_name = append_date_sequence(new_name);
+			} else if (transformation == "rdate") {
+			remove_last_date_sequence(new_name);
+				}
+			}
 
+		}
     // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
         // Construct the new path within the same parent directory
@@ -459,7 +523,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed = false;
 
     // Static Regular expression patterns for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate)");
 
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
@@ -547,8 +611,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else if (transformation == "rsequence") {
                 // Do nothing for directories
                 new_dirname = dirname;
-            }
+            } else if (transformation == "date") {
+				new_dirname = dirname;
+			} else if (transformation == "rdate") {
+				new_dirname = dirname;
         }
+	}
     } else {
         // If transform_dirs is false, keep the original directory name
         new_dirname = dirname;
@@ -841,7 +909,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "rbak", "bak", "noext"};
     }
