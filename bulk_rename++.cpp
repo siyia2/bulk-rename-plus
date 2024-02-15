@@ -160,8 +160,6 @@ for (size_t i = 0; i < input.length(); ++i) {
 }
 
 
-
-
 std::string to_camel_case(const std::string& input) {
     std::string result;
     bool capitalizeNext = false;
@@ -237,7 +235,6 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  title      Convert names to Title Case (e.g., test => Test)\n"
           << "  upper      Convert names to UPPERCASE (e.g., Test => TEST)\n"
           << "  lower      Convert names to lowercase (e.g., Test => test)\n"
-          << "  swag       Alternate between upper and lower case in names (e.g., Test => TeSt)\n"
           << "  reverse    Reverse current case in names (e.g., Test => tEST)\n"
           << "Common Special:\n"
           << "  snake      Convert spaces to underscores in names (e.g., Te st => Te_st)\n"
@@ -260,6 +257,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
           << "  rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)\n"
+          << "  swag       Alternate between upper and lower case in names (e.g., Test.txt => TeSt.TxT)\n"
           << "\n"
           << "Examples:\n"
           << "  bulk_rename++ -c lower [path1] [path2]...\n"
