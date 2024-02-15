@@ -525,7 +525,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname; // Initialize with original name
     bool renaming_message_printed = false;
@@ -671,7 +671,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             max_threads = 1; // If hardware concurrency is not available, default to 1 thread
         }
 
-        if (rename_immediate_parent) {
+        if (rename_parents) {
             // Process subdirectories without spawning threads
             for (const auto& entry : fs::directory_iterator(new_path)) {
                 if (entry.is_directory()) {
@@ -714,7 +714,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
 
 
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_immediate_parent, bool verbose_enabled = false,bool transform_dirs = true, bool transform_files = true, int depth = -1)  {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled,bool transform_dirs, bool transform_files, int depth)  {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
@@ -742,13 +742,13 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
         if (fs::exists(current_path)) {
             if (fs::is_directory(current_path)) {
-                if (rename_immediate_parent) {
+                if (rename_parents) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
+                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
                 } else {
                     // Otherwise, rename the entire path
-                    threads.emplace_back(rename_directory, current_path, case_input, rename_immediate_parent, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
+                    threads.emplace_back(rename_directory, current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
@@ -767,13 +767,13 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
         if (fs::exists(current_path)) {
             if (fs::is_directory(current_path)) {
-                if (rename_immediate_parent) {
+                if (rename_parents) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_immediate_parent, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
+                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
                 } else {
                     // Otherwise, rename the entire path in the main thread
-                    rename_directory(current_path, case_input, rename_immediate_parent, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
+                    rename_directory(current_path, case_input, rename_parents, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
@@ -999,12 +999,10 @@ if (rename_parents) {
     }
 
     if (rename_parents) {
-        rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth); // Pass true for rename_immediate_parent
+        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth); // Pass true for rename_parents
     } else if (rename_extensions) {
         int files_count = 0; // Declare files_count here
         rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
-    } else {
-        rename_path(paths, case_input, false, verbose_enabled, transform_dirs, transform_files, depth); // Pass false for rename_immediate_parent
     }
 
     std::cout << "\n\033[1mPress enter to exit...\033[0m";
