@@ -22,7 +22,7 @@ Options:
 - `title`      Convert names to Title Case (e.g., test => Test)
 - `upper`      Convert names to UPPERCASE (e.g., Test => TEST)
 - `lower`      Convert names to lowercase (e.g., Test => test)
-- reverse`    Reverse current case in names (e.g., Test => tEST)
+- `reverse`    Reverse current case in names (e.g., Test => tEST)
 #### Common Special CASE Modes:
 - `snake`      Convert spaces to underscores in names (e.g., Te st => Te_st)
 - `rsnake`     Convert underscores to spaces in names (e.g., Te_st => Te st)
