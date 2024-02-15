@@ -19,32 +19,32 @@ Options:
 ### Current suported case modes: 
 
 #### Common Regular CASE Modes:
-- title      Convert names to Title Case (e.g., test => Test)
-- upper      Convert names to UPPERCASE (e.g., Test => TEST)
-- lower      Convert names to lowercase (e.g., Test => test)
-- reverse    Reverse current case in names (e.g., Test => tEST)
+- `title`      Convert names to Title Case (e.g., test => Test)
+- `upper`      Convert names to UPPERCASE (e.g., Test => TEST)
+- `lower`      Convert names to lowercase (e.g., Test => test)
+- reverse`    Reverse current case in names (e.g., Test => tEST)
 #### Common Special CASE Modes:
-- snake      Convert spaces to underscores in names (e.g., Te st => Te_st)
-- rsnake     Convert underscores to spaces in names (e.g., Te_st => Te st)
-- kebab      Convert spaces to hyphens in names (e.g., Te st => Te-st)
-- rkebab     Convert hyphens to spaces in names (e.g., Te-st => Te st)
-- camel      Convert names to camelCase (e.g., Te st => TeSt)
-- rcamel     Reverse camelCase in names (e.g., TeSt => Te st)
+- `snake`      Convert spaces to underscores in names (e.g., Te st => Te_st)
+- `rsnake`     Convert underscores to spaces in names (e.g., Te_st => Te st)
+- `kebab`      Convert spaces to hyphens in names (e.g., Te st => Te-st)
+- `rkebab`     Convert hyphens to spaces in names (e.g., Te-st => Te st)
+- `camel`      Convert names to camelCase (e.g., Te st => TeSt)
+- `rcamel`     Reverse camelCase in names (e.g., TeSt => Te st)
 #### Extension exclusive CASE Modes:
-- bak        Add .bak at file extension names (e.g., Test.txt => Test.txt.bak)
-- rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
-- noext      Remove extensions (e.g., Test.txt => Test)\n"
+- `bak`        Add .bak at file extension names (e.g., Test.txt => Test.txt.bak)
+- `rbak`       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
+- `noext`      Remove extensions (e.g., Test.txt => Test)\n"
 #### Numbering CASE Modes:
-- sequence   Apply sequential numbering to files only (e.g., Test => 001_Test)
-- rsequence  Remove sequential numbering of files (e.g., 001_Test => Test)
-- date       Apply current date to files only (e.g., Test => Test_20240215)\n"
--	rdate      Remove date from files (e.g., Test_20240215 => Test)\n"
-- rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)
+- `sequence`   Apply sequential numbering to files only (e.g., Test => 001_Test)
+- `rsequence`  Remove sequential numbering of files (e.g., 001_Test => Test)
+- `date`       Apply current date to files only (e.g., Test => Test_20240215)
+-	`rdate`      Remove date from files (e.g., Test_20240215 => Test)
+- `rnumeric`   Remove numeric characters from names (e.g., 1Te0st2 => Test)
 #### Custom CASE Modes:
-- rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)
-- roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
-- rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
-- swap       Swap upper-lower case for names including extensions (e.g., Test.txt => TeSt.TxT)\n"
+- `rbra`       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)
+- `roperand`   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
+- `rspecial`   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
+- `swap`       Swap upper-lower case for names including extensions (e.g., Test.txt => TeSt.TxT)
 
 for more help and usage examples:
 
