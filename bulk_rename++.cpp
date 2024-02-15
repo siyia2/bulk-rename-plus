@@ -129,7 +129,7 @@ std::string remove_date_sequencial(const std::string& filename) {
 }
 
 
-std::string swag_transform(const std::string& input) {
+std::string swap_transform(const std::string& input) {
     std::string transformed;
     bool capitalize = false; // Start by capitalizing
     bool inFolderName = true; // Start within folder name
@@ -277,7 +277,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
           << "  rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)\n"
-          << "  swag       Alternate between upper and lower case in names (e.g., Test.txt => TeSt.TxT)\n"
+          << "  swap       Swap upper-lower case for names including extensions (e.g., Test.txt => TeSt.TxT)\n"
           << "\n"
           << "Examples:\n"
           << "  bulk_rename++ -c lower [path1] [path2]...\n"
@@ -338,8 +338,8 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         }
     } else if (case_input == "noext") {
         new_extension.clear(); // Clearing extension removes it
-    } else if (case_input == "swag") {
-        new_extension = swag_transform(extension);
+    } else if (case_input == "swap") {
+        new_extension = swap_transform(extension);
     }
 
     if (extension != new_extension) {
@@ -475,7 +475,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path new_path;
 
     // Static regex pattern for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequencial|rsequencial|date|rdate|swag)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequencial|rsequencial|date|rdate|swap)");
     std::smatch match;
 
     // If the item is a symbolic link, skip it
@@ -558,8 +558,8 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             } else if (transformation == "date") {
 				new_name = append_date_sequencial(new_name);
 			} 
-			else if (transformation == "swag") {
-				new_name = swag_transform(new_name);	
+			else if (transformation == "swap") {
+				new_name = swap_transform(new_name);	
 			} 
 			else if (transformation == "rdate") {
 				new_name = remove_date_sequencial(new_name);	
@@ -599,7 +599,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed=false;
 
     // Pre-compile transformation pattern
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swag)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swap)");
 
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
@@ -664,8 +664,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname = to_camel_case(new_dirname);
             } else if (transformation == "rcamel") {
                 new_dirname = from_camel_case(new_dirname);
-            } else if (transformation == "swag") {
-                new_dirname = swag_transform(new_dirname);
+            } else if (transformation == "swap") {
+                new_dirname = swap_transform(new_dirname);
             }
             
         }
@@ -954,9 +954,9 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequencial", "rsequencial"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequencial", "rsequencial"};
     } else { // Valid modes for -c
-        valid_modes = {"lower", "upper", "reverse", "title", "swag", "rbak", "bak", "noext"};
+        valid_modes = {"lower", "upper", "reverse", "title", "swap", "rbak", "bak", "noext"};
     }
 
     if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
