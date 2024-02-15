@@ -20,40 +20,6 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
-std::string sandwich(const std::string& input) {
-    // Find the position of the last dot (.)
-    auto dotPos = input.find_last_of('.');
-    
-    std::string transformed;
-    
-    if (dotPos == std::string::npos) {
-        // No extension found, transform the entire string
-        transformed += std::toupper(input.front()); // Capitalize first letter
-        
-        // Copy the middle part unchanged
-        std::transform(input.begin() + 1, input.end() - 1, std::back_inserter(transformed),
-                       [](char c) { return c; });
-        
-        transformed += std::toupper(input.back()); // Capitalize last letter
-    } else {
-        // Extension found, transform only the part before the extension
-        transformed += std::toupper(input.front()); // Capitalize first letter
-        
-        // Copy the middle part unchanged
-        std::transform(input.begin() + 1, input.begin() + dotPos, std::back_inserter(transformed),
-                       [](char c) { return c; });
-        
-        transformed += std::toupper(input[dotPos]); // Capitalize last letter of main part
-        
-        // Append the extension unchanged
-        std::transform(input.begin() + dotPos, input.end(), std::back_inserter(transformed),
-                       [](char c) { return c; });
-    }
-    
-    return transformed;
-}
-
-
 std::string append_numbered_prefix(const fs::path& parent_path, const std::string& new_name) {
     // Retrieve the counter for the current directory from the map
     static std::unordered_map<fs::path, int> counter_map;
@@ -341,8 +307,6 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         new_extension.clear(); // Clearing extension removes it
     } else if (case_input == "swag") {
         new_extension = swag_transform(extension);
-    } else if (case_input == "sandwich") {
-        new_extension = sandwich(extension);
     }
 
     if (extension != new_extension) {
@@ -483,7 +447,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path new_path;
 
     // Static regex pattern for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag|sandwich)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sequence|rsequence|date|rdate|swag)");
     std::smatch match;
 
     // If the item is a symbolic link, skip it
@@ -572,12 +536,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 			else if (transformation == "rdate") {
 				new_name = remove_date_sequence(new_name);	
 			}
-			else if (transformation == "sandwich") {
-				new_name = sandwich(new_name);	
-			}  
-			}
-
 		}
+
+	}
     // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
         // Construct the new path within the same parent directory
@@ -610,7 +571,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     bool renaming_message_printed=false;
 
     // Pre-compile transformation pattern
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|sandwich)");
+    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab)");
 
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
@@ -678,9 +639,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else if (transformation == "swag") {
                 new_dirname = swag_transform(new_dirname);
             }
-            else if (transformation == "sandwich") {
-                new_dirname = sandwich(new_dirname);
-            }
+            
         }
     }
 
@@ -973,9 +932,9 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "sandwich", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swag","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
     } else { // Valid modes for -c
-        valid_modes = {"lower", "upper", "reverse", "title", "swag", "sandwich", "rbak", "bak", "noext"};
+        valid_modes = {"lower", "upper", "reverse", "title", "swag", "rbak", "bak", "noext"};
     }
 
     if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
