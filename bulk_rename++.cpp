@@ -576,6 +576,25 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 }
 
+void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
+    int counter = 1;
+    for (const auto& folder : fs::directory_iterator(base_directory)) {
+        if (folder.is_directory()) {
+            // Construct the new name with sequential numbering
+            fs::path new_name = base_directory / ("folder_" + std::to_string(counter));
+
+            // Rename the folder
+            try {
+                fs::rename(folder.path(), new_name);
+                std::cout << "Renamed folder: " << folder.path() << " to " << new_name << std::endl;
+                counter++;
+            } catch (const fs::filesystem_error& e) {
+                std::cerr << "Error renaming folder: " << e.what() << std::endl;
+            }
+        }
+    }
+}
+
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with original name
@@ -650,9 +669,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
-                    new_dirname = swap_transform(new_dirname);
+                    rename_folders_with_sequential_numbering(directory_path.parent_path());
                 }
-                break;
             }
         }
     }
