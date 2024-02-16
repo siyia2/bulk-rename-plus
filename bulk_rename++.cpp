@@ -297,7 +297,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
 
 // Extension stuff
 
-void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count) {
+void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled) {
     if (!fs::is_regular_file(item_path)) {
         if (verbose_enabled) {
             std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
@@ -345,7 +345,6 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             fs::rename(item_path, new_path);
             if (verbose_enabled) {
                 std::lock_guard<std::mutex> lock(files_count_mutex);
-                ++files_count;
                 std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
             }
         } catch (const fs::filesystem_error& e) {
@@ -414,11 +413,11 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                         if (fs::is_directory(entry)) {
                             directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                         } else if (fs::is_regular_file(entry)) {
-                            rename_extension(entry.path(), case_input, verbose_enabled, files_count);
+                            rename_extension(entry.path(), case_input, verbose_enabled);
                         }
                     }
                 } else if (fs::is_regular_file(current_fs_path)) {
-                    rename_extension(current_fs_path, case_input, verbose_enabled, files_count);
+                    rename_extension(current_fs_path, case_input, verbose_enabled);
                 } else {
                     print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
