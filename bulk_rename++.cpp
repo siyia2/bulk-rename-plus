@@ -581,8 +581,10 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
     int counter = 1; // Counter for immediate subdirectories
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory()) {
-            // Construct the new name with sequential numbering
-            fs::path new_name = base_directory / ("folder_" + std::to_string(counter));
+            // Construct the new name with sequential numbering and "001_folder" prefix
+            std::stringstream ss;
+            ss << std::setw(3) << std::setfill('0') << counter << "_folder"; // Use setw and setfill for leading zeros
+            fs::path new_name = base_directory / ss.str();
 
             // Check if the folder is already renamed to the new name
             if (folder.path() != new_name) {
