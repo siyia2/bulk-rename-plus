@@ -728,21 +728,22 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
             std::string folder_name = folder.path().filename().string();
 
             // Check if the folder name ends with the date suffix format "_YYYYMMDD"
-            bool has_date_suffix = true;
-            if (folder_name.length() < 9) // Minimum length required for "_YYYYMMDD"
-                has_date_suffix = false;
-            for (size_t i = folder_name.length() - 9; i < folder_name.length(); ++i) {
+            if (folder_name.size() < 9 || folder_name.substr(folder_name.size() - 9, 1) != "_")
+                continue;
+
+            bool is_date_suffix = true;
+            for (size_t i = folder_name.size() - 8; i < folder_name.size(); ++i) {
                 if (!std::isdigit(folder_name[i])) {
-                    has_date_suffix = false;
+                    is_date_suffix = false;
                     break;
                 }
             }
 
-            if (!has_date_suffix)
+            if (!is_date_suffix)
                 continue;
 
             // Remove the date suffix from the folder name
-            std::string new_folder_name = folder_name.substr(0, folder_name.length() - 9);
+            std::string new_folder_name = folder_name.substr(0, folder_name.size() - 9);
 
             // Check if the folder is already renamed to the new name
             fs::path new_path = folder.path().parent_path() / new_folder_name;
