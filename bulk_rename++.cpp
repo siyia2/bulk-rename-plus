@@ -10,7 +10,7 @@
 #include <cctype>
 #include <queue>
 #include <unordered_map>
- 
+
 namespace fs = std::filesystem;
 
 std::mutex cout_mutex;
