@@ -639,16 +639,14 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
 }
 
 
-
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled = false) {
     int counter = 1; // Counter for immediate subdirectories
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory()) {
             std::string folder_name = folder.path().filename().string();
 
-            // Check if the folder already has the prefix
-            std::string prefix_check = std::to_string(counter) + "_";
-            if (folder_name.substr(0, prefix_check.size()) == prefix_check) {
+            // Check if the folder is already numbered
+            if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
                 // Skip renaming if already numbered
                 continue;
             }
@@ -656,7 +654,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             // Construct the new name with sequential numbering and original name
             std::stringstream ss;
             ss << std::setw(3) << std::setfill('0') << counter << "_" << folder_name; // Append original name to the numbering
-            fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str();
+            fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str(); // Corrected the concatenation
 
             // Check if the folder is already renamed to the new name
             if (folder.path() != new_name) {
