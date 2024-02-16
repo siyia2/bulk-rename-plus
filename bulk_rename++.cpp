@@ -845,6 +845,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname = to_camel_case(new_dirname);
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
+                } else if (transformation == "swap") {
+                    new_dirname = swap_transform(new_dirname);
                 } else if (transformation == "nsequence") {
                     rename_folders_with_sequential_numbering(directory_path, dirs_count,verbose_enabled);
                 } else if (transformation == "rnsequence") {
@@ -855,6 +857,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 else if (transformation == "rdate") {
                     remove_date_suffix_from_folders(directory_path, dirs_count,verbose_enabled);
                 }
+                break;
             }
         }
     }
@@ -921,7 +924,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
                 }
             }
-            
+
             // Join all threads
             for (auto& thread : threads) {
                 thread.join();
