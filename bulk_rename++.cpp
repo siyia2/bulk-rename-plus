@@ -600,7 +600,9 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                 try {
                     fs::rename(folder.path(), new_name);
                 } catch (const fs::filesystem_error& e) {
-                    std::cerr << "Error renaming folder: " << e.what() << std::endl;
+					if (e.code() == std::errc::permission_denied) {
+					std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
+				}
                     continue; // Skip renaming if moving fails
                 }
 
