@@ -584,7 +584,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             // Construct the new name with sequential numbering and original name
             std::stringstream ss;
             ss << std::setw(3) << std::setfill('0') << counter << "_" << folder.path().filename().string(); // Append original name to the numbering
-            fs::path new_name = base_directory / (prefix + ss.str());
+            fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str(); // Corrected the concatenation
 
             // Check if the folder is already renamed to the new name
             if (folder.path() != new_name) {
@@ -600,7 +600,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             }
 
             // Recursively process subdirectories with updated prefix
-            rename_folders_with_sequential_numbering(new_name, prefix + ss.str() + "_");
+            rename_folders_with_sequential_numbering(new_name, prefix + ss.str());
             counter++; // Increment counter after each directory is processed
         }
     }
@@ -610,6 +610,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
     rename_folders_with_sequential_numbering(base_directory, "");
 }
+
 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
