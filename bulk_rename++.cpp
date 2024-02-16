@@ -273,8 +273,8 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
           << "  noext      Remove extensions (e.g., Test.txt => Test)\n"
 		  << "Numerical CASE Modes:\n"
-		  << "  nsequence  Apply sequential numbering to files only (e.g., Test => 001_Test)\n"
-          << "  rnsequence Remove sequential numbering from files (e.g., 001_Test => Test)\n"
+		  << "  nsequence  Apply sequential numbering (e.g., Test => 001_Test)\n"
+          << "  rnsequence Remove sequential numbering (e.g., 001_Test => Test)\n"
 		  << "  date       Apply current date to files only (e.g., Test => Test_20240215)\n"
 		  << "  rdate      Remove date from files (e.g., Test_20240215 => Test)\n"
 		  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
@@ -577,40 +577,42 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 }
 
 
-void remove_sequential_numbering_from_folders(const fs::path& base_directory) {
+void remove_sequential_numbering(const fs::path& base_directory, int& dirs_count) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory()) {
             std::string folder_name = folder.path().filename().string();
-            std::string new_folder_name;
 
-            // Check if the folder name starts with a numbering prefix
-            if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
-                // Find the position of the first underscore
-                size_t pos = folder_name.find('_');
+            // Check if the folder is numbered
+            size_t underscore_pos = folder_name.find('_');
+            if (underscore_pos != std::string::npos && std::isdigit(folder_name[0])) {
+                // Extract the original name without the numbering
+                std::string original_name = folder_name.substr(underscore_pos + 1);
 
-                // Extract the substring after the numbering prefix
-                new_folder_name = folder_name.substr(pos + 1);
-                
-                // Construct the new path
-                fs::path new_path = folder.path().parent_path() / new_folder_name;
+                // Construct the new name without numbering
+                fs::path new_name = base_directory / original_name;
 
-                // Rename the folder
-                try {
-                    fs::rename(folder.path(), new_path);
-                    std::cout << "Renamed folder: " << folder.path() << " to " << new_path << std::endl;
-                } catch (const fs::filesystem_error& e) {
-                    std::cerr << "Error renaming folder: " << e.what() << std::endl;
+                // Check if the folder is already renamed to the new name
+                if (folder.path() != new_name) {
+                    // Move the contents of the source directory to the destination directory
+                    try {
+                        fs::rename(folder.path(), new_name);
+                    } catch (const fs::filesystem_error& e) {
+                        if (e.code() == std::errc::permission_denied) {
+                            std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
+                        }
+                        continue; // Skip renaming if moving fails
+                    }
+
+                    std::cout << "Removed numbering from folder: " << folder.path() << " to " << new_name << std::endl;
+                    ++dirs_count; // Increment dirs_count after each successful rename
                 }
 
-                // Check if the new path exists before recursively processing it
-                if (fs::exists(new_path) && fs::is_directory(new_path)) {
-                    remove_sequential_numbering_from_folders(new_path);
-                }
+                // Recursively process subdirectories
+                remove_sequential_numbering(new_name, dirs_count);
             }
         }
     }
 }
-
 
 
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count) {
@@ -667,7 +669,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Static list of transformation commands
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial",
-        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap"
+        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap,"
+        "nsequence", "rnsequence"
     };
 
     // Early exit if directory is a symlink
@@ -734,6 +737,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
                     rename_folders_with_sequential_numbering(directory_path, dirs_count);
+                }
+                else if (transformation == "nsequence") {
+                    rename_folders_with_sequential_numbering(directory_path, dirs_count);
+                }
+                else if (transformation == "rnsequence") {
+                    remove_sequential_numbering(directory_path, dirs_count);
                 }
             }
         }
