@@ -642,7 +642,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     fs::rename(folder.path(), new_name);
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
+                        std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
                     }
                     continue; // Skip renaming if moving fails
                 }
@@ -705,7 +705,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                     fs::rename(folder.path(), new_path);
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
+                        std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
                     }
                     continue; // Skip renaming if moving fails
                 }
@@ -753,7 +753,7 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                     fs::rename(folder.path(), new_path);
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
+                        std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
                     }
                     continue; // Skip renaming if moving fails
                 }
