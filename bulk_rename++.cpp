@@ -7,7 +7,6 @@
 #include <mutex>
 #include <unistd.h>
 #include <chrono>
-#include <regex>
 #include <cctype>
 #include <queue>
 #include <unordered_map>
@@ -299,11 +298,6 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
 // Extension stuff
 
 void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count) {
-    static const std::regex lower_case("([a-z]+)");
-    static const std::regex upper_case("([A-Z]+)");
-    static const std::regex reverse_case("([a-zA-Z])");
-    static const std::regex title_case("([a-zA-Z])([a-zA-Z.]*)");
-
     if (!fs::is_regular_file(item_path)) {
         if (verbose_enabled) {
             std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
@@ -324,20 +318,17 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         });
     } else if (case_input == "title") {
         std::string temp_extension = extension;
-		std::smatch match;
-	if (std::regex_search(temp_extension, match, title_case)) {
-		std::string rest_of_extension = match[2].str();
-		std::transform(rest_of_extension.begin(), rest_of_extension.end(), rest_of_extension.begin(), ::tolower);
-		new_extension = "." + std::string(1, std::toupper(match[1].str()[0])) + rest_of_extension;
-	}
-        
-   } else if (case_input == "bak") {
-    if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
-        new_extension = extension + ".bak";
-    } else {
-        new_extension = extension; // Keep the extension unchanged
-    }
-	
+        if (!temp_extension.empty()) {
+            temp_extension[0] = std::toupper(temp_extension[0]);
+            std::transform(temp_extension.begin() + 1, temp_extension.end(), temp_extension.begin() + 1, ::tolower);
+            new_extension = temp_extension;
+        }
+    } else if (case_input == "bak") {
+        if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
+            new_extension = extension + ".bak";
+        } else {
+            new_extension = extension; // Keep the extension unchanged
+        }
     } else if (case_input == "rbak") {
         if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
             new_extension = extension.substr(0, extension.length() - 4);
@@ -355,7 +346,6 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             ++files_count;
             if (verbose_enabled) {
                 std::lock_guard<std::mutex> lock(files_count_mutex);
-                
                 std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
             }
         } catch (const fs::filesystem_error& e) {
@@ -481,30 +471,16 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name;
     fs::path new_path;
 
-    // Static regex pattern for transformations
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|seq|rseq|date|rdate|swap)");
-    std::smatch match;
+    // Static list of transformation commands
+    static const std::vector<std::string> transformation_commands = {
+        "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
+        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
+        "seq", "rseq", "date", "rdate", "swap"
+    };
 
-    // If the item is a symbolic link, skip it
-    if (fs::is_symlink(item_path)) {
-        if (verbose_enabled) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + item_path.string() + " (not supported)");
-        }
-        return;
-    }
-
-    // Create vector to store transformations
-    std::vector<std::pair<std::string, size_t>> transformations;
-    std::sregex_iterator iter(case_input.begin(), case_input.end(), transformation_pattern);
-    std::sregex_iterator end;
-    for (; iter != end; ++iter) {
-        transformations.emplace_back((*iter)[1].str(), (*iter).position());
-    }
-
-    if (transform_files) {
-        // Apply case transformation using regex patterns
-        if (std::regex_search(case_input, match, transformation_pattern)) {
-            const std::string& transformation = match[1].str();
+    for (const auto& transformation : transformation_commands) {
+        if (case_input.find(transformation) != std::string::npos) {
+            // Apply the corresponding transformation
             if (transformation == "lower") {
                 std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
             } else if (transformation == "upper") {
@@ -603,10 +579,13 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with original name
-    bool renaming_message_printed=false;
+    bool renaming_message_printed = false;
 
-    // Pre-compile transformation pattern
-    static const std::regex transformation_pattern("(lower|upper|reverse|title|snake|rsnake|rspecial|rnumeric|rbra|roperand|camel|rcamel|kebab|rkebab|swap)");
+    // Static list of transformation commands
+    static const std::vector<std::string> transformation_commands = {
+        "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial",
+        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap"
+    };
 
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
@@ -617,69 +596,68 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     }
 
     if (transform_dirs) {
-        std::smatch match;
-        if (std::regex_match(case_input, match, transformation_pattern)) {
-            const std::string& transformation = match[1].str();
-            if (transformation == "lower") {
-                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
-            } else if (transformation == "upper") {
-                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
-            } else if (transformation == "reverse") {
-                std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
-                    return std::islower(c) ? std::toupper(c) : std::tolower(c);
-                });
-            } else if (transformation == "title") {
-                bool first_letter = true;
-                new_dirname.reserve(dirname.size());
-                for (char c : dirname) {
-                    if (std::isalpha(c)) {
-                        if (first_letter) {
-                            new_dirname.push_back(std::toupper(c));
-                            first_letter = false;
+        for (const auto& transformation : transformation_commands) {
+            if (case_input == transformation) {
+                if (transformation == "lower") {
+                    std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
+                } else if (transformation == "upper") {
+                    std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
+                } else if (transformation == "reverse") {
+                    std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
+                        return std::islower(c) ? std::toupper(c) : std::tolower(c);
+                    });
+                } else if (transformation == "title") {
+                    bool first_letter = true;
+                    new_dirname.reserve(dirname.size());
+                    for (char c : dirname) {
+                        if (std::isalpha(c)) {
+                            if (first_letter) {
+                                new_dirname.push_back(std::toupper(c));
+                                first_letter = false;
+                            } else {
+                                new_dirname.push_back(std::tolower(c));
+                            }
                         } else {
-                            new_dirname.push_back(std::tolower(c));
+                            new_dirname.push_back(c);
                         }
-                    } else {
-                        new_dirname.push_back(c);
                     }
+                } else if (transformation == "snake") {
+                    std::replace(new_dirname.begin(), new_dirname.end(), ' ', '_');
+                } else if (transformation == "rsnake") {
+                    std::replace(new_dirname.begin(), new_dirname.end(), '_', ' ');
+                } else if (transformation == "kebab") {
+                    std::replace(new_dirname.begin(), new_dirname.end(), ' ', '-');
+                } else if (transformation == "rkebab") {
+                    std::replace(new_dirname.begin(), new_dirname.end(), '-', ' ');
+                } else if (transformation == "rspecial") {
+                    new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                        return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' ';
+                    }), new_dirname.end());
+                } else if (transformation == "rnumeric") {
+                    new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                        return std::isdigit(c);
+                    }), new_dirname.end());
+                } else if (transformation == "rbra") {
+                    new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                        return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
+                    }), new_dirname.end());
+                } else if (transformation == "roperand") {
+                    new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
+                        return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
+                    }), new_dirname.end());
+                } else if (transformation == "camel") {
+                    new_dirname = to_camel_case(new_dirname);
+                } else if (transformation == "rcamel") {
+                    new_dirname = from_camel_case(new_dirname);
+                } else if (transformation == "swap") {
+                    new_dirname = swap_transform(new_dirname);
                 }
-            } else if (transformation == "snake") {
-                std::replace(new_dirname.begin(), new_dirname.end(), ' ', '_');
-            } else if (transformation == "rsnake") {
-                std::replace(new_dirname.begin(), new_dirname.end(), '_', ' ');
-            } else if (transformation == "kebab") {
-                std::replace(new_dirname.begin(), new_dirname.end(), ' ', '-');
-            } else if (transformation == "rkebab") {
-                std::replace(new_dirname.begin(), new_dirname.end(), '-', ' ');
-            } else if (transformation == "rspecial") {
-                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' ';
-                }), new_dirname.end());
-            } else if (transformation == "rnumeric") {
-                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return std::isdigit(c);
-                }), new_dirname.end());
-            } else if (transformation == "rbra") {
-                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
-                }), new_dirname.end());
-            } else if (transformation == "roperand") {
-                new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
-                    return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
-                }), new_dirname.end());
-            } else if (transformation == "camel") {
-                new_dirname = to_camel_case(new_dirname);
-            } else if (transformation == "rcamel") {
-                new_dirname = from_camel_case(new_dirname);
-            } else if (transformation == "swap") {
-                new_dirname = swap_transform(new_dirname);
+                break;
             }
-            
         }
     }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
-
 
     // Check if renaming is necessary
     if (directory_path != new_path) {
@@ -700,11 +678,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     } else {
         if (verbose_enabled && !transform_files) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
-            }
-         else if (verbose_enabled && transform_dirs && transform_files) {
-			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
-		}
-			
+        } else if (verbose_enabled && transform_dirs && transform_files) {
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
+        }
     }
 
     // Continue recursion if depth limit not reached
@@ -712,7 +688,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         // Decrement depth only if depth limit is positive
         if (depth > 0)
             --depth;
-        
+
         unsigned int max_threads = std::thread::hardware_concurrency();
         if (max_threads == 0) {
             max_threads = 1; // If hardware concurrency is not available, default to 1 thread
@@ -748,8 +724,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             for (auto& thread : threads) {
                 thread.join();
             }
-        
-
         }
     }
 }
@@ -851,11 +825,11 @@ int main(int argc, char *argv[]) {
     bool rename_parents = false;
     bool rename_extensions = false;
     bool verbose_enabled = false;
+    int files_count = 0;
     int depth = -1;
     bool case_specified = false;
     bool transform_dirs = true;
     bool transform_files = true;
-    int files_count = 0;
 
     if (argc == 1) {
         print_help();
