@@ -19,6 +19,27 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
+std::string capitalizeFirstLetter(const std::string& dirname) {
+    std::string new_dirname;
+    bool capitalize_next = true;
+    
+    for (char c : dirname) {
+        if (std::isalpha(c)) {
+            if (capitalize_next) {
+                new_dirname += std::toupper(c);
+                capitalize_next = false;
+            } else {
+                new_dirname += std::tolower(c);
+            }
+        } else {
+            new_dirname += c;
+            capitalize_next = true;
+        }
+    }
+    
+    return new_dirname;
+}
+
 std::string append_numbered_prefix(const fs::path& parent_path, const std::string& new_name) {
     // Retrieve the counter for the current directory from the map
     static std::unordered_map<fs::path, int> counter_map;
@@ -547,6 +568,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 			else if (transformation == "rdate") {
 				new_name = remove_date_seq(new_name);	
 			}
+			break;
 		}
 	}
 
@@ -770,8 +792,6 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
 }
 
 
-
-
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with original name
@@ -802,21 +822,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
                         return std::islower(c) ? std::toupper(c) : std::tolower(c);
                     });
-                } else if (transformation == "title") {
-                    bool first_letter = true;
-                    new_dirname.reserve(dirname.size());
-                    for (char c : dirname) {
-                        if (std::isalpha(c)) {
-                            if (first_letter) {
-                                new_dirname.push_back(std::toupper(c));
-                                first_letter = false;
-                            } else {
-                                new_dirname.push_back(std::tolower(c));
-                            }
-                        } else {
-                            new_dirname.push_back(c);
-                        }
-                    }
+                } else if (case_input == "title") {
+					new_dirname= capitalizeFirstLetter(new_dirname);
+					
+        
                 } else if (transformation == "snake") {
                     std::replace(new_dirname.begin(), new_dirname.end(), ' ', '_');
                 } else if (transformation == "rsnake") {
