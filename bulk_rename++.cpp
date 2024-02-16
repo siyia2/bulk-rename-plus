@@ -581,9 +581,17 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
     int counter = 1; // Counter for immediate subdirectories
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory()) {
+            std::string folder_name = folder.path().filename().string();
+
+            // Check if the folder is already numbered
+            if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
+                // Skip renaming if already numbered
+                continue;
+            }
+
             // Construct the new name with sequential numbering and original name
             std::stringstream ss;
-            ss << std::setw(3) << std::setfill('0') << counter << "_" << folder.path().filename().string(); // Append original name to the numbering
+            ss << std::setw(3) << std::setfill('0') << counter << "_" << folder_name; // Append original name to the numbering
             fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str(); // Corrected the concatenation
 
             // Check if the folder is already renamed to the new name
@@ -610,6 +618,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
     rename_folders_with_sequential_numbering(base_directory, "");
 }
+
 
 void remove_sequential_numbering_from_folders(const fs::path& base_directory) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
@@ -723,7 +732,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
-                    remove_sequential_numbering_from_folders(directory_path);
+                    rename_folders_with_sequential_numbering(directory_path);
                 }
             }
         }
