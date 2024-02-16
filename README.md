@@ -34,7 +34,7 @@ Options:
 - `bak`        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)
 - `rbak`       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
 - `noext`      Remove extensions (e.g., Test.txt => Test)
-#### Numbering CASE Modes:
+#### Numerical CASE Modes:
 - `nsequence`  Apply sequential numbering to files only (e.g., Test => 001_Test)
 - `rnsequence` Remove sequential numbering from files (e.g., 001_Test => Test)
 - `date`       Apply current date to files only (e.g., Test => Test_20240215)
