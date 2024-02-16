@@ -281,7 +281,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "Custom:\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
-          << "  rspecial   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)\n"
+          << "  rspecial   Remove special characters from names (e.g., @T!es#$%^|&~`';?t => Test)\n"
           << "  swap       Swap upper-lower case for names including extensions (e.g., Test.txt => TeSt.TxT)\n"
           << "\n"
           << "Examples:\n"
@@ -1016,7 +1016,7 @@ if (rename_parents) {
     }
 
     if (rename_parents) {
-        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth); // Pass true for rename_parents
+        rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth); // Pass true for rename_parents
     } else if (rename_extensions) {
         rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
     }
