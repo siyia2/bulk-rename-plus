@@ -577,14 +577,14 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 }
 
 
-void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix) {
     int counter = 1; // Counter for immediate subdirectories
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory()) {
-            // Construct the new name with sequential numbering and "001_folder" prefix
+            // Construct the new name with sequential numbering and original name
             std::stringstream ss;
-            ss << std::setw(3) << std::setfill('0') << counter << "_folder"; // Use setw and setfill for leading zeros
-            fs::path new_name = base_directory / ss.str();
+            ss << std::setw(3) << std::setfill('0') << counter << "_" << folder.path().filename().string(); // Append original name to the numbering
+            fs::path new_name = base_directory / (prefix + ss.str());
 
             // Check if the folder is already renamed to the new name
             if (folder.path() != new_name) {
@@ -597,17 +597,18 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
                 }
 
                 std::cout << "Renamed folder: " << folder.path() << " to " << new_name << std::endl;
-                counter++;
             }
-        }
-    }
 
-    // Reset counter for subdirectories of subdirectories
-    for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory()) {
-            rename_folders_with_sequential_numbering(folder.path());
+            // Recursively process subdirectories with updated prefix
+            rename_folders_with_sequential_numbering(new_name, prefix + ss.str() + "_");
+            counter++; // Increment counter after each directory is processed
         }
     }
+}
+
+// Call this function to start the renaming process
+void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
+    rename_folders_with_sequential_numbering(base_directory, "");
 }
 
 
@@ -685,7 +686,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
-                    rename_folders_with_sequential_numbering(directory_path.parent_path());
+                    rename_folders_with_sequential_numbering(directory_path);
                 }
             }
         }
