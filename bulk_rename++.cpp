@@ -475,7 +475,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
         "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
-        "seq", "rseq", "date", "rdate", "swap"
+        "nsequence", "rnsequence", "date", "rdate", "swap"
     };
 
     for (const auto& transformation : transformation_commands) {
@@ -533,10 +533,10 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 new_name = to_camel_case(new_name);
             } else if (transformation == "rcamel") {
                 new_name = from_camel_case(new_name);
-            } else if (transformation == "seq") {
+            } else if (transformation == "nsequence") {
                 // Check if the filename is already numbered
                 new_name = append_numbered_prefix(parent_path, new_name);
-            } else if (transformation == "rseq") {
+            } else if (transformation == "rnsequence") {
                 new_name = remove_numbered_prefix(new_name);
             } else if (transformation == "date") {
 				new_name = append_date_seq(new_name);
