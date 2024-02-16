@@ -19,135 +19,37 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
-std::string capitalizeFirstLetter(const std::string& dirname) {
-    if (dirname.empty()) return dirname; // Handling empty string case
+// Separate string operations 
+
+// for Files&Dirs
+
+std::string capitalizeFirstLetter(const std::string& string) {
+    if (string.empty()) return string; // Handling empty string case
     
-    std::stringstream new_dirname;
+    std::stringstream new_string;
     bool first = true;
     
-    for (char c : dirname) {
+    for (char c : string) {
         if (first && std::isalpha(c)) {
-            new_dirname << static_cast<char>(std::toupper(c));
+            new_string << static_cast<char>(std::toupper(c));
             first = false;
         } else {
-            new_dirname << static_cast<char>(std::tolower(c));
+            new_string << static_cast<char>(std::tolower(c));
         }
     }
     
-    return new_dirname.str();
+    return new_string.str();
 }
 
-
-std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& new_name) {
-    static std::unordered_map<std::filesystem::path, int> counter_map;
-    int& counter = counter_map[parent_path];
-
-    if (!new_name.empty() && std::isdigit(new_name[0])) {
-        return new_name;
-    }
-
-    int current_counter = counter++;
-
-    std::ostringstream oss;
-    oss << std::setw(4) << std::setfill('0') << current_counter; // Adjust the width as needed
-
-    oss << "_" << new_name;
-
-    return oss.str();
-}
-
-
-
-std::string remove_numbered_prefix(const std::string& new_name) {
-    size_t pos = new_name.find_first_not_of("0123456789");
-
-    // Check if the filename is already numbered and contains an underscore after numbering
-    if (pos != std::string::npos && pos > 0 && new_name[pos] == '_' && new_name[pos - 1] != '_') {
-        // Remove the number and the first underscore
-        return new_name.substr(pos + 1);
-    }
-
-    // If the prefix contains a number at the beginning, remove it
-    if (pos == 0) {
-        size_t underscore_pos = new_name.find('_');
-        if (underscore_pos != std::string::npos && underscore_pos > 0) {
-            return new_name.substr(underscore_pos + 1);
-        }
-    }
-
-    return new_name; // Return the original name if no number found or if number is not followed by an underscore
-}
-
-
-std::string append_date_seq(const std::string& new_name) {
-    // Check if the filename already contains a date seq
-    size_t dot_position = new_name.find_last_of('.');
-    size_t underscore_position = new_name.find_last_of('_');
-    if (dot_position != std::string::npos && underscore_position != std::string::npos && dot_position > underscore_position) {
-        std::string date_seq = new_name.substr(underscore_position + 1, dot_position - underscore_position - 1);
-        if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
-            // Filename already contains a valid date seq, no need to append
-            return new_name;
-        }
-    } else if (underscore_position != std::string::npos) {
-        std::string date_seq = new_name.substr(underscore_position + 1);
-        if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
-            // Filename already contains a valid date seq, no need to append
-            return new_name;
-        }
-    }
-
-    auto now = std::chrono::system_clock::now();
-    auto time_t_now = std::chrono::system_clock::to_time_t(now);
-    std::tm* local_tm = std::localtime(&time_t_now);
-
-    std::ostringstream oss;
-    oss << std::put_time(local_tm, "%Y%m%d");
-    std::string date_seq = oss.str();
-
-    if (dot_position != std::string::npos) {
-        return new_name.substr(0, dot_position) + "_" + date_seq + new_name.substr(dot_position);
-    } else {
-        return new_name + "_" + date_seq;
-    }
-}
-
-
-std::string remove_date_seq(const std::string& filename) {
-    size_t dot_position = filename.find_last_of('.');
-    size_t underscore_position = filename.find_last_of('_');
-
-    if (underscore_position != std::string::npos) {
-        if (dot_position != std::string::npos && dot_position > underscore_position) {
-            std::string date_seq = filename.substr(underscore_position + 1, dot_position - underscore_position - 1);
-            if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
-                // Valid date seq found, remove it
-                return filename.substr(0, underscore_position) + filename.substr(dot_position);
-            }
-        } else {
-            // No dot found after underscore, consider the substring from underscore to the end as potential date seq
-            std::string date_seq = filename.substr(underscore_position + 1);
-            if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
-                // Valid date seq found, remove it
-                return filename.substr(0, underscore_position);
-            }
-        }
-    }
-
-    // No valid date seq found, return original filename
-    return filename;
-}
-
-
-std::string swap_transform(const std::string& input) {
+std::string swap_transform(const std::string& string) {
     std::stringstream transformed;
     bool capitalize = false; // Start by capitalizing
     bool inFolderName = true; // Start within folder name
-    size_t folderDelimiter = input.find_last_of("/\\"); // Find the last folder delimiter
-    size_t length = input.length(); // Cache the length of the input string
+    size_t folderDelimiter = string.find_last_of("/\\"); // Find the last folder delimiter
+    size_t length = string.length(); // Cache the length of the string string
 
     for (size_t i = 0; i < length; ++i) {
-        char c = input[i];
+        char c = string[i];
         if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
             if (inFolderName) {
                 transformed << static_cast<char>(std::toupper(c)); // Capitalize first character in folder name
@@ -173,11 +75,11 @@ std::string swap_transform(const std::string& input) {
 }
 
 
-std::string to_camel_case(const std::string& input) {
+std::string to_camel_case(const std::string& string) {
     bool hasUpperCase = false;
     bool hasSpace = false;
 
-    for (char c : input) {
+    for (char c : string) {
         if (std::isupper(c)) {
             hasUpperCase = true;
         } else if (c == ' ') {
@@ -190,16 +92,16 @@ std::string to_camel_case(const std::string& input) {
     }
 
     if (!hasSpace && hasUpperCase) {
-        return input;
+        return string;
     }
 
     std::string result;
-    result.reserve(input.size() + 10); // Adjust the reserve size as needed
+    result.reserve(string.size() + 10); // Adjust the reserve size as needed
 
     bool capitalizeNext = false;
     bool afterDot = false;
 
-    for (char c : input) {
+    for (char c : string) {
         if (c == '.') {
             afterDot = true;
         }
@@ -221,12 +123,11 @@ std::string to_camel_case(const std::string& input) {
 }
 
 
-
-std::string from_camel_case(const std::string& input) {
+std::string from_camel_case(const std::string& string) {
     std::string result;
-    result.reserve(input.size() + std::count_if(input.begin(), input.end(), ::isupper)); // Reserve space for the result string
+    result.reserve(string.size() + std::count_if(string.begin(), string.end(), ::isupper)); // Reserve space for the result string
 
-    for (char c : input) {
+    for (char c : string) {
         if (std::isupper(c)) {
             result += ' ';
             result += std::tolower(c);
@@ -238,6 +139,108 @@ std::string from_camel_case(const std::string& input) {
     return result;
 }
 
+// For Files
+
+std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string) {
+    static std::unordered_map<std::filesystem::path, int> counter_map;
+    int& counter = counter_map[parent_path];
+
+    if (!file_string.empty() && std::isdigit(file_string[0])) {
+        return file_string;
+    }
+
+    int current_counter = counter++;
+
+    std::ostringstream oss;
+    oss << std::setw(4) << std::setfill('0') << current_counter; // Adjust the width as needed
+
+    oss << "_" << file_string;
+
+    return oss.str();
+}
+
+
+std::string remove_numbered_prefix(const std::string& file_string) {
+    size_t pos = file_string.find_first_not_of("0123456789");
+
+    // Check if the filename is already numbered and contains an underscore after numbering
+    if (pos != std::string::npos && pos > 0 && file_string[pos] == '_' && file_string[pos - 1] != '_') {
+        // Remove the number and the first underscore
+        return file_string.substr(pos + 1);
+    }
+
+    // If the prefix contains a number at the beginning, remove it
+    if (pos == 0) {
+        size_t underscore_pos = file_string.find('_');
+        if (underscore_pos != std::string::npos && underscore_pos > 0) {
+            return file_string.substr(underscore_pos + 1);
+        }
+    }
+
+    return file_string; // Return the original name if no number found or if number is not followed by an underscore
+}
+
+
+std::string append_date_seq(const std::string& file_string) {
+    // Check if the filename already contains a date seq
+    size_t dot_position = file_string.find_last_of('.');
+    size_t underscore_position = file_string.find_last_of('_');
+    if (dot_position != std::string::npos && underscore_position != std::string::npos && dot_position > underscore_position) {
+        std::string date_seq = file_string.substr(underscore_position + 1, dot_position - underscore_position - 1);
+        if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
+            // Filename already contains a valid date seq, no need to append
+            return file_string;
+        }
+    } else if (underscore_position != std::string::npos) {
+        std::string date_seq = file_string.substr(underscore_position + 1);
+        if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
+            // Filename already contains a valid date seq, no need to append
+            return file_string;
+        }
+    }
+
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm* local_tm = std::localtime(&time_t_now);
+
+    std::ostringstream oss;
+    oss << std::put_time(local_tm, "%Y%m%d");
+    std::string date_seq = oss.str();
+
+    if (dot_position != std::string::npos) {
+        return file_string.substr(0, dot_position) + "_" + date_seq + file_string.substr(dot_position);
+    } else {
+        return file_string + "_" + date_seq;
+    }
+}
+
+
+std::string remove_date_seq(const std::string& file_string) {
+    size_t dot_position = file_string.find_last_of('.');
+    size_t underscore_position = file_string.find_last_of('_');
+
+    if (underscore_position != std::string::npos) {
+        if (dot_position != std::string::npos && dot_position > underscore_position) {
+            std::string date_seq = file_string.substr(underscore_position + 1, dot_position - underscore_position - 1);
+            if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
+                // Valid date seq found, remove it
+                return file_string.substr(0, underscore_position) + file_string.substr(dot_position);
+            }
+        } else {
+            // No dot found after underscore, consider the substring from underscore to the end as potential date seq
+            std::string date_seq = file_string.substr(underscore_position + 1);
+            if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
+                // Valid date seq found, remove it
+                return file_string.substr(0, underscore_position);
+            }
+        }
+    }
+
+    // No valid date seq found, return original file_string
+    return file_string;
+}
+
+// Global print functions
 
 void print_error(const std::string& error) {
     std::lock_guard<std::mutex> lock(cout_mutex);
