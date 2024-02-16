@@ -20,63 +20,61 @@ std::mutex files_count_mutex;
 // General purpose stuff
 
 std::string capitalizeFirstLetter(const std::string& dirname) {
-    std::string new_dirname;
-    bool capitalize_next = true;
+    if (dirname.empty()) return dirname; // Handling empty string case
+    
+    std::stringstream new_dirname;
+    bool first = true;
     
     for (char c : dirname) {
-        if (std::isalpha(c)) {
-            if (capitalize_next) {
-                new_dirname += std::toupper(c);
-                capitalize_next = false;
-            } else {
-                new_dirname += std::tolower(c);
-            }
+        if (first && std::isalpha(c)) {
+            new_dirname << static_cast<char>(std::toupper(c));
+            first = false;
         } else {
-            new_dirname += c;
-            capitalize_next = true;
+            new_dirname << static_cast<char>(std::tolower(c));
         }
     }
     
-    return new_dirname;
+    return new_dirname.str();
 }
 
-std::string append_numbered_prefix(const fs::path& parent_path, const std::string& new_name) {
-    // Retrieve the counter for the current directory from the map
-    static std::unordered_map<fs::path, int> counter_map;
+
+std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& new_name) {
+    static std::unordered_map<std::filesystem::path, int> counter_map;
     int& counter = counter_map[parent_path];
 
-    // Check if new_name already starts with a number
     if (!new_name.empty() && std::isdigit(new_name[0])) {
-        return new_name; // If already numbered, return new_name unchanged
+        return new_name;
     }
 
-    // Increment the counter for the current directory
     int current_counter = counter++;
 
-    // Format the counter with leading zeros
     std::ostringstream oss;
-    oss << std::setw(3) << std::setfill('0') << current_counter + 1;
+    oss << std::setw(4) << std::setfill('0') << current_counter; // Adjust the width as needed
 
-    // Append the counter and underscore to the new name
-    return oss.str() + "_" + new_name;
+    oss << "_" << new_name;
+
+    return oss.str();
 }
+
 
 
 std::string remove_numbered_prefix(const std::string& new_name) {
-    // Find the position of the first non-digit character
     size_t pos = new_name.find_first_not_of("0123456789");
 
     // Check if the filename is already numbered and contains an underscore after numbering
     if (pos != std::string::npos && pos > 0 && new_name[pos] == '_' && new_name[pos - 1] != '_') {
         // Remove the number and the first underscore
         return new_name.substr(pos + 1);
-    } else if (pos == 0) {
-        // Remove only the number if it's at the beginning
+    }
+
+    // If the prefix contains a number at the beginning, remove it
+    if (pos == 0) {
         size_t underscore_pos = new_name.find('_');
         if (underscore_pos != std::string::npos && underscore_pos > 0) {
             return new_name.substr(underscore_pos + 1);
         }
     }
+
     return new_name; // Return the original name if no number found or if number is not followed by an underscore
 }
 
@@ -98,23 +96,18 @@ std::string append_date_seq(const std::string& new_name) {
             return new_name;
         }
     }
-    
-    // Get current date and time
+
     auto now = std::chrono::system_clock::now();
     auto time_t_now = std::chrono::system_clock::to_time_t(now);
     std::tm* local_tm = std::localtime(&time_t_now);
 
-    // Format date as YYYYMMDD
     std::ostringstream oss;
     oss << std::put_time(local_tm, "%Y%m%d");
     std::string date_seq = oss.str();
 
-    // Find the position of the last dot in the filename
     if (dot_position != std::string::npos) {
-        // Insert date seq before the last dot
         return new_name.substr(0, dot_position) + "_" + date_seq + new_name.substr(dot_position);
     } else {
-        // If no dot found, append date seq at the end
         return new_name + "_" + date_seq;
     }
 }
@@ -123,12 +116,10 @@ std::string append_date_seq(const std::string& new_name) {
 std::string remove_date_seq(const std::string& filename) {
     size_t dot_position = filename.find_last_of('.');
     size_t underscore_position = filename.find_last_of('_');
-    
+
     if (underscore_position != std::string::npos) {
-        // Check if there's a dot after the underscore
         if (dot_position != std::string::npos && dot_position > underscore_position) {
             std::string date_seq = filename.substr(underscore_position + 1, dot_position - underscore_position - 1);
-            // Check if the substring between underscore and dot is a valid date seq
             if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
                 // Valid date seq found, remove it
                 return filename.substr(0, underscore_position) + filename.substr(dot_position);
@@ -136,50 +127,49 @@ std::string remove_date_seq(const std::string& filename) {
         } else {
             // No dot found after underscore, consider the substring from underscore to the end as potential date seq
             std::string date_seq = filename.substr(underscore_position + 1);
-            // Check if the substring after underscore is a valid date seq
             if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
                 // Valid date seq found, remove it
                 return filename.substr(0, underscore_position);
             }
         }
     }
-    
+
     // No valid date seq found, return original filename
     return filename;
 }
 
 
 std::string swap_transform(const std::string& input) {
-    std::string transformed;
+    std::stringstream transformed;
     bool capitalize = false; // Start by capitalizing
     bool inFolderName = true; // Start within folder name
     size_t folderDelimiter = input.find_last_of("/\\"); // Find the last folder delimiter
+    size_t length = input.length(); // Cache the length of the input string
 
-for (size_t i = 0; i < input.length(); ++i) {
-    char c = input[i];
-    if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
-        if (inFolderName) {
-            transformed += std::toupper(c); // Capitalize first character in folder name
-            inFolderName = false; // Exit folder name after first character
-        } else {
-            if (std::isalpha(c)) {
-                if (capitalize) {
-                    transformed += std::toupper(c);
-                } else {
-                    transformed += std::tolower(c);
-                }
-                capitalize = !capitalize; // Toggle between upper and lower case
+    for (size_t i = 0; i < length; ++i) {
+        char c = input[i];
+        if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
+            if (inFolderName) {
+                transformed << static_cast<char>(std::toupper(c)); // Capitalize first character in folder name
+                inFolderName = false; // Exit folder name after first character
             } else {
-                transformed += c; // Keep non-alphabetic characters unchanged
+                if (std::isalpha(c)) {
+                    if (capitalize) {
+                        transformed << static_cast<char>(std::toupper(c));
+                    } else {
+                        transformed << static_cast<char>(std::tolower(c));
+                    }
+                    capitalize = !capitalize; // Toggle between upper and lower case
+                } else {
+                    transformed << c; // Keep non-alphabetic characters unchanged
+                }
             }
+        } else {
+            transformed << c; // Keep characters after the folder delimiter unchanged
         }
-    } else {
-        transformed += c; // Keep characters after the folder delimiter unchanged
     }
-}
 
-    
-    return transformed;
+    return transformed.str();
 }
 
 
@@ -187,7 +177,6 @@ std::string to_camel_case(const std::string& input) {
     bool hasUpperCase = false;
     bool hasSpace = false;
 
-    // Check if there are any spaces and at least one uppercase letter
     for (char c : input) {
         if (std::isupper(c)) {
             hasUpperCase = true;
@@ -200,25 +189,25 @@ std::string to_camel_case(const std::string& input) {
         }
     }
 
-    // If there are no spaces and at least one uppercase letter, return input string as it is
     if (!hasSpace && hasUpperCase) {
         return input;
     }
 
     std::string result;
-    result.reserve(input.size()); // Reserve memory for the result string
+    result.reserve(input.size() + 10); // Adjust the reserve size as needed
 
     bool capitalizeNext = false;
-    bool afterDot = false; // Track if we have encountered a period ('.')
+    bool afterDot = false;
+
     for (char c : input) {
         if (c == '.') {
             afterDot = true;
         }
         if (afterDot) {
-            result += c; // Preserve characters after the first period
+            result += c;
         } else {
             if (std::isalpha(c)) {
-                result += capitalizeNext ? std::toupper(c) : std::tolower(c);
+                result += capitalizeNext ? toupper(c) : tolower(c); // Use toupper directly
                 capitalizeNext = false;
             } else if (c == ' ') {
                 capitalizeNext = true;
@@ -235,7 +224,8 @@ std::string to_camel_case(const std::string& input) {
 
 std::string from_camel_case(const std::string& input) {
     std::string result;
-    
+    result.reserve(input.size() + std::count_if(input.begin(), input.end(), ::isupper)); // Reserve space for the result string
+
     for (char c : input) {
         if (std::isupper(c)) {
             result += ' ';
@@ -338,12 +328,7 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
             return std::islower(c) ? std::toupper(c) : std::tolower(c);
         });
     } else if (case_input == "title") {
-        std::string temp_extension = extension;
-        if (!temp_extension.empty()) {
-            temp_extension[0] = std::toupper(temp_extension[0]);
-            std::transform(temp_extension.begin() + 1, temp_extension.end(), temp_extension.begin() + 1, ::tolower);
-            new_extension = temp_extension;
-        }
+        new_extension = capitalizeFirstLetter(new_extension);
     } else if (case_input == "bak") {
         if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
             new_extension = extension + ".bak";
@@ -511,17 +496,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                     return std::islower(c) ? std::toupper(c) : std::tolower(c);
                 });
             } else if (transformation == "title") {
-                bool first_letter_encountered = true;
-                for (char& c : new_name) {
-                    if (std::isalpha(c)) {
-                        if (first_letter_encountered) {
-                            c = std::toupper(c);
-                            first_letter_encountered = false;
-                        } else {
-                            c = std::tolower(c); // Convert subsequent letters to lowercase
-                        }
-                    }
-                }
+                new_name = capitalizeFirstLetter(new_name);
             } else if (transformation == "snake") {
                 std::replace(new_name.begin(), new_name.end(), ' ', '_');
             } else if (transformation == "rsnake") {
