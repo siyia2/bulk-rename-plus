@@ -611,6 +611,42 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
     rename_folders_with_sequential_numbering(base_directory, "");
 }
 
+void remove_sequential_numbering_from_folders(const fs::path& base_directory) {
+    for (const auto& folder : fs::directory_iterator(base_directory)) {
+        if (folder.is_directory()) {
+            std::string folder_name = folder.path().filename().string();
+            std::string new_folder_name;
+
+            // Check if the folder name starts with a numbering prefix
+            if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
+                // Find the position of the first underscore
+                size_t pos = folder_name.find('_');
+
+                // Extract the substring after the numbering prefix
+                new_folder_name = folder_name.substr(pos + 1);
+                
+                // Construct the new path
+                fs::path new_path = folder.path().parent_path() / new_folder_name;
+
+                // Rename the folder
+                try {
+                    fs::rename(folder.path(), new_path);
+                    std::cout << "Renamed folder: " << folder.path() << " to " << new_path << std::endl;
+                } catch (const fs::filesystem_error& e) {
+                    std::cerr << "Error renaming folder: " << e.what() << std::endl;
+                }
+
+                // Check if the new path exists before recursively processing it
+                if (fs::exists(new_path) && fs::is_directory(new_path)) {
+                    remove_sequential_numbering_from_folders(new_path);
+                }
+            }
+        }
+    }
+}
+
+
+
 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
@@ -687,7 +723,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
-                    rename_folders_with_sequential_numbering(directory_path);
+                    remove_sequential_numbering_from_folders(directory_path);
                 }
             }
         }
