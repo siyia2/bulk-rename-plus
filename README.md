@@ -35,8 +35,8 @@ Options:
 - `rbak`       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
 - `noext`      Remove extensions (e.g., Test.txt => Test)
 #### Numbering CASE Modes:
-- `seq`  Apply sequential numbering to files only (e.g., Test => 001_Test)
-- `rseq` Remove sequential numbering from files (e.g., 001_Test => Test)
+- `nsequence`  Apply sequential numbering to files only (e.g., Test => 001_Test)
+- `rnsequence` Remove sequential numbering from files (e.g., 001_Test => Test)
 - `date`       Apply current date to files only (e.g., Test => Test_20240215)
 -	`rdate`      Remove date from files (e.g., Test_20240215 => Test)
 - `rnumeric`   Remove numeric characters from names (e.g., 1Te0st2 => Test)
