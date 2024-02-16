@@ -18,19 +18,19 @@ Options:
 
 ### Current suported case modes: 
 
-#### Common Regular CASE Modes:
+#### Regular CASE Modes:
 - `title`      Convert names to Title Case (e.g., test => Test)
 - `upper`      Convert names to UPPERCASE (e.g., Test => TEST)
 - `lower`      Convert names to lowercase (e.g., Test => test)
 - `reverse`    Reverse current case in names (e.g., Test => tEST)
-#### Common Special CASE Modes:
+#### Special CASE Modes:
 - `snake`      Convert spaces to underscores in names (e.g., Te st => Te_st)
 - `rsnake`     Convert underscores to spaces in names (e.g., Te_st => Te st)
 - `kebab`      Convert spaces to hyphens in names (e.g., Te st => Te-st)
 - `rkebab`     Convert hyphens to spaces in names (e.g., Te-st => Te st)
 - `camel`      Convert names to camelCase (e.g., Te st => TeSt)
 - `rcamel`     Reverse camelCase in names (e.g., TeSt => Te st)
-#### Extension exclusive CASE Modes:
+#### Extension CASE Modes:
 - `bak`        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)
 - `rbak`       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
 - `noext`      Remove extensions (e.g., Test.txt => Test)
