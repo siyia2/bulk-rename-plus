@@ -143,16 +143,21 @@ std::string from_camel_case(const std::string& string) {
 
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string) {
     static std::unordered_map<std::filesystem::path, int> counter_map;
+
+    // Initialize counter if not already initialized
+    if (counter_map.find(parent_path) == counter_map.end()) {
+        counter_map[parent_path] = 1;
+    }
+
     int& counter = counter_map[parent_path];
 
     if (!file_string.empty() && std::isdigit(file_string[0])) {
         return file_string;
     }
 
-    int current_counter = counter++;
-
     std::ostringstream oss;
-    oss << std::setw(4) << std::setfill('0') << current_counter; // Adjust the width as needed
+    oss << std::setfill('0') << std::setw(3) << counter; // Width set to 3 for leading zeros up to three digits
+    counter++; // Increment counter after using its current value
 
     oss << "_" << file_string;
 
