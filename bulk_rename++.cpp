@@ -477,7 +477,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
         "nsequence", "rnsequence", "date", "rdate", "swap"
     };
-
+	if (transform_files) {
     for (const auto& transformation : transformation_commands) {
         if (case_input.find(transformation) != std::string::npos) {
             // Apply the corresponding transformation
@@ -548,6 +548,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 				new_name = remove_date_seq(new_name);	
 			}
 		}
+	}
 
 	}
     // Skip renaming if the new name is the same as the old name
@@ -721,6 +722,53 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
 }
 
 
+void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false) {
+    for (const auto& folder : fs::directory_iterator(base_directory)) {
+        if (folder.is_directory()) {
+            std::string folder_name = folder.path().filename().string();
+
+            // Check if the folder name ends with the date suffix format "_YYYYMMDD"
+            bool has_date_suffix = true;
+            if (folder_name.length() < 9) // Minimum length required for "_YYYYMMDD"
+                has_date_suffix = false;
+            for (size_t i = folder_name.length() - 9; i < folder_name.length(); ++i) {
+                if (!std::isdigit(folder_name[i])) {
+                    has_date_suffix = false;
+                    break;
+                }
+            }
+
+            if (!has_date_suffix)
+                continue;
+
+            // Remove the date suffix from the folder name
+            std::string new_folder_name = folder_name.substr(0, folder_name.length() - 9);
+
+            // Check if the folder is already renamed to the new name
+            fs::path new_path = folder.path().parent_path() / new_folder_name;
+            if (folder.path() != new_path) {
+                // Rename the folder
+                try {
+                    fs::rename(folder.path(), new_path);
+                } catch (const fs::filesystem_error& e) {
+                    if (e.code() == std::errc::permission_denied) {
+                        std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
+                    }
+                    continue; // Skip renaming if moving fails
+                }
+                if (verbose_enabled) {
+                    std::cout << "\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " << folder.path() << " to " << new_path << std::endl;
+                }
+                ++dirs_count; // Increment dirs_count after each successful rename
+            }
+
+            // Recursively process subdirectories
+            remove_date_suffix_from_folders(new_path, dirs_count, verbose_enabled);
+        }
+    }
+}
+
+
 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
@@ -731,7 +779,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Static list of transformation commands
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial",
-        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence","date"
+        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence","date","rdate"
     };
 
     // Early exit if directory is a symlink
@@ -802,6 +850,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     remove_sequential_numbering_from_folders(directory_path, dirs_count,verbose_enabled);
                 } else if (transformation == "date") {
                     rename_folders_with_date_suffix(directory_path, dirs_count,verbose_enabled);
+                }
+                else if (transformation == "rdate") {
+                    remove_date_suffix_from_folders(directory_path, dirs_count,verbose_enabled);
                 }
             }
         }
