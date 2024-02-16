@@ -577,7 +577,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 }
 
 
-void remove_sequential_numbering(const fs::path& base_directory, int& dirs_count, bool verbose_enabled =false) {
+void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled =false) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory()) {
             std::string folder_name = folder.path().filename().string();
@@ -609,7 +609,7 @@ void remove_sequential_numbering(const fs::path& base_directory, int& dirs_count
                 }
 
                 // Recursively process subdirectories
-                remove_sequential_numbering(new_name, dirs_count, verbose_enabled);
+                remove_sequential_numbering_from_folders(new_name, dirs_count, verbose_enabled);
             }
         }
     }
@@ -663,10 +663,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, in
     rename_folders_with_sequential_numbering(base_directory, "", dirs_count, verbose_enabled);
 }
 
-// Call this function to start the renaming process
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count) {
-    rename_folders_with_sequential_numbering(base_directory, "", dirs_count);
-}
 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
@@ -677,7 +673,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Static list of transformation commands
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial",
-        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence"
+        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence"
     };
 
     // Early exit if directory is a symlink
@@ -744,6 +740,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "nsequence") {
                     rename_folders_with_sequential_numbering(directory_path, dirs_count,verbose_enabled);
+                } else if (transformation == "rnsequence") {
+                    remove_sequential_numbering_from_folders(directory_path, dirs_count,verbose_enabled);
                 }
             }
         }
