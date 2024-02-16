@@ -577,51 +577,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 }
 
 
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix) {
-    int counter = 1; // Counter for immediate subdirectories
-    for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory()) {
-            std::string folder_name = folder.path().filename().string();
-
-            // Check if the folder is already numbered
-            if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
-                // Skip renaming if already numbered
-                continue;
-            }
-
-            // Construct the new name with sequential numbering and original name
-            std::stringstream ss;
-            ss << std::setw(3) << std::setfill('0') << counter << "_" << folder_name; // Append original name to the numbering
-            fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str(); // Corrected the concatenation
-
-            // Check if the folder is already renamed to the new name
-            if (folder.path() != new_name) {
-                // Move the contents of the source directory to the destination directory
-                try {
-                    fs::rename(folder.path(), new_name);
-                } catch (const fs::filesystem_error& e) {
-					if (e.code() == std::errc::permission_denied) {
-					std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
-				}
-                    continue; // Skip renaming if moving fails
-                }
-
-                std::cout << "Renamed folder: " << folder.path() << " to " << new_name << std::endl;
-            }
-
-            // Recursively process subdirectories with updated prefix
-            rename_folders_with_sequential_numbering(new_name, prefix + ss.str());
-            counter++; // Increment counter after each directory is processed
-        }
-    }
-}
-
-// Call this function to start the renaming process
-void rename_folders_with_sequential_numbering(const fs::path& base_directory) {
-    rename_folders_with_sequential_numbering(base_directory, "");
-}
-
-
 void remove_sequential_numbering_from_folders(const fs::path& base_directory) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory()) {
@@ -658,6 +613,50 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory) {
 
 
 
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count) {
+    int counter = 1; // Counter for immediate subdirectories
+    for (const auto& folder : fs::directory_iterator(base_directory)) {
+        if (folder.is_directory()) {
+            std::string folder_name = folder.path().filename().string();
+
+            // Check if the folder is already numbered
+            if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
+                // Skip renaming if already numbered
+                continue;
+            }
+
+            // Construct the new name with sequential numbering and original name
+            std::stringstream ss;
+            ss << std::setw(3) << std::setfill('0') << counter << "_" << folder_name; // Append original name to the numbering
+            fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str(); // Corrected the concatenation
+
+            // Check if the folder is already renamed to the new name
+            if (folder.path() != new_name) {
+                // Move the contents of the source directory to the destination directory
+                try {
+                    fs::rename(folder.path(), new_name);
+                } catch (const fs::filesystem_error& e) {
+                    if (e.code() == std::errc::permission_denied) {
+                        std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
+                    }
+                    continue; // Skip renaming if moving fails
+                }
+
+                std::cout << "Renamed folder: " << folder.path() << " to " << new_name << std::endl;
+                ++dirs_count; // Increment dirs_count after each successful rename
+            }
+
+            // Recursively process subdirectories with updated prefix
+            rename_folders_with_sequential_numbering(new_name, prefix + ss.str(), dirs_count);
+            counter++; // Increment counter after each directory is processed
+        }
+    }
+}
+
+// Call this function to start the renaming process
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count) {
+    rename_folders_with_sequential_numbering(base_directory, "", dirs_count);
+}
 
 
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
@@ -734,7 +733,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
-                    rename_folders_with_sequential_numbering(directory_path);
+                    rename_folders_with_sequential_numbering(directory_path, dirs_count);
                 }
             }
         }
@@ -802,7 +801,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
                 }
             }
-
+            
             // Join all threads
             for (auto& thread : threads) {
                 thread.join();
