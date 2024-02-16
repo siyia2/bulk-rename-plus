@@ -568,11 +568,10 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 			else if (transformation == "rdate") {
 				new_name = remove_date_seq(new_name);	
 			}
-			break;
 		}
-	}
 
 	}
+}
     // Skip renaming if the new name is the same as the old name
     if (name != new_name) {
         // Construct the new path within the same parent directory
