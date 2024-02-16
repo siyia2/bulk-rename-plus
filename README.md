@@ -37,8 +37,8 @@ Options:
 #### Numerical CASE Modes:
 - `nsequence`  Apply sequential numbering (e.g., Test => 001_Test)
 - `rnsequence` Remove sequential numbering (e.g., 001_Test => Test)
-- `date`       Apply current date to files only (e.g., Test => Test_20240215)
--	`rdate`      Remove date from files (e.g., Test_20240215 => Test)
+- `date`       Apply current date (e.g., Test => Test_20240215)
+-	`rdate`      Remove date (e.g., Test_20240215 => Test)
 - `rnumeric`   Remove numeric characters from names (e.g., 1Te0st2 => Test)
 #### Custom CASE Modes:
 - `rbra`       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)
