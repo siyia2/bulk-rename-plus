@@ -214,10 +214,23 @@ std::string from_pascal_case(const std::string& string) {
 
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string) {
     static std::unordered_map<std::filesystem::path, int> counter_map;
-
+    
     // Initialize counter if not already initialized
     if (counter_map.find(parent_path) == counter_map.end()) {
-        counter_map[parent_path] = 1;
+        // Find the highest existing numbered file
+        int max_counter = 0;
+        for (const auto& entry : std::filesystem::directory_iterator(parent_path)) {
+            if (entry.is_regular_file()) {
+                std::string filename = entry.path().filename().string();
+                if (!filename.empty() && std::isdigit(filename[0])) {
+                    int number = std::stoi(filename.substr(0, filename.find('_')));
+                    if (number > max_counter) {
+                        max_counter = number;
+                    }
+                }
+            }
+        }
+        counter_map[parent_path] = max_counter + 1; // Start from the next number
     }
 
     int& counter = counter_map[parent_path];
