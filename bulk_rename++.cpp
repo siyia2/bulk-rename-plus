@@ -8,6 +8,10 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
+ 
+
+
+
 // Global print functions
 
 void print_error(const std::string& error) {
@@ -632,7 +636,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.2.3");
+        printVersionNumber("1.2.2");
         return 0;
     }
 
