@@ -261,7 +261,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
         "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
-        "nsequence", "rnsequence", "prepdate", "appdate", "rdate", "swap","sentence","pascal","rpascal"
+        "nsequence", "rnsequence", "prepdate", "appdate", "rdate", "swap","sentence","pascal","rpascal","mvdatef", "mvdateb"
     };
 	if (transform_files) {
     for (const auto& transformation : transformation_commands) {
@@ -318,7 +318,13 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 				new_name = append_date_seq(new_name); 
 			} else if (transformation == "prepdate") {
 				new_name = prepend_date_seq(new_name);
-			} 
+			
+			} else if (transformation == "mvdatef") {
+				new_name = move_date_to_front(new_name);
+			
+			} else if (transformation == "mvdateb") {
+				new_name = move_date_to_back(new_name);
+			}
 			else if (transformation == "swap") {
 				new_name = swap_transform(new_name);	
 			} 
@@ -736,7 +742,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "prepdate", "appdate", "swap","rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "prepdate", "appdate", "swap", "mvdatef", "mvdateb", "rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swap", "rbak", "bak", "noext"};
     }

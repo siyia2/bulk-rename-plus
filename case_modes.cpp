@@ -280,6 +280,47 @@ std::string remove_numbered_prefix(const std::string& file_string) {
 }
 
 
+std::string move_date_to_front(const std::string& file_string) {
+    // Find the position of the last underscore
+    size_t underscore_position = file_string.find_last_of('_');
+    
+    // Extract the date sequence from the filename
+    std::string date_seq = file_string.substr(underscore_position + 1);
+
+    // Generate current date sequence
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm* local_tm = std::localtime(&time_t_now);
+    std::ostringstream oss;
+    oss << std::put_time(local_tm, "%Y%m%d");
+    std::string current_date_seq = oss.str();
+
+    // Move the date sequence to the front of the filename
+    std::string filename_without_date = file_string.substr(0, underscore_position);
+    return current_date_seq + "_" + filename_without_date;
+}
+
+
+std::string move_date_to_back(const std::string& file_string) {
+    // Find the position of the last underscore
+    size_t underscore_position = file_string.find_last_of('_');
+    
+    // Extract the filename without the date sequence
+    std::string filename_without_date = file_string.substr(1 +  underscore_position);
+
+    // Generate current date sequence
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm* local_tm = std::localtime(&time_t_now);
+    std::ostringstream oss;
+    oss << std::put_time(local_tm, "%Y%m%d");
+    std::string current_date_seq = oss.str();
+
+    // Construct the new filename with the date sequence at the back
+    return filename_without_date + "_" + current_date_seq;
+}
+
+
 std::string append_date_seq(const std::string& file_string) {
     // Check if the filename already contains a date seq
     size_t dot_position = file_string.find_last_of('.');
