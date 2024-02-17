@@ -314,78 +314,26 @@ std::string append_date_seq(const std::string& file_string) {
 }
 
 
-std::string prepend_date_seq(const std::string& file_string) {
-    // Check if the filename already contains a date seq
+std::string remove_date_seq(const std::string& file_string) {
     size_t dot_position = file_string.find_last_of('.');
     size_t underscore_position = file_string.find_last_of('_');
-    if (dot_position != std::string::npos && underscore_position != std::string::npos && dot_position > underscore_position) {
-        std::string date_seq = file_string.substr(underscore_position + 1, dot_position - underscore_position - 1);
-        if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
-            // Filename already contains a valid date seq, no need to prepend
-            return file_string;
-        }
-    } else if (underscore_position != std::string::npos) {
-        std::string date_seq = file_string.substr(underscore_position + 1);
-        if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
-            // Filename already contains a valid date seq, no need to prepend
-            return file_string;
-        }
-    }
 
-    auto now = std::chrono::system_clock::now();
-    auto time_t_now = std::chrono::system_clock::to_time_t(now);
-    std::tm* local_tm = std::localtime(&time_t_now);
-
-    std::ostringstream oss;
-    oss << std::put_time(local_tm, "%Y%m%d");
-    std::string date_seq = oss.str();
-
-    // Check if date seq exists at the beginning or end of the filename
-    if (file_string.size() >= 8 && (file_string.substr(0, 8) == date_seq || (dot_position != std::string::npos && file_string.substr(file_string.size() - 8) == date_seq))) {
-        return file_string; // Date seq already exists at the beginning or end, no need to prepend
-    }
-
-    if (dot_position != std::string::npos) {
-        return date_seq + "_" + file_string;
-    } else {
-        return date_seq + file_string;
-    }
-}
-
-
-std::string remove_date_seq(const std::string& file_string) {
-    // Find the position of underscore character
-    size_t underscore_position = file_string.find('_');
-
-    // Check if underscore exists and if it's followed by 8 digits
-    if (underscore_position != std::string::npos && file_string.size() - underscore_position >= 9) {
-        std::string potential_date_seq = file_string.substr(underscore_position + 1, 8);
-        
-        // Check if the potential date sequence consists of exactly 8 digits
-        bool is_valid_date_seq = std::all_of(potential_date_seq.begin(), potential_date_seq.end(), ::isdigit);
-
-        // If valid, remove the date sequence from the filename and return
-        if (is_valid_date_seq) {
-            return file_string.substr(0, underscore_position) + file_string.substr(underscore_position + 9);
+    if (underscore_position != std::string::npos) {
+        if (dot_position != std::string::npos && dot_position > underscore_position) {
+            std::string date_seq = file_string.substr(underscore_position + 1, dot_position - underscore_position - 1);
+            if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
+                // Valid date seq found, remove it
+                return file_string.substr(0, underscore_position) + file_string.substr(dot_position);
+            }
+        } else {
+            // No dot found after underscore, consider the substring from underscore to the end as potential date seq
+            std::string date_seq = file_string.substr(underscore_position + 1);
+            if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
+                // Valid date seq found, remove it
+                return file_string.substr(0, underscore_position);
+            }
         }
     }
-
-    // Check if the filename starts with 8 digits followed by an underscore
-    if (file_string.size() >= 9) {
-        std::string potential_date_seq = file_string.substr(0, 8);
-        
-        // Check if the potential date sequence consists of exactly 8 digits
-        bool is_valid_date_seq = std::all_of(potential_date_seq.begin(), potential_date_seq.end(), ::isdigit);
-
-        // If valid, remove the date sequence from the filename and return
-        if (is_valid_date_seq && file_string[8] == '_') {
-            return file_string.substr(9);
-        }
-    }
-
-    // If no valid date sequence is found, return the original filename
-    return file_string;
-}
 
     // No valid date seq found, return original file_string
     return file_string;
