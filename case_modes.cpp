@@ -298,6 +298,10 @@ std::string move_date_to_front(const std::string& file_string) {
     std::string filename_without_date = file_string.substr(0, underscore_position);
 
     // Construct the new filename with the date sequence at the front
+    if (!filename_without_date.empty() && filename_without_date.back() == '_') {
+        // If filename ends with an underscore, remove it
+        filename_without_date.pop_back();
+    }
     return date_seq + "_" + filename_without_date;
 }
 
@@ -305,24 +309,25 @@ std::string move_date_to_front(const std::string& file_string) {
 std::string move_date_to_back(const std::string& file_string) {
     // Find the position of the date sequence (8 digits) in the filename
     size_t date_position = file_string.find_first_of("0123456789");
-    if (date_position != std::string::npos && date_position + 8 <= file_string.length()) {
+    if (date_position != std::string::npos && date_position + 9 <= file_string.length()) {
         // Extract the date sequence
-        std::string date_seq = file_string.substr(date_position, 8);
+        std::string date_seq = file_string.substr(date_position, 9);
+        // Remove the last character from the date sequence
+        date_seq.pop_back();
 
         // Extract the filename without the date sequence
         std::string filename_without_date = file_string.substr(0, date_position) +
-                                            file_string.substr(date_position + 8);
+                                            file_string.substr(date_position + 9);
 
-        // Check if the filename already starts with an underscore
-        if (!filename_without_date.empty() && filename_without_date[0] == '_') {
-            // If it does, remove the leading underscore
-            filename_without_date.erase(0, 1);
+        // Check if the filename already ends with an underscore
+        if (!filename_without_date.empty() && filename_without_date.back() == '_') {
+            // If it does, remove the trailing underscore
+            filename_without_date.pop_back();
         }
 
-        // Construct the new filename with the date sequence at the back
+        // Construct the new filename with the modified date sequence at the back
         return filename_without_date + "_" + date_seq;
     } else {
-        std::cerr << "No date sequence found in the filename." << std::endl;
         return file_string; // Return unchanged if no date sequence found
     }
 }
