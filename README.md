@@ -31,6 +31,7 @@ Options:
 - `rsnake`     Convert underscores to spaces in names (e.g., Te_st => Te st)
 - `kebab`      Convert spaces to hyphens in names (e.g., Te st => Te-st)
 - `rkebab`     Convert hyphens to spaces in names (e.g., Te-st => Te st)
+- `camel`     Convert names to camelCase (e.g., Te st => teSt)
 - `rcamel`     Reverse camelCase in names (e.g., TeSt => te st)
 - `pascal`     Convert names to pascalCase (e.g., Te st => TeSt)
 - `rpascal`    Reverse pascalCase in names (e.g., TeSt => te st)
