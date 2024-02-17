@@ -261,7 +261,7 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
 
 std::string append_numbered_suffix(const std::filesystem::path& parent_path, const std::string& file_string) {
     static std::unordered_map<std::filesystem::path, int> counter_map;
-    
+
     // Initialize counter if not already initialized
     if (counter_map.find(parent_path) == counter_map.end()) {
         // Find the highest existing numbered file
@@ -292,18 +292,24 @@ std::string append_numbered_suffix(const std::filesystem::path& parent_path, con
 
     int& counter = counter_map[parent_path];
 
-    if (!file_string.empty() && std::isdigit(file_string[file_string.size() - 1])) {
-        return file_string;
+    // Extract filename and extension
+    std::filesystem::path filePath = file_string;
+    std::string filename = filePath.stem().string();
+    std::string extension = filePath.extension().string();
+
+    // Check if the file_string already ends with a numeric sequence like "001"
+    std::string numeric_suffix = filename.substr(filename.find_last_of('_') + 1);
+    if (!numeric_suffix.empty() && numeric_suffix.size() == 3 && std::all_of(numeric_suffix.begin(), numeric_suffix.end(), ::isdigit)) {
+        return file_string; // Return the original filename if it already ends with a numeric sequence like "001"
     }
 
+    // Construct the new filename with the incremented counter
     std::ostringstream oss;
-    oss << file_string;
-
-    counter++; // Increment counter after using its current value
-    oss << "_" << std::setfill('0') << std::setw(3) << counter; // Append the counter to the end of the filename
+    oss << filename << "_" << std::setfill('0') << std::setw(3) << (++counter) << extension;
 
     return oss.str();
 }
+
 
 
 std::string remove_numbered_prefix_and_suffix(const std::string& file_string) {
