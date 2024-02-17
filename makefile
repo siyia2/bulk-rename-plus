@@ -7,7 +7,7 @@ NUM_PROCESSORS := $(shell nproc 2>/dev/null)
 # Set the default number of jobs to the number of available processors
 MAKEFLAGS = -j$(NUM_PROCESSORS)
 
-SRC_FILES = bulk_rename++.cpp
+SRC_FILES = bulk_rename++.cpp case_modes.cpp
 OBJ_FILES = $(SRC_FILES:.cpp=.o)
 EXECUTABLE = bulk_rename++
 
