@@ -8,10 +8,6 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
- 
-
-
-
 // Global print functions
 
 void print_error(const std::string& error) {
