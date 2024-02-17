@@ -6,22 +6,44 @@ namespace fs = std::filesystem;
 
 // for Files&Dirs
 
-std::string capitalizeFirstLetter(const std::string& string) {
+std::string sentenceCase(const std::string& string) {
     if (string.empty()) return string; // Handling empty string case
     
-    std::stringstream new_string;
-    bool first = true;
+    std::stringstream result;
+    bool newWord = true;
     
     for (char c : string) {
-        if (first && std::isalpha(c)) {
-            new_string << static_cast<char>(std::toupper(c));
-            first = false;
+        if (newWord && std::isalpha(c)) {
+            result << static_cast<char>(std::toupper(c));
+            newWord = false;
         } else {
-            new_string << static_cast<char>(std::tolower(c));
+            result << static_cast<char>(std::tolower(c));
+        }
+        if (std::isspace(c) || c == '.') { // Consider a new word after a space or period
+            newWord = true;
         }
     }
     
-    return new_string.str();
+    return result.str();
+}
+
+
+std::string capitalizeFirstLetter(const std::string& input) {
+    if (input.empty()) return input; // Handling empty string case
+    
+    std::stringstream result;
+    bool first = true;
+    
+    for (char c : input) {
+        if (first && std::isalpha(c)) {
+            result << static_cast<char>(std::toupper(c));
+            first = false;
+        } else {
+            result << c; // Keep non-alphabetic characters unchanged
+        }
+    }
+    
+    return result.str();
 }
 
 std::string swap_transform(const std::string& string) {

@@ -18,6 +18,7 @@
 
 // case modes
 
+std::string sentenceCase(const std::string& string);
 std::string capitalizeFirstLetter(const std::string& string);
 std::string swap_transform(const std::string& string);
 std::string to_camel_case(const std::string& string);

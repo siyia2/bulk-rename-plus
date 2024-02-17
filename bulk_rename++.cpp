@@ -256,7 +256,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
         "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
-        "nsequence", "rnsequence", "date", "rdate", "swap"
+        "nsequence", "rnsequence", "date", "rdate", "swap","sentence"
     };
 	if (transform_files) {
     for (const auto& transformation : transformation_commands) {
@@ -318,6 +318,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 			else if (transformation == "rdate") {
 				new_name = remove_date_seq(new_name);	
 			}
+			else if (transformation == "sentence") {
+				new_name = sentenceCase(new_name);	
+			}
 		}
 
 	}
@@ -357,7 +360,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Static list of transformation commands
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial",
-        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence","date","rdate"
+        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence","date","rdate","sentence"
     };
 
     // Early exit if directory is a symlink
@@ -422,6 +425,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 }
                 else if (transformation == "rdate") {
                     remove_date_suffix_from_folders(directory_path, dirs_count,verbose_enabled);
+                }
+                else if (transformation == "sentence") {
+                    new_dirname = sentenceCase(new_dirname);
                 }
                 break;
             }
@@ -707,7 +713,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","rdate", "camel", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","rdate", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swap", "rbak", "bak", "noext"};
     }
