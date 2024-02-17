@@ -382,6 +382,35 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
 
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled = false) {
     int counter = 1; // Counter for immediate subdirectories
+    std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
+
+    for (const auto& folder : fs::directory_iterator(base_directory)) {
+        if (folder.is_directory()) {
+            std::string folder_name = folder.path().filename().string();
+
+            // Extract number from the folder name if it is already numbered
+            int number = 0;
+            if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
+                number = std::stoi(folder_name.substr(0, folder_name.find('_')));
+                existing_numbers.insert(number); // Add existing number to set
+            } else {
+                // Skip if not already numbered
+                continue;
+            }
+
+            // Find the first gap in the sequence of numbers
+            int gap = 1;
+            while (existing_numbers.find(gap) != existing_numbers.end()) {
+                gap++;
+            }
+
+            // Increment counter to start from the first gap
+            counter = gap;
+
+            break; // Break loop after finding the first gap
+        }
+    }
+
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory()) {
             std::string folder_name = folder.path().filename().string();
