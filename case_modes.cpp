@@ -306,7 +306,7 @@ std::string move_date_to_back(const std::string& file_string) {
     size_t underscore_position = file_string.find_last_of('_');
     
     // Extract the filename without the date sequence
-    std::string filename_without_date = file_string.substr(1 +  underscore_position);
+    std::string filename_without_date = file_string.substr(underscore_position + 1);
 
     // Generate current date sequence
     auto now = std::chrono::system_clock::now();
