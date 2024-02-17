@@ -19,6 +19,8 @@
 
 // case modes
 
+std::string move_date_to_back(const std::string& file_string);
+std::string move_date_to_front(const std::string& file_string);
 std::string prepend_date_seq(const std::string& file_string);
 std::string sentenceCase(const std::string& string);
 std::string to_pascal(const std::string& string);
