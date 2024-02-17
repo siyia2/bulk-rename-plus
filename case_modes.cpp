@@ -281,6 +281,13 @@ std::string remove_numbered_prefix(const std::string& file_string) {
 
 
 std::string move_date_to_front(const std::string& file_string) {
+    // Check if the filename starts with 8 digits followed by an underscore
+    if (file_string.size() >= 9 &&
+        std::all_of(file_string.begin(), file_string.begin() + 8, ::isdigit) &&
+        file_string[8] == '_') {
+        return file_string; // If so, return the original filename
+    }
+
     // Find the position of the last underscore
     size_t underscore_position = file_string.find_last_of('_');
     
@@ -293,7 +300,6 @@ std::string move_date_to_front(const std::string& file_string) {
     // Construct the new filename with the date sequence at the front
     return date_seq + "_" + filename_without_date;
 }
-
 
 
 std::string move_date_to_back(const std::string& file_string) {
