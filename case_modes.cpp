@@ -219,18 +219,28 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
     if (counter_map.find(parent_path) == counter_map.end()) {
         // Find the highest existing numbered file
         int max_counter = 0;
+        std::unordered_set<int> existing_numbers;
+
         for (const auto& entry : std::filesystem::directory_iterator(parent_path)) {
             if (entry.is_regular_file()) {
                 std::string filename = entry.path().filename().string();
                 if (!filename.empty() && std::isdigit(filename[0])) {
                     int number = std::stoi(filename.substr(0, filename.find('_')));
+                    existing_numbers.insert(number);
                     if (number > max_counter) {
                         max_counter = number;
                     }
                 }
             }
         }
-        counter_map[parent_path] = max_counter + 1; // Start from the next number
+
+        // Find the first gap in the sequence of numbers
+        int gap = 1;
+        while (existing_numbers.find(gap) != existing_numbers.end()) {
+            gap++;
+        }
+
+        counter_map[parent_path] = gap - 1; // Initialize counter with the first gap
     }
 
     int& counter = counter_map[parent_path];
@@ -240,8 +250,8 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
     }
 
     std::ostringstream oss;
+    counter++; // Increment counter before using its current value
     oss << std::setfill('0') << std::setw(3) << counter; // Width set to 3 for leading zeros up to three digits
-    counter++; // Increment counter after using its current value
 
     oss << "_" << file_string;
 
