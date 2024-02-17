@@ -19,6 +19,7 @@
 
 // case modes
 
+std::string append_numbered_suffix(const std::filesystem::path& parent_path, const std::string& file_string);
 std::string move_date_to_back(const std::string& file_string);
 std::string move_date_to_front(const std::string& file_string);
 std::string prepend_date_seq(const std::string& file_string);
@@ -31,7 +32,7 @@ std::string swap_transform(const std::string& string);
 std::string to_camel_case(const std::string& string);
 std::string from_camel_case(const std::string& string);
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string);
-std::string remove_numbered_prefix(const std::string& file_string);
+std::string remove_numbered_prefix_and_suffix(const std::string& file_string);
 std::string append_date_seq(const std::string& file_string);
 std::string remove_date_seq(const std::string& file_string);
 void remove_sequential_numbering_from_folders(const std::filesystem::path& base_directory, int& dirs_count, bool verbose_enabled);
