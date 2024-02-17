@@ -40,6 +40,7 @@ void remove_date_suffix_from_folders(const std::filesystem::path& base_directory
 
 void print_error(const std::string& error);
 void print_verbose_enabled(const std::string& message);
+void printVersionNumber(const std::string& version);
 void print_help();
 void rename_extension(const std::filesystem::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count);
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count);

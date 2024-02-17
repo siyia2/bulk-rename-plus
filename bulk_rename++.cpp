@@ -26,6 +26,10 @@ void print_verbose_enabled(const std::string& message) {
 }
 
 
+void printVersionNumber(const std::string& version) {
+    std::cout << "Bulk-rename-plus v" << version << "\n" << std::endl;
+}
+
 void print_help() {
 
 std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
@@ -52,8 +56,11 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rsnake     Convert underscores to spaces in names (e.g., Te_st => Te st)\n"
           << "  kebab      Convert spaces to hyphens in names (e.g., Te st => Te-st)\n"
           << "  rkebab     Convert hyphens to spaces in names (e.g., Te-st => Te st)\n"
-          << "  camel      Convert names to camelCase (e.g., Te st => TeSt)\n"
-          << "  rcamel     Reverse camelCase in names (e.g., TeSt => Te st)\n"
+          << "  camel      Convert names to camelCase (e.g., Te st => teSt)\n"
+          << "  rcamel     Reverse camelCase in names (e.g., TeSt => te st)\n"
+          << "  pascal     Convert names to pascalCase (e.g., Te st => TeSt)\n"
+          << "  rpascal    Reverse pascalCase in names (e.g., TeSt => te st)\n"
+          << "  sentence    Reverse pascalCase in names (e.g., Te st => Te St)\n"
           << "Extension CASE Modes:\n"
           << "  bak        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
@@ -623,6 +630,12 @@ int main(int argc, char *argv[]) {
 
     if (argc == 1) {
         print_help();
+        return 0;
+    }
+    
+    if (argc > 1 && std::string(argv[1]) == "--version") {
+        // Call the function with the version number
+        printVersionNumber("1.2.2");
         return 0;
     }
 
