@@ -160,15 +160,14 @@ std::string to_pascal(const std::string& string) {
         }
     }
 
-    if (!hasSpace) {
+    if (!hasSpace && hasUpperCase) {
         return string;
     }
-    
 
     std::string result;
     result.reserve(string.size() + 10); // Adjust the reserve size as needed
 
-    bool capitalizeNext = true;
+    bool capitalizeNext = true; // Start with true for PascalCase
     bool afterDot = false;
 
     for (char c : string) {
@@ -177,9 +176,10 @@ std::string to_pascal(const std::string& string) {
         }
         if (afterDot) {
             result += c;
+            capitalizeNext = true; // Reset for new word after period
         } else {
             if (std::isalpha(c)) {
-                result += capitalizeNext ? toupper(c) : tolower(c); // Use toupper directly
+                result += capitalizeNext ? toupper(c) : tolower(c);
                 capitalizeNext = false;
             } else if (c == ' ') {
                 capitalizeNext = true;
