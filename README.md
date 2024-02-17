@@ -15,6 +15,7 @@ Options:
 - `-ce` option stands for case set for file extensions.
 - `-cp` option stands for case set including the lowest parent dir(s).
 - `-v` or `--verbose` option stands for enabling verbose output (optional).
+- `--version` print version.
 
 ### Current suported case modes: 
 
@@ -28,8 +29,10 @@ Options:
 - `rsnake`     Convert underscores to spaces in names (e.g., Te_st => Te st)
 - `kebab`      Convert spaces to hyphens in names (e.g., Te st => Te-st)
 - `rkebab`     Convert hyphens to spaces in names (e.g., Te-st => Te st)
-- `camel`      Convert names to camelCase (e.g., Te st => TeSt)
-- `rcamel`     Reverse camelCase in names (e.g., TeSt => Te st)
+- `rcamel`     Reverse camelCase in names (e.g., TeSt => te st)
+- `pascal`     Convert names to pascalCase (e.g., Te st => TeSt)
+- `rpascal`    Reverse pascalCase in names (e.g., TeSt => te st)
+- `sentence`    Reverse pascalCase in names (e.g., Te st => Te St)
 #### Extension CASE Modes:
 - `bak`        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)
 - `rbak`       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
