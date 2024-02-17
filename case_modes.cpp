@@ -284,6 +284,10 @@ std::string append_date_seq(const std::string& file_string) {
     // Check if the filename already contains a date seq
     size_t dot_position = file_string.find_last_of('.');
     size_t underscore_position = file_string.find_last_of('_');
+    if ((file_string.size() >= 8 && std::all_of(file_string.begin(), file_string.begin() + 8, ::isdigit)) || 
+        (file_string.size() >= 17 && file_string.substr(file_string.size() - 8, 8).find_first_not_of("0123456789") == std::string::npos)) {
+        return file_string; // Return the original filename without appending the date
+    }
     if (dot_position != std::string::npos && underscore_position != std::string::npos && dot_position > underscore_position) {
         std::string date_seq = file_string.substr(underscore_position + 1, dot_position - underscore_position - 1);
         if (date_seq.size() == 8 && std::all_of(date_seq.begin(), date_seq.end(), ::isdigit)) {
@@ -312,6 +316,7 @@ std::string append_date_seq(const std::string& file_string) {
         return file_string + "_" + date_seq;
     }
 }
+
 
 
 std::string prepend_date_seq(const std::string& file_string) {
