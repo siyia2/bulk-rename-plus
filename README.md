@@ -1,5 +1,7 @@
 # bulk-rename-plus
-Multithreaded, Tiny and Powerful C++ CMD tool to rename recursively paths on Linux, useful for batch renaming.
+Tiny and Powerful C++ CMD tool to rename recursively paths on Linux, useful for batch renaming.
+
+Multithreaded at top level with each input path being assigned to a separate thread and at mid-level where each subdirectory is processed by a separate trhead.
 
 Default and recommended installation path is `~/.local/bin/bulk_rename++`, no need to run it as `ROOT` unless of course you know what you are doing.
 
