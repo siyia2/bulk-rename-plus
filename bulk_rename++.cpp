@@ -256,7 +256,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
         "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
-        "nsequence", "rnsequence", "date", "rdate", "swap","sentence"
+        "nsequence", "rnsequence", "date", "rdate", "swap","sentence","pascal","rpascal"
     };
 	if (transform_files) {
     for (const auto& transformation : transformation_commands) {
@@ -321,6 +321,12 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 			else if (transformation == "sentence") {
 				new_name = sentenceCase(new_name);	
 			}
+			else if (transformation == "pascal") {
+				new_name = to_pascal(new_name);	
+			}
+			else if (transformation == "rpascal") {
+				new_name = from_pascal_case(new_name);	
+			}
 		}
 
 	}
@@ -360,7 +366,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Static list of transformation commands
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial",
-        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence","date","rdate","sentence"
+        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence","date","rdate",
+        "pascal", "rpascal"
     };
 
     // Early exit if directory is a symlink
@@ -428,6 +435,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 }
                 else if (transformation == "sentence") {
                     new_dirname = sentenceCase(new_dirname);
+                }
+                else if (transformation == "pascal") {
+                    new_dirname = to_pascal(new_dirname);
+                }
+                else if (transformation == "rpascal") {
+                    new_dirname = from_pascal_case(new_dirname);
                 }
                 break;
             }
@@ -713,7 +726,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","rdate", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swap", "rbak", "bak", "noext"};
     }

@@ -127,7 +127,6 @@ std::string to_camel_case(const std::string& string) {
     return result;
 }
 
-
 std::string from_camel_case(const std::string& string) {
     std::string result;
     result.reserve(string.size() + std::count_if(string.begin(), string.end(), ::isupper)); // Reserve space for the result string
@@ -143,6 +142,73 @@ std::string from_camel_case(const std::string& string) {
 
     return result;
 }
+
+
+std::string to_pascal(const std::string& string) {
+    bool hasUpperCase = false;
+    bool hasSpace = false;
+
+    for (char c : string) {
+        if (std::isupper(c)) {
+            hasUpperCase = true;
+        } else if (c == ' ') {
+            hasSpace = true;
+        }
+        if (c == '.') {
+            // Stop processing after encountering a period
+            break;
+        }
+    }
+
+    if (!hasSpace && hasUpperCase) {
+        return string;
+    }
+    
+
+    std::string result;
+    result.reserve(string.size() + 10); // Adjust the reserve size as needed
+
+    bool capitalizeNext = true;
+    bool afterDot = false;
+
+    for (char c : string) {
+        if (c == '.') {
+            afterDot = true;
+        }
+        if (afterDot) {
+            result += c;
+        } else {
+            if (std::isalpha(c)) {
+                result += capitalizeNext ? toupper(c) : tolower(c); // Use toupper directly
+                capitalizeNext = false;
+            } else if (c == ' ') {
+                capitalizeNext = true;
+            } else {
+                result += c;
+            }
+        }
+    }
+
+    return result;
+}
+
+
+std::string from_pascal_case(const std::string& string) {
+    std::string result;
+    result.reserve(string.size() + std::count_if(string.begin(), string.end(), ::isupper)); // Reserve space for the result string
+
+    for (char c : string) {
+        if (std::isupper(c)) {
+            result += ' ';
+            result += std::tolower(c);
+        } else {
+            result += c;
+        }
+    }
+
+    return result;
+}
+
 
 // For Files
 

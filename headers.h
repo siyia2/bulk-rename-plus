@@ -19,6 +19,9 @@
 // case modes
 
 std::string sentenceCase(const std::string& string);
+std::string to_pascal(const std::string& string);
+std::string from_pascal_case(const std::string& string);
+std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string);
 std::string capitalizeFirstLetter(const std::string& string);
 std::string swap_transform(const std::string& string);
 std::string to_camel_case(const std::string& string);
