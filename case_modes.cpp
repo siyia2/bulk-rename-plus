@@ -160,7 +160,7 @@ std::string to_pascal(const std::string& string) {
         }
     }
 
-    if (!hasSpace && hasUpperCase) {
+    if (!hasSpace) {
         return string;
     }
     
