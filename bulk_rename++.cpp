@@ -8,6 +8,7 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
+
 // Global print functions
 
 void print_error(const std::string& error) {
@@ -57,23 +58,22 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rcamel     Reverse camelCase in names (e.g., TeSt => te st)\n"
           << "  pascal     Convert names to pascalCase (e.g., Te st => TeSt)\n"
           << "  rpascal    Reverse pascalCase in names (e.g., TeSt => te st)\n"
-          << "  sentence   Reverse pascalCase in names (e.g., Te st => Te St)\n"
+          << "  sentence    Reverse pascalCase in names (e.g., Te st => Te St)\n"
           << "Extension CASE Modes:\n"
           << "  bak        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
           << "  noext      Remove file extensions (e.g., Test.txt => Test)\n"
-	  << "Numerical CASE Modes:\n"
-	  << "  nsequence  Append sequential numbering  (e.g., Test => 001_Test)\n"
+		  << "Numerical CASE Modes:\n"
+		  << "  nsequence  Apply sequential numbering  (e.g., Test => 001_Test)\n"
           << "  rnsequence Remove sequential numbering from names (e.g., 001_Test => Test)\n"
-	  << "  date       Append current date stamp (e.g., Test => Test_20240215)\n"
-	  << "  rdate      Remove date (e.g., Test_20240215 => Test)\n"
-	  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
+		  << "  date       Apply current date (e.g., Test => Test_20240215)\n"
+		  << "  rdate      Remove date (e.g., Test_20240215 => Test)\n"
+		  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
           << "Custom CASE Modes:\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
           << "  rspecial   Remove special characters from names (e.g., @T!es#$%^|&~`';?t => Test)\n"
           << "  swap       Swap upper-lower case for names including extensions (e.g., Test.txt => TeSt.TxT)\n"
-	  << "  swapr      Swap lower-upper case for names including extensions (e.g., Test.txt => tEsT.tXt)\n"
           << "\n"
           << "Examples:\n"
           << "  bulk_rename++ -c lower [path1] [path2]...\n"
@@ -123,8 +123,6 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
         new_extension.clear(); // Clearing extension removes it
     } else if (case_input == "swap") {
         new_extension = swap_transform(extension);
-    } else if (case_input == "swapr") {
-        new_extension = swapr_transform(extension);
     }
 
     if (extension != new_extension) {
@@ -263,7 +261,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
         "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
-        "nsequence", "rnsequence", "date", "rdate", "swap","sentence","pascal","rpascal","swapr"
+        "nsequence", "rnsequence", "dateb", "datef", "rdate", "swap","sentence","pascal","rpascal","mvdatef", "mvdateb","nsequence2"
     };
 	if (transform_files) {
     for (const auto& transformation : transformation_commands) {
@@ -312,31 +310,32 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             } else if (transformation == "rcamel") {
                 new_name = from_camel_case(new_name);
             } else if (transformation == "nsequence") {
-                // Check if the filename is already numbered
                 new_name = append_numbered_prefix(parent_path, new_name);
+            } else if (transformation == "nsequence2") {
+                new_name = append_numbered_suffix(parent_path, new_name);
             } else if (transformation == "rnsequence") {
-                new_name = remove_numbered_prefix(new_name);
-            } else if (transformation == "date") {
-				new_name = append_date_seq(new_name);
-			} 
-			else if (transformation == "swap") {
-				new_name = swapr_transform(new_name);	
+                new_name = remove_numbered_prefix_and_suffix(new_name);
+            } else if (transformation == "dateb") {
+				new_name = renameFile(new_name); 
+			} else if (transformation == "datef") {
+				new_name = prepend_date_seq(new_name);
+			} else if (transformation == "mvdatef") {
+				new_name = move_date_to_front(new_name);
+			} else if (transformation == "mvdateb") {
+				new_name = move_date_to_back(new_name);
 			}
-				else if (transformation == "swapr") {
+			else if (transformation == "swap") {
 				new_name = swap_transform(new_name);	
 			} 
 			else if (transformation == "rdate") {
 				new_name = remove_date_seq(new_name);	
-			}
-			else if (transformation == "sentence") {
+			} else if (transformation == "sentence") {
 				new_name = sentenceCase(new_name);	
-			}
-			else if (transformation == "pascal") {
+			} else if (transformation == "pascal") {
 				new_name = to_pascal(new_name);	
-			}
-			else if (transformation == "rpascal") {
+			} else if (transformation == "rpascal") {
 				new_name = from_pascal_case(new_name);	
-			}
+		}
 		}
 
 	}
@@ -377,7 +376,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     static const std::vector<std::string> transformation_commands = {
         "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial",
         "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence","date","rdate",
-        "pascal", "rpascal","swapr"
+        "pascal", "rpascal"
     };
 
     // Early exit if directory is a symlink
@@ -432,8 +431,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
-                    new_dirname = swap_transform(new_dirname);
-		} else if (transformation == "swapr") {
                     new_dirname = swap_transform(new_dirname);
                 } else if (transformation == "nsequence") {
                     rename_folders_with_sequential_numbering(directory_path, dirs_count,verbose_enabled);
@@ -640,7 +637,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.2.3");
+        printVersionNumber("1.2.4");
         return 0;
     }
 
@@ -744,7 +741,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","swapr","rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "datef", "dateb", "swap", "mvdatef", "mvdateb", "rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence","nsequence2", "rnsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swap", "rbak", "bak", "noext"};
     }
