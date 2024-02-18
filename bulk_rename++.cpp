@@ -73,7 +73,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
           << "  rspecial   Remove special characters from names (e.g., @T!es#$%^|&~`';?t => Test)\n"
           << "  swap       Swap upper-lower case for names (e.g., Test => TeSt)\n"
-		  << "  swapr      Swap lower-upper case for names (e.g., Test.txt => tEsT)\n"
+		  << "  swapr      Swap lower-upper case for names (e.g., Test => tEsT)\n"
           << "\n"
           << "Examples:\n"
           << "  bulk_rename++ -c lower [path1] [path2]...\n"
@@ -93,6 +93,7 @@ static const std::vector<std::string> transformation_commands = {
     "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
     "nsequence", "rnsequence", "date", "rdate", "swap","sentence","pascal","rpascal","swapr"
 };
+
 
 void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count) {
     if (!fs::is_regular_file(item_path)) {
@@ -614,7 +615,6 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
-
 
 
 int main(int argc, char *argv[]) {
