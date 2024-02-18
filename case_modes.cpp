@@ -79,6 +79,39 @@ std::string swap_transform(const std::string& string) {
     return transformed.str();
 }
 
+std::string swapr_transform(const std::string& string) {
+    std::stringstream transformed;
+    bool capitalize = false; // Start by capitalizing
+    bool inFolderName = true; // Start within folder name
+    size_t folderDelimiter = string.find_last_of("/\\"); // Find the last folder delimiter
+    size_t length = string.length(); // Cache the length of the string string
+
+    for (size_t i = 0; i < length; ++i) {
+        char c = string[i];
+        if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
+            if (inFolderName) {
+                transformed << static_cast<char>(std::tolower(c)); // lower first character in folder name
+                inFolderName = false; // Exit folder name after first character
+            } else {
+                if (std::isalpha(c)) {
+                    if (capitalize) {
+                        transformed << static_cast<char>(std::tolower(c));
+                    } else {
+                        transformed << static_cast<char>(std::toupper(c));
+                    }
+                    capitalize = !capitalize; // Toggle between lower and upper case
+                } else {
+                    transformed << c; // Keep non-alphabetic characters unchanged
+                }
+            }
+        } else {
+            transformed << c; // Keep characters after the folder delimiter unchanged
+        }
+    }
+
+    return transformed.str();
+}
+
 
 std::string to_camel_case(const std::string& string) {
     bool hasUpperCase = false;
