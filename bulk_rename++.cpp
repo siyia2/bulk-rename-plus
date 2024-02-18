@@ -8,7 +8,6 @@ std::mutex files_count_mutex;
 
 // General purpose stuff
 
-
 // Global print functions
 
 void print_error(const std::string& error) {
@@ -58,22 +57,23 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rcamel     Reverse camelCase in names (e.g., TeSt => te st)\n"
           << "  pascal     Convert names to pascalCase (e.g., Te st => TeSt)\n"
           << "  rpascal    Reverse pascalCase in names (e.g., TeSt => te st)\n"
-          << "  sentence    Reverse pascalCase in names (e.g., Te st => Te St)\n"
+          << "  sentence   Reverse pascalCase in names (e.g., Te st => Te St)\n"
           << "Extension CASE Modes:\n"
           << "  bak        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
           << "  noext      Remove file extensions (e.g., Test.txt => Test)\n"
 		  << "Numerical CASE Modes:\n"
-		  << "  nsequence  Apply sequential numbering  (e.g., Test => 001_Test)\n"
+	      << "  nsequence  Append sequential numbering  (e.g., Test => 001_Test)\n"
           << "  rnsequence Remove sequential numbering from names (e.g., 001_Test => Test)\n"
-		  << "  date       Apply current date (e.g., Test => Test_20240215)\n"
-		  << "  rdate      Remove date (e.g., Test_20240215 => Test)\n"
-		  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
+	      << "  date       Append current date to names if no date pre-exists (e.g., Test => Test_20240215)\n"
+	      << "  rdate      Remove date from names (e.g., Test_20240215 => Test)\n"
+	      << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
           << "Custom CASE Modes:\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
           << "  rspecial   Remove special characters from names (e.g., @T!es#$%^|&~`';?t => Test)\n"
-          << "  swap       Swap upper-lower case for names including extensions (e.g., Test.txt => TeSt.TxT)\n"
+          << "  swap       Swap upper-lower case for names (e.g., Test => TeSt)\n"
+		  << "  swapr      Swap lower-upper case for names (e.g., Test.txt => tEsT)\n"
           << "\n"
           << "Examples:\n"
           << "  bulk_rename++ -c lower [path1] [path2]...\n"
@@ -88,6 +88,12 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
 
 // Extension stuff
 
+static const std::vector<std::string> transformation_commands = {
+    "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
+    "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
+    "nsequence", "rnsequence", "date", "rdate", "swap","sentence","pascal","rpascal","swapr"
+};
+
 void rename_extension(const fs::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count) {
     if (!fs::is_regular_file(item_path)) {
         if (verbose_enabled) {
@@ -99,54 +105,61 @@ void rename_extension(const fs::path& item_path, const std::string& case_input, 
     std::string extension = item_path.extension().string();
     std::string new_extension = extension;
 
-    if (case_input == "lower") {
-        std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
-    } else if (case_input == "upper") {
-        std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
-    } else if (case_input == "reverse") {
-        std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
-            return std::islower(c) ? std::toupper(c) : std::tolower(c);
-        });
-    } else if (case_input == "title") {
-        new_extension = capitalizeFirstLetter(new_extension);
-    } else if (case_input == "bak") {
-        if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
-            new_extension = extension + ".bak";
-        } else {
-            new_extension = extension; // Keep the extension unchanged
-        }
-    } else if (case_input == "rbak") {
-        if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
-            new_extension = extension.substr(0, extension.length() - 4);
-        }
-    } else if (case_input == "noext") {
-        new_extension.clear(); // Clearing extension removes it
-    } else if (case_input == "swap") {
-        new_extension = swap_transform(extension);
-    }
-
-    if (extension != new_extension) {
-        fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
-        try {
-            fs::rename(item_path, new_path);
-            ++files_count;
-            if (verbose_enabled) {
-                std::lock_guard<std::mutex> lock(files_count_mutex);
-                std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
+    if (std::find(transformation_commands.begin(), transformation_commands.end(), case_input) != transformation_commands.end()) {
+        // Case input is valid
+        if (case_input == "lower") {
+            std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
+        } else if (case_input == "upper") {
+            std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
+        } else if (case_input == "reverse") {
+            std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
+                return std::islower(c) ? std::toupper(c) : std::tolower(c);
+            });
+        } else if (case_input == "title") {
+            new_extension = capitalizeFirstLetter(new_extension);
+        } else if (case_input == "bak") {
+            if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
+                new_extension = extension + ".bak";
+            } else {
+                new_extension = extension; // Keep the extension unchanged
             }
-        } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+        } else if (case_input == "rbak") {
+            if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
+                new_extension = extension.substr(0, extension.length() - 4);
+            }
+        } else if (case_input == "noext") {
+            new_extension.clear(); // Clearing extension removes it
+        } else if (case_input == "swap") {
+            new_extension = swapr_transform(extension);
+        } else if (case_input == "swapr") {
+            new_extension = swap_transform(extension);
+        }
+
+        if (extension != new_extension) {
+            fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
+            try {
+                fs::rename(item_path, new_path);
+                ++files_count;
+                if (verbose_enabled) {
+                    std::lock_guard<std::mutex> lock(files_count_mutex);
+                    std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
+                }
+            } catch (const fs::filesystem_error& e) {
+                std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+            }
+        } else {
+            if (verbose_enabled) {
+                std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
+                if (extension.empty()) {
+                    std::cout << " (no extension)";
+                } else {
+                    std::cout << " (extension unchanged)";
+                }
+                std::cout << std::endl;
+            }
         }
     } else {
-        if (verbose_enabled) {
-            std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
-            if (extension.empty()) {
-                std::cout << " (no extension)";
-            } else {
-                std::cout << " (extension unchanged)";
-            }
-            std::cout << std::endl;
-        }
+        std::cerr << "Invalid transformation command: " << case_input << std::endl;
     }
 }
 
@@ -257,12 +270,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name;
     fs::path new_path;
 
-    // Static list of transformation commands
-    static const std::vector<std::string> transformation_commands = {
-        "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
-        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
-        "nsequence", "rnsequence", "dateb", "datef", "rdate", "swap","sentence","pascal","rpascal","mvdatef", "mvdateb","nsequence2"
-    };
 	if (transform_files) {
     for (const auto& transformation : transformation_commands) {
         if (case_input.find(transformation) != std::string::npos) {
@@ -310,32 +317,31 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             } else if (transformation == "rcamel") {
                 new_name = from_camel_case(new_name);
             } else if (transformation == "nsequence") {
+                // Check if the filename is already numbered
                 new_name = append_numbered_prefix(parent_path, new_name);
-            } else if (transformation == "nsequence2") {
-                new_name = append_numbered_suffix(parent_path, new_name);
             } else if (transformation == "rnsequence") {
-                new_name = remove_numbered_prefix_and_suffix(new_name);
-            } else if (transformation == "dateb") {
-				new_name = renameFile(new_name); 
-			} else if (transformation == "datef") {
-				new_name = prepend_date_seq(new_name);
-			} else if (transformation == "mvdatef") {
-				new_name = move_date_to_front(new_name);
-			} else if (transformation == "mvdateb") {
-				new_name = move_date_to_back(new_name);
-			}
+                new_name = remove_numbered_prefix(new_name);
+            } else if (transformation == "date") {
+				new_name = append_date_seq(new_name);
+			} 
 			else if (transformation == "swap") {
 				new_name = swap_transform(new_name);	
+			}
+				else if (transformation == "swapr") {
+				new_name = swapr_transform(new_name);	
 			} 
 			else if (transformation == "rdate") {
 				new_name = remove_date_seq(new_name);	
-			} else if (transformation == "sentence") {
+			}
+			else if (transformation == "sentence") {
 				new_name = sentenceCase(new_name);	
-			} else if (transformation == "pascal") {
+			}
+			else if (transformation == "pascal") {
 				new_name = to_pascal(new_name);	
-			} else if (transformation == "rpascal") {
+			}
+			else if (transformation == "rpascal") {
 				new_name = from_pascal_case(new_name);	
-		}
+			}
 		}
 
 	}
@@ -372,12 +378,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string new_dirname = dirname; // Initialize with original name
     bool renaming_message_printed = false;
 
-    // Static list of transformation commands
-    static const std::vector<std::string> transformation_commands = {
-        "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial",
-        "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", "swap","nsequence","rnsequence","date","rdate",
-        "pascal", "rpascal"
-    };
 
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
@@ -399,9 +399,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                         return std::islower(c) ? std::toupper(c) : std::tolower(c);
                     });
                 } else if (case_input == "title") {
-					new_dirname= capitalizeFirstLetter(new_dirname);
-					
-        
+					new_dirname= capitalizeFirstLetter(new_dirname);	        
                 } else if (transformation == "snake") {
                     std::replace(new_dirname.begin(), new_dirname.end(), ' ', '_');
                 } else if (transformation == "rsnake") {
@@ -432,6 +430,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
                     new_dirname = swap_transform(new_dirname);
+				} else if (transformation == "swapr") {
+                    new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "nsequence") {
                     rename_folders_with_sequential_numbering(directory_path, dirs_count,verbose_enabled);
                 } else if (transformation == "rnsequence") {
@@ -526,7 +526,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 }
-
 
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled,bool transform_dirs, bool transform_files, int depth)  {
@@ -637,7 +636,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.2.4");
+        printVersionNumber("1.2.3");
         return 0;
     }
 
@@ -741,9 +740,9 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "datef", "dateb", "swap", "mvdatef", "mvdateb", "rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence","nsequence2", "rnsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","swapr","rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
     } else { // Valid modes for -c
-        valid_modes = {"lower", "upper", "reverse", "title", "swap", "rbak", "bak", "noext"};
+        valid_modes = {"lower", "upper", "reverse", "title", "swap", "swapr", "rbak", "bak", "noext"};
     }
 
     if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
