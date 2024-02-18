@@ -31,11 +31,11 @@ Options:
 - `rsnake`     Convert underscores to spaces in names (e.g., Te_st => Te st)
 - `kebab`      Convert spaces to hyphens in names (e.g., Te st => Te-st)
 - `rkebab`     Convert hyphens to spaces in names (e.g., Te-st => Te st)
-- `camel`     Convert names to camelCase (e.g., Te st => teSt)
+- `camel`      Convert names to camelCase (e.g., Te st => teSt)
 - `rcamel`     Reverse camelCase in names (e.g., TeSt => te st)
 - `pascal`     Convert names to pascalCase (e.g., Te st => TeSt)
 - `rpascal`    Reverse pascalCase in names (e.g., TeSt => te st)
-- `sentence`    Convert names to sentenceCase (e.g., Te st => Te St)
+- `sentence`   Convert names to sentenceCase (e.g., Te st => Te St)
 #### Extension CASE Modes:
 - `bak`        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)
 - `rbak`       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
@@ -51,7 +51,7 @@ Options:
 - `roperand`   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
 - `rspecial`   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
 - `swap`       Swap upper-lower case for names (e.g., Test => TeSt)
-- `swap`       Swap upper-lower case for names (e.g., Test => tEsT)
+- `swapr`      Swap lower-upper case for names (e.g., Test => tEsT)
 
 for more help and usage examples:
 
