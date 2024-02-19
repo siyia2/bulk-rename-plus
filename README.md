@@ -44,8 +44,8 @@ Options:
 - `nsequence`  Append sequential numbering to names if no numbering pre-exists (e.g., Test => 001_Test)
 - `rnsequence` Remove sequential numbering from names (e.g., 001_Test => Test)\n"
 - `date`       Append current date to names if no date pre-exists (e.g., Test => Test_20240215)
-- `rdate`      Remove date from names (e.g., Test_20240215 => Test)\n"
-- `rnumeric`   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
+- `rdate`      Remove date from names (e.g., Test_20240215 => Test)
+- `rnumeric`   Remove numeric characters from names (e.g., 1Te0st2 => Test)
 #### Custom CASE Modes:
 - `rbra`       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)
 - `roperand`   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
