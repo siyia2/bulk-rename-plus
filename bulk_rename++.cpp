@@ -8,7 +8,6 @@ std::mutex files_count_mutex;
 
 // Global print functions
 
-int files_count = 0;
 int batch_size = 10;
 
 void print_error(const std::string& error) {
@@ -671,6 +670,7 @@ int main(int argc, char *argv[]) {
     bool rename_parents = false;
     bool rename_extensions = false;
     bool verbose_enabled = false;
+    int files_count = 0;
     int depth = -1;
     bool case_specified = false;
     bool transform_dirs = true;
