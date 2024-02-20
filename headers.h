@@ -15,6 +15,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+namespace fs = std::filesystem;
+
 // Function prototypes
 
 // case modes
@@ -44,7 +46,7 @@ void print_error(const std::string& error);
 void print_verbose_enabled(const std::string& message);
 void printVersionNumber(const std::string& version);
 void print_help();
-void rename_extension(const std::filesystem::path& item_path, const std::string& case_input, bool verbose_enabled, int& files_count);
+void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count);
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count);
 void rename_file(const std::filesystem::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count);
 void rename_directory(const std::filesystem::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth);
