@@ -8,6 +8,8 @@ std::mutex files_count_mutex;
 
 // Global print functions
 
+int batch_size = 10;
+
 void print_error(const std::string& error) {
     std::lock_guard<std::mutex> lock(cout_mutex);
     std::cerr << error << std::endl;
@@ -93,73 +95,100 @@ static const std::vector<std::string> transformation_commands = {
 };
 
 
-void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count) {
-    for (const auto& item_path : item_paths) {
-        if (!fs::is_regular_file(item_path)) {
-            if (verbose_enabled) {
-                std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
-            }
-            continue;
-        }
+void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size) {
+    for (size_t i = 0; i < item_paths.size(); i += batch_size) {
+        auto batch_begin = item_paths.begin() + i;
+        auto batch_end = std::min(batch_begin + batch_size, item_paths.end());
+        std::vector<fs::path> batch(batch_begin, batch_end);
 
-        std::string extension = item_path.extension().string();
-        std::string new_extension = extension;
-
-        if (std::find(transformation_commands.begin(), transformation_commands.end(), case_input) != transformation_commands.end()) {
-            // Case input is valid
-            if (case_input == "lower") {
-                std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
-            } else if (case_input == "upper") {
-                std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
-            } else if (case_input == "reverse") {
-                std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
-                    return std::islower(c) ? std::toupper(c) : std::tolower(c);
-                });
-            } else if (case_input == "title") {
-                new_extension = capitalizeFirstLetter(new_extension);
-            } else if (case_input == "bak") {
-                if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
-                    new_extension = extension + ".bak";
-                } else {
-                    new_extension = extension; // Keep the extension unchanged
+        for (const auto& item_path : batch) {
+            if (!fs::is_regular_file(item_path)) {
+                if (verbose_enabled) {
+                    std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
                 }
-            } else if (case_input == "rbak") {
-                if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
-                    new_extension = extension.substr(0, extension.length() - 4);
-                }
-            } else if (case_input == "noext") {
-                new_extension.clear(); // Clearing extension removes it
-            } else if (case_input == "swap") {
-                new_extension = swapr_transform(extension);
-            } else if (case_input == "swapr") {
-                new_extension = swap_transform(extension);
+                continue;
             }
 
-            if (extension != new_extension) {
-                fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
-                try {
-                    fs::rename(item_path, new_path);
-                    ++files_count;
-                    if (verbose_enabled) {
-                        std::lock_guard<std::mutex> lock(files_count_mutex);
-                        std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
+            std::string extension = item_path.extension().string();
+            std::string new_extension = extension;
+
+            if (std::find(transformation_commands.begin(), transformation_commands.end(), case_input) != transformation_commands.end()) {
+                // Case input is valid
+                if (case_input == "lower") {
+                    std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
+                } else if (case_input == "upper") {
+                    std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
+                } else if (case_input == "reverse") {
+                    std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
+                        return std::islower(c) ? std::toupper(c) : std::tolower(c);
+                    });
+                } else if (case_input == "title") {
+                    new_extension = capitalizeFirstLetter(new_extension);
+                } else if (case_input == "bak") {
+                    if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
+                        new_extension = extension + ".bak";
+                    } else {
+                        new_extension = extension; // Keep the extension unchanged
                     }
-                } catch (const fs::filesystem_error& e) {
-                    std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+                } else if (case_input == "rbak") {
+                    if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
+                        new_extension = extension.substr(0, extension.length() - 4);
+                    }
+                } else if (case_input == "noext") {
+                    new_extension.clear(); // Clearing extension removes it
+                } else if (case_input == "swap") {
+                    new_extension = swapr_transform(extension);
+                } else if (case_input == "swapr") {
+                    new_extension = swap_transform(extension);
+                }
+
+                if (extension != new_extension) {
+                    fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
+                    try {
+                        fs::rename(item_path, new_path);
+                        ++files_count;
+                        if (verbose_enabled) {
+                            std::lock_guard<std::mutex> lock(files_count_mutex);
+                            std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
+                        }
+                    } catch (const fs::filesystem_error& e) {
+                        std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+                    }
+                } else {
+                    if (verbose_enabled) {
+                        std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
+                        if (extension.empty()) {
+                            std::cout << " (no extension)";
+                        } else {
+                            std::cout << " (extension unchanged)";
+                        }
+                        std::cout << std::endl;
+                    }
                 }
             } else {
-                if (verbose_enabled) {
-                    std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
-                    if (extension.empty()) {
-                        std::cout << " (no extension)";
-                    } else {
-                        std::cout << " (extension unchanged)";
-                    }
-                    std::cout << std::endl;
-                }
+                std::cerr << "Invalid transformation command: " << case_input << std::endl;
             }
-        } else {
-            std::cerr << "Invalid transformation command: " << case_input << std::endl;
+        }
+    }
+}
+
+void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, size_t batch_size) {
+    for (size_t i = 0; i < data.size(); i += batch_size) {
+        auto batch_begin = data.begin() + i;
+        auto batch_end = std::min(batch_begin + batch_size, data.end());
+        std::vector<std::pair<fs::path, fs::path>> batch(batch_begin, batch_end);
+
+        for (const auto& [old_path, new_path] : batch) {
+            try {
+                fs::rename(old_path, new_path);
+                ++files_count; // Update files_count when a file is successfully renamed
+                if (verbose_enabled) {
+                    std::lock_guard<std::mutex> lock(files_count_mutex);
+                    std::cout << "\033[0m\033[92mRenamed\033[0m file " << old_path.string() << " to " << new_path.string() << std::endl;
+                }
+            } catch (const fs::filesystem_error& e) {
+                std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+            }
         }
     }
 }
@@ -214,11 +243,11 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                         if (fs::is_directory(entry)) {
                             directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                         } else if (fs::is_regular_file(entry)) {
-                            rename_extension({entry.path()}, case_input, verbose_enabled, files_count);
+                            rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size);
                         }
                     }
                 } else if (fs::is_regular_file(current_fs_path)) {
-                    rename_extension({current_fs_path}, case_input, verbose_enabled, files_count);
+                    rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size);
                 } else {
                     print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
@@ -243,7 +272,10 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
 // Rename file&directory stuff
 
-void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count) {
+void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory,
+                bool verbose_enabled, bool transform_dirs, bool transform_files,
+                int& files_count, int& dirs_count, int batch_size = 10) {
+				std::vector<std::pair<fs::path, std::string>> rename_data;
     // Check if the item is a directory
     if (is_directory) {
         // If it is a directory, recursively process its contents
@@ -347,30 +379,45 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
 	}
 }
-    // Skip renaming if the new name is the same as the old name
-    if (name != new_name) {
-        // Construct the new path within the same parent directory
-        new_path = parent_path / std::move(new_name);
+    // Add data to the list if new name differs
+  if (name != new_name) {
+    rename_data.push_back({item_path, new_name});
+  }
 
-        try {
-            // Rename the file
-            fs::rename(item_path, new_path);
 
-            if (verbose_enabled) {
-                print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
-            }
-            // Increment the file count
-            std::lock_guard<std::mutex> lock(files_count_mutex);
-            ++files_count;
-        } catch (const fs::filesystem_error& e) {
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-        }
-    } else {
-        // Print a message if the name remains unchanged
-        if (verbose_enabled && (!transform_dirs || (transform_dirs && transform_files))) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + " (name unchanged)");
-        }
+// Check if batch size is reached and perform renaming:
+if (rename_data.size() >= batch_size) {
+  rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
+  rename_data.clear();
+}
+
+// Rename any remaining data after processing the loop:
+if (!rename_data.empty()) {
+  rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
+}
+}
+
+
+void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data,
+                  bool verbose_enabled, int& files_count, int& dirs_count) {
+  // Use a loop to rename each item in the batch
+  for (const auto& [item_path, new_name] : data) {
+    fs::path new_path = item_path.parent_path() / new_name;
+    try {
+      fs::rename(item_path, new_path);
+      if (verbose_enabled) {
+        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
+      }
+      std::filesystem::directory_entry entry(new_path);
+      if (entry.is_regular_file()) {
+        ++files_count; // Update files_count when a file is successfully renamed
+      } else {
+        ++dirs_count;
+      }
+    } catch (const fs::filesystem_error& e) {
+      std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
     }
+  }
 }
 
 

@@ -1,7 +1,5 @@
 #include "headers.h"
 
-namespace fs = std::filesystem;
-
 // Separate string operations
 
 // for Files&Dirs
@@ -39,12 +37,13 @@ std::string capitalizeFirstLetter(const std::string& input) {
             result << static_cast<char>(std::toupper(c));
             first = false;
         } else {
-            result << c; // Keep non-alphabetic characters unchanged
+            result << static_cast<char>(std::tolower(c)); // Convert to lowercase
         }
     }
     
     return result.str();
 }
+
 
 std::string swap_transform(const std::string& string) {
     std::stringstream transformed;
