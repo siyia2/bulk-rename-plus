@@ -47,6 +47,7 @@ void print_verbose_enabled(const std::string& message);
 void printVersionNumber(const std::string& version);
 void print_help();
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count);
+void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count);
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count);
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory,
                 bool verbose_enabled, bool transform_dirs, bool transform_files,

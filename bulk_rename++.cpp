@@ -96,7 +96,10 @@ static const std::vector<std::string> transformation_commands = {
 };
 
 
+
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count) {
+    std::vector<std::pair<fs::path, fs::path>> rename_data;
+
     for (const auto& item_path : item_paths) {
         if (!fs::is_regular_file(item_path)) {
             if (verbose_enabled) {
@@ -140,16 +143,8 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 
             if (extension != new_extension) {
                 fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
-                try {
-                    fs::rename(item_path, new_path);
-                    ++files_count;
-                    if (verbose_enabled) {
-                        std::lock_guard<std::mutex> lock(files_count_mutex);
-                        std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
-                    }
-                } catch (const fs::filesystem_error& e) {
-                    std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-                }
+                rename_data.push_back({item_path, new_path});
+                // Increment files_count here if needed (depends on your logic)
             } else {
                 if (verbose_enabled) {
                     std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
@@ -163,6 +158,27 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
             }
         } else {
             std::cerr << "Invalid transformation command: " << case_input << std::endl;
+        }
+    }
+
+    // Check if batch size is reached and perform renaming:
+    if (!rename_data.empty()) {
+        batch_rename_extension(rename_data, verbose_enabled, files_count);
+    }
+}
+
+void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count) {
+    // Use a loop to rename each item in the batch
+    for (const auto& [old_path, new_path] : data) {
+        try {
+            fs::rename(old_path, new_path);
+            ++files_count; // Update files_count when a file is successfully renamed
+            if (verbose_enabled) {
+                std::lock_guard<std::mutex> lock(files_count_mutex);
+                std::cout << "\033[0m\033[92mRenamed\033[0m file " << old_path.string() << " to " << new_path.string() << std::endl;
+            }
+        } catch (const fs::filesystem_error& e) {
+            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
         }
     }
 }
