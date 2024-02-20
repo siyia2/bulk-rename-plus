@@ -8,6 +8,7 @@ std::mutex files_count_mutex;
 
 // Global print functions
 
+int files_count = 0;
 int batch_size = 10;
 
 void print_error(const std::string& error) {
@@ -370,6 +371,7 @@ if (!rename_data.empty()) {
 }
 }
 
+
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data,
                   bool verbose_enabled, int& files_count, int& dirs_count) {
   // Use a loop to rename each item in the batch
@@ -380,9 +382,9 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data,
       if (verbose_enabled) {
         print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
       }
-      std::filesystem::directory_entry entry(item_path);
-if (entry.is_regular_file()) {
-        ++files_count;
+      std::filesystem::directory_entry entry(new_path);
+      if (entry.is_regular_file()) {
+        ++files_count; // Update files_count when a file is successfully renamed
       } else {
         ++dirs_count;
       }
@@ -642,7 +644,6 @@ int main(int argc, char *argv[]) {
     bool rename_parents = false;
     bool rename_extensions = false;
     bool verbose_enabled = false;
-    int files_count = 0;
     int depth = -1;
     bool case_specified = false;
     bool transform_dirs = true;
