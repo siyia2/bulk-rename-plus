@@ -3,7 +3,7 @@ Tiny and Powerful C++ CMD tool to rename recursively paths on Linux, useful for 
 
 Multithreaded at the top level with each input path being assigned to a separate thread and at the mid-level where each subdirectory is processed by a separate thread.
 
-Default and recommended installation path is `~/.local/bin/bulk_rename++`, no need to run it as `ROOT` unless of course you know what you are doing.
+Default and recommended installation path is `~/.local/bin/bulk_rename++`, no need to run as `ROOT` unless of course you know what you are doing.
 
 ## How to use:
 
