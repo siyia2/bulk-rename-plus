@@ -1,7 +1,5 @@
 #include "headers.h"
 
-namespace fs = std::filesystem;
-
 // Separate string operations
 
 // for Files&Dirs
