@@ -282,10 +282,8 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
 // Rename file&directory stuff
 
-void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory,
-                bool verbose_enabled, bool transform_dirs, bool transform_files,
-                int& files_count, int& dirs_count, int batch_size = 10) {
-				std::vector<std::pair<fs::path, std::string>> rename_data;
+void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int batch_size = 10) {
+	std::vector<std::pair<fs::path, std::string>> rename_data;
     // Check if the item is a directory
     if (is_directory) {
         // If it is a directory, recursively process its contents
@@ -591,7 +589,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
 }
-
 
 
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth) {
