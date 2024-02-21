@@ -554,40 +554,41 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 }
             }
         } else {
-            unsigned int max_threads = std::thread::hardware_concurrency();
-            if (max_threads == 0) {
-                max_threads = 1; // If hardware concurrency is not available, default to 1 thread
-            }
+					unsigned int num_threads = 0; // Number of subdirectories
+			for (const auto& entry : fs::directory_iterator(new_path)) {
+				if (entry.is_directory()) {
+					++num_threads;
+				}
+			}
 
-            unsigned int num_threads = 0; // Number of subdirectories
-            for (const auto& entry : fs::directory_iterator(new_path)) {
-                if (entry.is_directory()) {
-                    ++num_threads;
-                }
-            }
-            num_threads = std::min(max_threads, num_threads); // Limit threads to the number of subdirectories
+			// Limit threads to the number of subdirectories
+			unsigned int max_threads = std::thread::hardware_concurrency();
+			if (max_threads == 0) {
+				max_threads = 1; // If hardware concurrency is not available, default to 1 thread
+			}
+				num_threads = std::min(max_threads, num_threads);
 
-            std::vector<std::future<void>> futures;
-            for (const auto& entry : fs::directory_iterator(new_path)) {
-                if (entry.is_directory()) {
-                    if (futures.size() < num_threads) {
-                        futures.push_back(std::async(std::launch::async, rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth));
-                    } else {
-                        // Process directories in the main thread if max_threads is reached
-                        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
-                    }
-                } else {
-                    // Process files in the main thread
-                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
-                }
-            }
+			std::vector<std::future<void>> futures;
+			for (const auto& entry : fs::directory_iterator(new_path)) {
+				if (entry.is_directory()) {
+					if (futures.size() < num_threads) {
+						futures.push_back(std::async(std::launch::async, rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), 		std::ref(dirs_count), depth));
+					} else {
+						// Process directories in the main thread if max_threads is reached
+						rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+					}
+				} else {
+					// Process files in the main thread
+					rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
+				}
+			}
 
-            // Wait for all asynchronous tasks to finish
-            for (auto& future : futures) {
-                future.get();
-            }
-        }
-    }
+			// Wait for all asynchronous tasks to finish
+			for (auto& future : futures) {
+				future.get();
+			}
+		}
+	}
 }
 
 
