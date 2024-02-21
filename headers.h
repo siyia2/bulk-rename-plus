@@ -6,7 +6,6 @@
 #include <filesystem>
 #include <algorithm>
 #include <vector>
-#include <thread>
 #include <mutex>
 #include <unistd.h>
 #include <chrono>
