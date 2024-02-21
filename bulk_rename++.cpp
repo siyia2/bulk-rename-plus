@@ -172,6 +172,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
     }
 }
 
+
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, size_t batch_size) {
     for (size_t i = 0; i < data.size(); i += batch_size) {
         auto batch_begin = data.begin() + i;
@@ -195,7 +196,7 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
 
 
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
-    //If depth is negative (default value), set it to a very large number to effectively disable the depth limit
+    // If depth is negative (default value), set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
     }
@@ -208,19 +209,22 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         max_threads = 1; // If hardware concurrency is not available, default to 1 thread
     }
 
-    std::vector<std::thread> threads; // Vector to store threads
-
     // Determine the number of threads to create (minimum of max_threads and paths.size())
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
 
-    std::string depth_limit_reached_path; // Store the path where depth limit is reached
+    // Vector to store futures
+    std::vector<std::future<void>> futures;
 
-    for (unsigned int i = 0; i < num_threads; ++i) {
-        threads.emplace_back([&paths, i, &case_input, verbose_enabled, depth, &files_count, &depth_limit_reached_path]() {
-            // Each thread handles a subset of paths based on its index i
-            // Example: process paths[i], paths[i + num_threads], paths[i + 2*num_threads], ...
+    // Calculate batch size
+    int batch_size = paths.size() / num_threads;
+
+    // Define the function to process each subset of paths asynchronously
+    auto process_paths_async = [&case_input, verbose_enabled, depth, &files_count, batch_size](const std::vector<std::string>& paths_subset) {
+        for (const auto& path : paths_subset) {
             std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
-            directories.push({paths[i], 0}); // Push the initial path onto the queue with depth 0
+            directories.push({path, 0}); // Push the initial path onto the queue with depth 0
+
+            std::string depth_limit_reached_path; // Store the path where depth limit is reached
 
             while (!directories.empty()) {
                 auto [current_path, current_depth] = directories.front();
@@ -252,12 +256,18 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                     print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
             }
-        });
+        }
+    };
+
+    // Launch asynchronous tasks for each subset of paths
+    for (unsigned int i = 0; i < num_threads; ++i) {
+        auto future = std::async(std::launch::async, process_paths_async, std::vector<std::string>(paths.begin() + i * batch_size, paths.begin() + (i + 1) * batch_size));
+        futures.push_back(std::move(future));
     }
 
-    // Join all threads
-    for (auto& thread : threads) {
-        thread.join();
+    // Wait for all asynchronous tasks to finish
+    for (auto& future : futures) {
+        future.wait();
     }
 
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
@@ -536,11 +546,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (depth > 0)
             --depth;
 
-        unsigned int max_threads = std::thread::hardware_concurrency();
-        if (max_threads == 0) {
-            max_threads = 1; // If hardware concurrency is not available, default to 1 thread
-        }
-
         if (rename_parents) {
             // Process subdirectories without spawning threads
             for (const auto& entry : fs::directory_iterator(new_path)) {
@@ -551,12 +556,24 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 }
             }
         } else {
-            std::vector<std::thread> threads;
+            unsigned int max_threads = std::thread::hardware_concurrency();
+            if (max_threads == 0) {
+                max_threads = 1; // If hardware concurrency is not available, default to 1 thread
+            }
+
+            unsigned int num_threads = 0; // Number of subdirectories
             for (const auto& entry : fs::directory_iterator(new_path)) {
                 if (entry.is_directory()) {
-                    if (threads.size() < max_threads) {
-                        // Start a new thread for each subdirectory
-                        threads.emplace_back(rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
+                    ++num_threads;
+                }
+            }
+            num_threads = std::min(max_threads, num_threads); // Limit threads to the number of subdirectories
+
+            std::vector<std::future<void>> futures;
+            for (const auto& entry : fs::directory_iterator(new_path)) {
+                if (entry.is_directory()) {
+                    if (futures.size() < num_threads) {
+                        futures.push_back(std::async(std::launch::async, rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth));
                     } else {
                         // Process directories in the main thread if max_threads is reached
                         rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
@@ -567,23 +584,22 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 }
             }
 
-            // Join all threads
-            for (auto& thread : threads) {
-                thread.join();
+            // Wait for all asynchronous tasks to finish
+            for (auto& future : futures) {
+                future.get();
             }
         }
     }
 }
 
 
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled,bool transform_dirs, bool transform_files, int depth)  {
+
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
         return;
     }
-
-    std::vector<std::thread> threads;
 
     unsigned int max_threads = std::thread::hardware_concurrency();
     if (max_threads == 0) {
@@ -598,29 +614,38 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     // Calculate num_threads as the minimum of max_threads and the number of paths
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
 
-    // Process paths in separate threads up to num_threads
-    for (unsigned int i = 0; i < num_threads; ++i) {
-        fs::path current_path(paths[i]);
+    std::vector<std::future<void>> futures;
 
-        if (fs::exists(current_path)) {
-            if (fs::is_directory(current_path)) {
-                if (rename_parents) {
-                    // If -p option is used, only rename the immediate parent
-                    fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
+    // Process paths asynchronously
+    for (unsigned int i = 0; i < num_threads; ++i) {
+        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count]() {
+            fs::path current_path(paths[i]);
+
+            if (fs::exists(current_path)) {
+                if (fs::is_directory(current_path)) {
+                    if (rename_parents) {
+                        // If -p option is used, only rename the immediate parent
+                        fs::path immediate_parent_path = current_path.parent_path();
+                        rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+                    } else {
+                        // Otherwise, rename the entire path
+                        rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+                    }
+                } else if (fs::is_regular_file(current_path)) {
+                    // For files, directly rename the item without considering the parent directory
+                    rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
                 } else {
-                    // Otherwise, rename the entire path
-                    threads.emplace_back(rename_directory, current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth);
+                    print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
-            } else if (fs::is_regular_file(current_path)) {
-                // For files, directly rename the item without considering the parent directory
-                rename_file(current_path, case_input, false, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count);
             } else {
-                print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
+                print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
             }
-        } else {
-            print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
-        }
+        }));
+    }
+
+    // Wait for all asynchronous tasks to finish
+    for (auto& future : futures) {
+        future.wait();
     }
 
     // Process remaining paths in the main thread
@@ -632,25 +657,20 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 if (rename_parents) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
+                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
                 } else {
                     // Otherwise, rename the entire path in the main thread
-                    rename_directory(current_path, case_input, rename_parents, verbose_enabled,transform_dirs,transform_files, files_count, dirs_count, depth);
+                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
-                rename_file(current_path, case_input, false, verbose_enabled, true, true, files_count, dirs_count);
+                rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
         } else {
             print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
         }
-    }
-
-    // Wait for all threads to finish
-    for (auto& thread : threads) {
-        thread.join();
     }
 
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
