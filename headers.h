@@ -2,18 +2,13 @@
 #define HEADERS_H
 
 #include <iostream>
-#include <string>
 #include <filesystem>
 #include <algorithm>
 #include <vector>
 #include <mutex>
-#include <unistd.h>
 #include <chrono>
-#include <cctype>
 #include <queue>
 #include <future>
-#include <unordered_map>
-#include <unordered_set>
 
 namespace fs = std::filesystem;
 
