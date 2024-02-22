@@ -92,7 +92,7 @@ static const std::vector<std::string> transformation_commands = {
     "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
     "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
     "nsequence", "rnsequence", "date", "rdate", "swap","sentence","pascal",
-    "rpascal","swapr","bak","rbak","noext"
+    "rpascal", "swapr", "bak", "rbak", "noext"
 };
 
 
