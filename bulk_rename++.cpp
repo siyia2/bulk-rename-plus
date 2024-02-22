@@ -1,14 +1,14 @@
 #include "headers.h"
 
+// General purpose stuff
+
+int batch_size = 10;
+
 std::mutex cout_mutex;
 std::mutex dirs_count_mutex;
 std::mutex files_count_mutex;
 
-// General purpose stuff
-
 // Global print functions
-
-int batch_size = 10;
 
 void print_error(const std::string& error) {
     std::lock_guard<std::mutex> lock(cout_mutex);
