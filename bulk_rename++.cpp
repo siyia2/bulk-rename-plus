@@ -91,7 +91,8 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
 static const std::vector<std::string> transformation_commands = {
     "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
     "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
-    "nsequence", "rnsequence", "date", "rdate", "swap","sentence","pascal","rpascal","swapr"
+    "nsequence", "rnsequence", "date", "rdate", "swap","sentence","pascal",
+    "rpascal","swapr","bak","rbak","noext"
 };
 
 
