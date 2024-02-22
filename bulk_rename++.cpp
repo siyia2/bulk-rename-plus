@@ -62,18 +62,18 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  bak        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
           << "  noext      Remove file extensions (e.g., Test.txt => Test)\n"
-		  << "Numerical CASE Modes:\n"
-	      << "  nsequence  Append sequential numbering  (e.g., Test => 001_Test)\n"
+	  << "Numerical CASE Modes:\n"
+	  << "  nsequence  Append sequential numbering  (e.g., Test => 001_Test)\n"
           << "  rnsequence Remove sequential numbering from names (e.g., 001_Test => Test)\n"
-	      << "  date       Append current date to names if no date pre-exists (e.g., Test => Test_20240215)\n"
-	      << "  rdate      Remove date from names (e.g., Test_20240215 => Test)\n"
-	      << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
+	  << "  date       Append current date to names if no date pre-exists (e.g., Test => Test_20240215)\n"
+	  << "  rdate      Remove date from names (e.g., Test_20240215 => Test)\n"
+	  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
           << "Custom CASE Modes:\n"
           << "  rbra       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)\n"
           << "  roperand   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)\n"
           << "  rspecial   Remove special characters from names (e.g., @T!es#$%^|&~`';?t => Test)\n"
           << "  swap       Swap upper-lower case for names (e.g., Test => TeSt)\n"
-		  << "  swapr      Swap lower-upper case for names (e.g., Test => tEsT)\n"
+	  << "  swapr      Swap lower-upper case for names (e.g., Test => tEsT)\n"
           << "\n"
           << "Examples:\n"
           << "  bulk_rename++ -c lower [path1] [path2]...\n"
@@ -91,8 +91,8 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
 static const std::vector<std::string> transformation_commands = {
     "lower", "upper", "reverse", "title", "snake", "rsnake", "rspecial", 
     "rnumeric", "rbra", "roperand", "camel", "rcamel", "kebab", "rkebab", 
-    "nsequence", "rnsequence", "date", "rdate", "swap","sentence","pascal",
-    "rpascal", "swapr", "bak", "rbak", "noext"
+    "nsequence", "rnsequence", "date", "rdate", "swap", "swapr","sentence",
+    "pascal","rpascal", "bak", "rbak", "noext"
 };
 
 
@@ -702,7 +702,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.2.7");
+        printVersionNumber("1.2.8");
         return 0;
     }
 
