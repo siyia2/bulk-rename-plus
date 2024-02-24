@@ -5,9 +5,9 @@
 int batch_size = 10;
 
 std::mutex cout_mutex;
+std::mutex files_mutex;
 std::mutex dirs_count_mutex;
 std::mutex files_count_mutex;
-std::mutex rename_data_mutex;
 
 // Global print functions
 
@@ -98,23 +98,19 @@ static const std::vector<std::string> transformation_commands = {
 
 
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size) {
-    std::vector<std::pair<fs::path, fs::path>> rename_data;
+    std::vector<std::pair<fs::path, fs::path>> rename_batch;
+    rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
 
-    for (size_t i = 0; i < item_paths.size(); i += batch_size) {
-        auto batch_begin = item_paths.begin() + i;
-        auto batch_end = std::min(batch_begin + batch_size, item_paths.end());
-        std::vector<fs::path> batch(batch_begin, batch_end);
-
-        for (const auto& item_path : batch) {
-            if (!fs::is_regular_file(item_path)) {
-                if (verbose_enabled) {
-                    std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
-                }
-                continue;
+    for (const auto& item_path : item_paths) {
+        if (!fs::is_regular_file(item_path)) {
+            if (verbose_enabled) {
+                std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
             }
+            continue;
+        }
 
-            std::string extension = item_path.extension().string();
-            std::string new_extension = extension;
+        std::string extension = item_path.extension().string();
+        std::string new_extension = extension;
 
             if (std::find(transformation_commands.begin(), transformation_commands.end(), case_input) != transformation_commands.end()) {
                 // Case input is valid
@@ -147,33 +143,28 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
                 }
 
                 if (extension != new_extension) {
-                    fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
-                    std::lock_guard<std::mutex> lock(rename_data_mutex);
-                    rename_data.push_back({item_path, new_path});
+            fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
+            rename_batch.emplace_back(item_path, new_path); // Add to the batch
+        } else {
+            if (verbose_enabled) {
+                std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
+                if (extension.empty()) {
+                    std::cout << " (no extension)";
                 } else {
-                    if (verbose_enabled) {
-                        std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
-                        if (extension.empty()) {
-                            std::cout << " (no extension)";
-                        } else {
-                            std::cout << " (extension unchanged)";
-                        }
-                        std::cout << std::endl;
-                    }
+                    std::cout << " (extension unchanged)";
                 }
-            } else {
-                std::cerr << "Invalid transformation command: " << case_input << std::endl;
+                std::cout << std::endl;
             }
         }
-
-        // Perform batch renaming
-        batch_rename_extension(rename_data, verbose_enabled, files_count);
-
-        // Clear rename_data for next batch
-        rename_data.clear();
     }
-}
 
+    // Now, if the batch is not empty, invoke batch_rename_extension
+    if (!rename_batch.empty()) {
+		std::lock_guard<std::mutex> lock(files_mutex);
+        batch_rename_extension(rename_batch, verbose_enabled, files_count);
+		}
+	}
+}
 
 
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count) {
@@ -398,7 +389,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 }
     // Add data to the list if new name differs
   if (name != new_name) {
-	std::lock_guard<std::mutex> lock(rename_data_mutex);
+	  std::lock_guard<std::mutex> lock(files_mutex);
     rename_data.push_back({item_path, new_name});
   }
 
@@ -412,7 +403,7 @@ if (rename_data.size() >= batch_size) {
 // Rename any remaining data after processing the loop:
 if (!rename_data.empty()) {
   rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
-}
+	}
 }
 
 
