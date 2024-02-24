@@ -175,25 +175,31 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 
 
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, size_t batch_size) {
-    for (size_t i = 0; i < data.size(); i += batch_size) {
-        auto batch_begin = data.begin() + i;
-        auto batch_end = std::min(batch_begin + batch_size, data.end());
-        std::vector<std::pair<fs::path, fs::path>> batch(batch_begin, batch_end);
+    // Determine the maximum available cores
+    size_t max_cores = std::thread::hardware_concurrency();
+    size_t num_threads = std::min(max_cores != 0 ? max_cores : 1, data.size());
 
-        for (const auto& [old_path, new_path] : batch) {
+    // Use parallel execution with limited number of threads
+    std::for_each(std::execution::par, data.begin(), data.end(),
+        [&](const auto& item) {
+            const auto& [old_path, new_path] = item;
             try {
                 fs::rename(old_path, new_path);
-                ++files_count; // Update files_count when a file is successfully renamed
+                {
+                    std::lock_guard<std::mutex> lock(files_count_mutex);
+                    ++files_count; // Update files_count when a file is successfully renamed
+                }
                 if (verbose_enabled) {
                     std::lock_guard<std::mutex> lock(files_count_mutex);
                     std::cout << "\033[0m\033[92mRenamed\033[0m file " << old_path.string() << " to " << new_path.string() << std::endl;
                 }
             } catch (const fs::filesystem_error& e) {
+                std::lock_guard<std::mutex> lock(files_count_mutex);
                 std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
             }
         }
-    }
-}
+    );
+} 
 
 
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
@@ -407,26 +413,36 @@ if (!rename_data.empty()) {
 }
 
 
-void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data,
-                  bool verbose_enabled, int& files_count, int& dirs_count) {
-  // Use a loop to rename each item in the batch
-  for (const auto& [item_path, new_name] : data) {
-    fs::path new_path = item_path.parent_path() / new_name;
-    try {
-      fs::rename(item_path, new_path);
-      if (verbose_enabled) {
-        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string());
-      }
-      std::filesystem::directory_entry entry(new_path);
-      if (entry.is_regular_file()) {
-        ++files_count; // Update files_count when a file is successfully renamed
-      } else {
-        ++dirs_count;
-      }
-    } catch (const fs::filesystem_error& e) {
-      std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
-    }
-  }
+void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count) {
+    // Determine the maximum available cores
+    size_t max_cores = std::thread::hardware_concurrency();
+    size_t num_threads = std::min(max_cores != 0 ? max_cores : 1, data.size());
+
+    // Use parallel execution with limited number of threads
+    std::for_each(std::execution::par, data.begin(), data.end(),
+        [&](const auto& item) {
+            const auto& [item_path, new_name] = item;
+            fs::path new_path = item_path.parent_path() / new_name;
+            try {
+                fs::rename(item_path, new_path);
+                if (verbose_enabled) {
+                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                    std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
+                }
+                std::filesystem::directory_entry entry(new_path);
+                if (entry.is_regular_file()) {
+                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                    ++files_count; // Update files_count when a file is successfully renamed
+                } else {
+                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                    ++dirs_count;
+                }
+            } catch (const fs::filesystem_error& e) {
+                std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+            }
+        }
+    );
 }
 
 
