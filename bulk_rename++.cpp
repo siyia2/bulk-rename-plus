@@ -24,7 +24,7 @@ void print_verbose_enabled(const std::string& message) {
 
 
 void printVersionNumber(const std::string& version) {
-    std::cout << "Bulk-rename-plus v" << version << "\n" << std::endl;
+    std::cout << "\x1B[32mBulk-rename-plus v" << version << "\x1B[0m\n" << std::endl;
 }
 
 void print_help() {
@@ -84,7 +84,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  bulk_rename++ -d 2 -c upper -v [path1]\n"
           << "  bulk_rename++ -fi -c lower -v [path1]\n"
           << "  bulk_rename++ -ce noext -v [path1]\n"
-          << "\n";
+          << "\x1B[0m\n";
 }
 
 // Extension stuff
@@ -712,7 +712,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.2.8");
+        printVersionNumber("1.3.0");
         return 0;
     }
 
