@@ -157,6 +157,15 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
             }
         }
     }
+    
+    // Check if the batch size is reached
+        if (rename_batch.size() >= batch_size) {
+            // Batch size reached, perform batch renaming
+            std::lock_guard<std::mutex> lock(files_mutex);
+            batch_rename_extension(rename_batch, verbose_enabled, files_count);
+            rename_batch.clear(); // Clear the batch after processing
+        }
+    
 
     // Now, if the batch is not empty, invoke batch_rename_extension
     if (!rename_batch.empty()) {
