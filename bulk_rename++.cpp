@@ -721,7 +721,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.3.1");
+        printVersionNumber("1.3.2");
         return 0;
     }
 
