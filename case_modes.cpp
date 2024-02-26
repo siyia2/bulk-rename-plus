@@ -265,20 +265,17 @@ std::string from_pascal_case(const std::string& string) {
     std::string result;
     result.reserve(string.size()); // Reserve space for the result string
 
-    bool was_upper = false; // Keep track if the previous character was upper
-
-    for (char c : string) {
+    for (size_t i = 0; i < string.size(); ++i) {
+        char c = string[i];
         if (std::isupper(c)) {
-            // If the previous character wasn't an uppercase letter,
-            // and it's not the first character, add a space
-            if (!result.empty() && !was_upper) {
+            // If the current character is uppercase and it's not the first character,
+            // and the previous character was lowercase, add a space before appending the uppercase character
+            if (i != 0 && std::islower(string[i - 1])) {
                 result += ' ';
             }
             result += c;
-            was_upper = true;
         } else {
             result += std::tolower(c);
-            was_upper = false;
         }
     }
 
