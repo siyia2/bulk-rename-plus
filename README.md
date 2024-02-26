@@ -34,7 +34,7 @@ Options:
 - `camel`      Convert names to camelCase (e.g., Te st => teSt)
 - `rcamel`     Reverse camelCase in names (e.g., TeSt => te st)
 - `pascal`     Convert names to pascalCase (e.g., Te st => TeSt)
-- `rpascal`    Reverse pascalCase in names (e.g., TeSt => te st)
+- `rpascal`    Reverse pascalCase in names (e.g., TeSt => Te st)
 - `sentence`   Convert names to sentenceCase (e.g., Te st => Te St)
 #### Extension CASE Modes:
 - `bak`        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)
