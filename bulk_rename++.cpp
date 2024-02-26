@@ -2,7 +2,7 @@
 
 // General purpose stuff
 
-int batch_size = 10;
+constexpr int batch_size = 10;
 
 std::mutex cout_mutex;
 std::mutex files_mutex;
