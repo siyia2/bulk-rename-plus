@@ -158,19 +158,17 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
         }
     }
     
-		// Check if the batch size is reached
-        if (rename_batch.size() >= batch_size) {
-            // Batch size reached, perform batch renaming
-            std::lock_guard<std::mutex> lock(files_mutex);
-            batch_rename_extension(rename_batch, verbose_enabled, files_count);
-            rename_batch.clear(); // Clear the batch after processing
-        }
-    
-
-		// Now, if the batch is not empty, invoke batch_rename_extension
-		if (!rename_batch.empty()) {
+		// Batch processing
+		if (rename_batch.size() >= batch_size) {
 			std::lock_guard<std::mutex> lock(files_mutex);
 			batch_rename_extension(rename_batch, verbose_enabled, files_count);
+			rename_batch.clear(); // Clear the batch after processing
+		} else {
+			// Process remaining items in the batch
+			if (!rename_batch.empty()) {
+				std::lock_guard<std::mutex> lock(files_mutex);
+				batch_rename_extension(rename_batch, verbose_enabled, files_count);
+			}
 		}
 	}
 }
@@ -412,6 +410,19 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 		if (!rename_data.empty()) {
 			rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
 		}
+		
+		// Verbose output for skipped files with unchanged names
+    if (name == new_name && verbose_enabled) {
+        std::lock_guard<std::mutex> lock(files_mutex);
+        std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
+        if (name.empty()) {
+            std::cout << " (no name change)";
+        } else {
+            std::cout << " (name unchanged)";
+        }
+        std::cout << std::endl;
+		}
+
 	}
 }
 
@@ -428,7 +439,7 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
             try {
                 fs::rename(item_path, new_path);
                 if (verbose_enabled) {
-                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                    std::lock_guard<std::mutex> lock(files_mutex);
                     std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
                 }
                 std::filesystem::directory_entry entry(new_path);
@@ -720,7 +731,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.3.3");
+        printVersionNumber("1.3.4");
         return 0;
     }
 
