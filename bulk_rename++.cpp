@@ -158,7 +158,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
         }
     }
     
-    // Check if the batch size is reached
+		// Check if the batch size is reached
         if (rename_batch.size() >= batch_size) {
             // Batch size reached, perform batch renaming
             std::lock_guard<std::mutex> lock(files_mutex);
@@ -167,10 +167,10 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
         }
     
 
-    // Now, if the batch is not empty, invoke batch_rename_extension
-    if (!rename_batch.empty()) {
-		std::lock_guard<std::mutex> lock(files_mutex);
-        batch_rename_extension(rename_batch, verbose_enabled, files_count);
+		// Now, if the batch is not empty, invoke batch_rename_extension
+		if (!rename_batch.empty()) {
+			std::lock_guard<std::mutex> lock(files_mutex);
+			batch_rename_extension(rename_batch, verbose_enabled, files_count);
 		}
 	}
 }
@@ -397,24 +397,23 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 	}
 }
     // Add data to the list if new name differs
-  if (name != new_name) {
-	  std::lock_guard<std::mutex> lock(files_mutex);
-    rename_data.push_back({item_path, new_name});
-  }
+	if (name != new_name) {
+		std::lock_guard<std::mutex> lock(files_mutex);
+		rename_data.push_back({item_path, new_name});
+		}
 
 
-// Check if batch size is reached and perform renaming:
-if (rename_data.size() >= batch_size) {
-  rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
-  rename_data.clear();
-}
-
-// Rename any remaining data after processing the loop:
-if (!rename_data.empty()) {
-  rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
+	// Check if batch size is reached and perform renaming:
+	if (rename_data.size() >= batch_size) {
+		rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
+		rename_data.clear();
+	} else {
+		// Rename any remaining data after processing the loop:
+		if (!rename_data.empty()) {
+			rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
+		}
 	}
 }
-
 
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count) {
     // Determine the maximum available cores
