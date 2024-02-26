@@ -57,7 +57,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  camel      Convert names to camelCase (e.g., Te st => teSt)\n"
           << "  rcamel     Reverse camelCase in names (e.g., TeSt => te st)\n"
           << "  pascal     Convert names to pascalCase (e.g., Te st => TeSt)\n"
-          << "  rpascal    Reverse pascalCase in names (e.g., TeSt => te st)\n"
+          << "  rpascal    Reverse pascalCase in names (e.g., TeSt => Te st)\n"
           << "  sentence   Convert names to sentenceCase (e.g., Te st => Te St)\n"
           << "Extension CASE Modes:\n"
           << "  bak        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)\n"
@@ -492,7 +492,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                         return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                     }), new_dirname.end());
                 } else if (transformation == "camel") {
-                    new_dirname = to_camel_case(new_dirname);
+                    new_dirname = to_camel_case_folders(new_dirname);
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
