@@ -492,7 +492,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                         return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                     }), new_dirname.end());
                 } else if (transformation == "camel") {
-                    new_dirname = to_camel_case_folders(new_dirname);
+                    new_dirname = to_camel_case(new_dirname);
                 } else if (transformation == "rcamel") {
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {

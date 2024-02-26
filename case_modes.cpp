@@ -159,42 +159,6 @@ std::string to_camel_case(const std::string& string) {
     return result;
 }
 
-std::string to_camel_case_folders(const std::string& string) {
-    bool hasUpperCase = false;
-    bool hasSpace = false;
-
-    for (char c : string) {
-        if (std::isupper(c)) {
-            hasUpperCase = true;
-        } else if (c == ' ') {
-            hasSpace = true;
-        }
-    }
-
-    if (!hasSpace && hasUpperCase) {
-        return string;
-    }
-
-    std::string result;
-    result.reserve(string.size() + 10); // Adjust the reserve size as needed
-
-    bool capitalizeNext = false;
-
-    for (char c : string) {
-        if (std::isalpha(c)) {
-            result += capitalizeNext ? std::toupper(c) : std::tolower(c);
-            capitalizeNext = false;
-        } else if (c == ' ') {
-            capitalizeNext = true;
-        } else {
-            result += c;
-        }
-    }
-
-    return result;
-}
-
-
 std::string from_camel_case(const std::string& string) {
     std::string result;
     result.reserve(string.size() + std::count_if(string.begin(), string.end(), ::isupper)); // Reserve space for the result string
