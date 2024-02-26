@@ -147,6 +147,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
             rename_batch.emplace_back(item_path, new_path); // Add to the batch
         } else {
             if (verbose_enabled) {
+				std::lock_guard<std::mutex> lock(files_mutex);
                 std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
                 if (extension.empty()) {
                     std::cout << " (no extension)";
@@ -190,11 +191,11 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
                     ++files_count; // Update files_count when a file is successfully renamed
                 }
                 if (verbose_enabled) {
-                    std::lock_guard<std::mutex> lock(files_count_mutex);
+                    std::lock_guard<std::mutex> lock(files_mutex);
                     std::cout << "\033[0m\033[92mRenamed\033[0m file " << old_path.string() << " to " << new_path.string() << std::endl;
                 }
             } catch (const fs::filesystem_error& e) {
-                std::lock_guard<std::mutex> lock(files_count_mutex);
+                std::lock_guard<std::mutex> lock(files_mutex);
                 std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
             }
         }
@@ -444,7 +445,7 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                 }
                 std::filesystem::directory_entry entry(new_path);
                 if (entry.is_regular_file()) {
-                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                    std::lock_guard<std::mutex> lock(files_count_mutex);
                     ++files_count; // Update files_count when a file is successfully renamed
                 } else {
                     std::lock_guard<std::mutex> lock(dirs_count_mutex);
