@@ -36,9 +36,9 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  -h, --help               Print this message and exit\n"
           << "  --version                Print version\n"
           << "  -v, --verbose            Enable verbose mode\n"
-          << "  -fi                      Only files will be renamed, by default everything is renamed\n"
-          << "  -fo                      Only folders will be renamed, by default everything is renamed\n"
-          << "  -d  [DEPTH]              Set traverse depth level otherwise maximum (-1) is used. -cp and -d 0 together rename only parent dir(s)\n"
+          << "  -fi                      Rename files exclusively, by default everything is renamed\n"
+          << "  -fo                      Rename folders exclusively, by default everything is renamed\n"
+          << "  -d  [DEPTH]              Set traverse depth level otherwise maximum (-1) is used. -d 0 and -cp together rename only parent dir(s)\n"
           << "  -c  [MODE]               Set the case conversion mode for file and dir name(s)\n"
           << "  -cp [MODE]               Set the case conversion mode for file and dir name(s), including parent dir(s)\n"
           << "  -ce [MODE]               Set the case conversion mode for file extension(s)\n"
@@ -78,7 +78,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "\n"
           << "Examples:\n"
           << "  bulk_rename++ -c lower [path1] [path2]...\n"
-          << "  bulk_rename++ -cp upper -d 0 [path1]\n"
+          << "  bulk_rename++ -d 0 -cp upper [path1]\n"
           << "  bulk_rename++ -v -cp upper [path1]\n"
           << "  bulk_rename++ -c upper -v [path1]\n"
           << "  bulk_rename++ -d 2 -c upper -v [path1]\n"
@@ -729,7 +729,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.3.5");
+        printVersionNumber("1.3.6");
         return 0;
     }
 
