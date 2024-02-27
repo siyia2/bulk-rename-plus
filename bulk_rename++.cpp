@@ -460,6 +460,15 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
 }
 
 
+void process_forParents(const fs::directory_entry& entry, const std::string& case_input, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
+    if (entry.is_directory()) {
+        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+    } else {
+        rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size);
+    }
+}
+
+
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with original name
@@ -576,14 +585,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             --depth;
 
         if (rename_parents) {
-            // Process subdirectories without spawning threads
-            for (const auto& entry : fs::directory_iterator(new_path)) {
-                if (entry.is_directory()) {
-                    rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
-                } else {
-                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size);
-                }
-            }
+        // Process subdirectories with spawning threads
+        std::vector<std::future<void>> futures;
+        for (const auto& entry : fs::directory_iterator(new_path)) {
+            futures.push_back(std::async(std::launch::async, process_forParents, entry, case_input, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth));
+        }
         } else {
 					unsigned int num_threads = 0; // Number of subdirectories
 			for (const auto& entry : fs::directory_iterator(new_path)) {
@@ -732,7 +738,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Call the function with the version number
-        printVersionNumber("1.3.4");
+        printVersionNumber("1.3.5");
         return 0;
     }
 
