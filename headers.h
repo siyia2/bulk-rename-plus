@@ -15,6 +15,14 @@
 
 namespace fs = std::filesystem;
 
+// Mutexes
+
+extern std::mutex dirs_mutex;
+extern std::mutex dirs_count_mutex;
+extern std::mutex files_count_mutex;
+extern std::mutex files_mutex;
+extern std::mutex cout_mutex;
+
 // Function prototypes
 
 // case modes

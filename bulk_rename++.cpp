@@ -4,31 +4,27 @@
 
 constexpr int batch_size = 10;
 
-std::mutex cout_mutex;
-std::mutex files_mutex;
-std::mutex dirs_mutex;
-std::mutex dirs_count_mutex;
-std::mutex files_count_mutex;
-
 // Global print functions
 
+// Print an error message to stderr
 void print_error(const std::string& error) {
-    std::lock_guard<std::mutex> lock(cout_mutex);
-    std::cerr << error << std::endl;
+    std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cerr
+    std::cerr << error << std::endl; // Output the error message
 }
 
-
+// Print a message to stdout, assuming verbose mode is enabled
 void print_verbose_enabled(const std::string& message) {
-    std::lock_guard<std::mutex> lock(cout_mutex);
-    std::cout << message << std::endl;
+    std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cout
+    std::cout << message << std::endl; // Output the message
 }
 
-
+// Print the version number of the program
 void printVersionNumber(const std::string& version) {
-    std::cout << "\x1B[32mBulk-rename-plus v" << version << "\x1B[0m\n" << std::endl;
+    std::cout << "\x1B[32mBulk-rename-plus v" << version << "\x1B[0m\n" << std::endl; // Output the version number in green color
 }
 
 
+// Function to print help
 void print_help() {
 
 std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
@@ -91,6 +87,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
 
 // Extension stuff
 
+// Global static transformations
 static const std::vector<std::string> transformation_commands = {
     "lower",      // Convert to lowercase
     "upper",      // Convert to uppercase
