@@ -474,7 +474,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string new_dirname = dirname; // Initialize with original name
     bool renaming_message_printed = false;
     // Limit threads to the number of subdirectories
-			unsigned int num_threads;
+			unsigned int num_threads= 1;
 			unsigned int max_threads = std::thread::hardware_concurrency();
 			if (max_threads == 0) {
 				max_threads = 1; // If hardware concurrency is not available, default to 1 thread
