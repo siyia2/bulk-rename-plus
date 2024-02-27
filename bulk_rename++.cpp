@@ -6,6 +6,7 @@ constexpr int batch_size = 10;
 
 std::mutex cout_mutex;
 std::mutex files_mutex;
+std::mutex dirs_mutex;
 std::mutex dirs_count_mutex;
 std::mutex files_count_mutex;
 
@@ -26,6 +27,7 @@ void print_verbose_enabled(const std::string& message) {
 void printVersionNumber(const std::string& version) {
     std::cout << "\x1B[32mBulk-rename-plus v" << version << "\x1B[0m\n" << std::endl;
 }
+
 
 void print_help() {
 
@@ -452,7 +454,7 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                     ++dirs_count;
                 }
             } catch (const fs::filesystem_error& e) {
-                std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                std::lock_guard<std::mutex> lock(dirs_mutex);
                 std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
             }
         }
@@ -484,6 +486,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Early exit if directory is a symlink
     if (fs::is_symlink(directory_path)) {
         if (verbose_enabled) {
+			std::lock_guard<std::mutex> lock(dirs_mutex);
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)");
         }
         return;
@@ -566,20 +569,24 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             fs::rename(directory_path, new_path);
 
             if (verbose_enabled && !renaming_message_printed) {
+				std::lock_guard<std::mutex> lock(dirs_mutex);
                 print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + directory_path.string() + " to " + new_path.string());
                 renaming_message_printed = true; // Set the flag to true after printing the message
             }
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
+			std::lock_guard<std::mutex> lock(dirs_mutex);
             std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
             return; // Stop processing if renaming failed
         }
 
     } else {
         if (verbose_enabled && !transform_files) {
+			std::lock_guard<std::mutex> lock(dirs_mutex);
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
         } else if (verbose_enabled && transform_dirs && transform_files) {
+			std::lock_guard<std::mutex> lock(dirs_mutex);
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
         }
     }
