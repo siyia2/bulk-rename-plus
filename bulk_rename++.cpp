@@ -181,6 +181,9 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
             } else {
                 // Print a message for skipped file if extension remains unchanged
                 if (verbose_enabled) {
+					if (fs::is_symlink(item_path) && symlinks) {
+				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + item_path.string() + (extension.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
+			}
 					print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
                 }
             }
@@ -297,10 +300,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                             if (verbose_enabled) {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " << entry.path().string() << " (excluded)\n";
 							}
-                        } else if (fs::is_directory(entry) && verbose_enabled && !fs::is_symlink(entry)) {
-							print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mdirectory\033[0m " + entry.path().string() + " (excluded)", std::cout);
-							directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
-						} else if (fs::is_directory(entry) && fs::is_symlink(entry) && !symlinks) {
+                        } else if (fs::is_directory(entry) && fs::is_symlink(entry) && !symlinks) {
 							print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + entry.path().string() + " (excluded)", std::cout);
 							directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                         } else if (fs::is_directory(entry)) {
@@ -473,6 +473,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         
         // Verbose output for skipped files with unchanged names
         if (name == new_name && verbose_enabled) {
+			if (fs::is_symlink(item_path) && symlinks) {
+				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
+			}
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
 
         }
@@ -652,9 +655,15 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     } else {
         // If the directory name remains unchanged
         if (verbose_enabled && !transform_files) {
+			if (symlinks && ((fs::is_symlink(directory_path) && symlinks) || (fs::is_symlink(new_path) && symlinks))) {
+				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + directory_path.string() + " to " + new_path.string());
+			}
             // Print a message indicating that the directory was skipped (no name change)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
         } else if (verbose_enabled && transform_dirs && transform_files) {
+			if (symlinks && ((fs::is_symlink(directory_path) && symlinks) || (fs::is_symlink(new_path) && symlinks))) {
+				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + directory_path.string() + " to " + new_path.string());
+			}
             // Print a message indicating that the directory was skipped (name unchanged)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
         }
