@@ -126,16 +126,16 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
     rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
 
     // Iterate through each item path
-for (const auto& item_path : item_paths) {
-    // Check if the item is a directory or a symlink
-    if (!fs::is_regular_file(item_path) || fs::is_symlink(item_path)) {
-        // Skip if it's a directory or symlink, print a message if verbose mode enabled
-        if (verbose_enabled) {
+	for (const auto& item_path : item_paths) {
+		// Check if the item is a directory or a symlink
+		if (!fs::is_regular_file(item_path) || fs::is_symlink(item_path)) {
+			// Skip if it's a directory or symlink, print a message if verbose mode enabled
+			if (verbose_enabled) {
                 print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + item_path.string() + " (not supported)", std::cout);
             
-        }
-        continue;
-    }
+			}
+			continue;
+		}
 
         // Get the current extension of the file
         std::string extension = item_path.extension().string();
@@ -287,11 +287,14 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                 // Process directories and files
                 if (fs::is_directory(current_fs_path)) {
                     for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                        if (fs::is_directory(entry) && verbose_enabled) {
+                        if (fs::is_directory(entry) && verbose_enabled && !fs::is_symlink(entry)) {
 							print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mdirectory\033[0m " + entry.path().string() + " (not supported)", std::cout);
 							directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+						} else if (fs::is_directory(entry) && fs::is_symlink(entry)) {
+							print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + entry.path().string() + " (not supported)", std::cout);
+							directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                         } else if (fs::is_directory(entry)) {
-                        directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+							directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                         } else if (fs::is_regular_file(entry)) {
                             rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size);
                         }
