@@ -5,6 +5,7 @@
 // Batch size for file processing
 constexpr int batch_size = 10;
 
+// For verbose folder renaming
 bool special = false;
 
 
@@ -810,7 +811,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.3.6");
+        printVersionNumber("1.3.7");
         return 0;
     }
 

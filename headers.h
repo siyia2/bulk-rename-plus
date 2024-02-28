@@ -22,6 +22,7 @@ extern std::mutex files_count_mutex;
 extern std::mutex files_mutex;
 extern std::mutex cout_mutex;
 
+// For verbose folder renaming
 extern bool special;
 
 // Function prototypes
