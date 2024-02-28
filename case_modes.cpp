@@ -12,6 +12,7 @@ std::mutex files_count_mutex;
 
 // for Files&Dirs
 
+// Function to reaname to sentenceCase
 std::string sentenceCase(const std::string& string) {
     if (string.empty()) return string; // Handling empty string case
     
@@ -34,6 +35,7 @@ std::string sentenceCase(const std::string& string) {
 }
 
 
+// Function to reaname to titlerCase
 std::string capitalizeFirstLetter(const std::string& input) {
     if (input.empty()) return input; // Handling empty string case
     
@@ -53,6 +55,7 @@ std::string capitalizeFirstLetter(const std::string& input) {
 }
 
 
+// Function to reaname to swapCase
 std::string swap_transform(const std::string& string) {
     std::stringstream transformed;
     bool capitalize = false; // Start by capitalizing
@@ -86,6 +89,7 @@ std::string swap_transform(const std::string& string) {
     return transformed.str();
 }
 
+// Function to reaname to swaprCase
 std::string swapr_transform(const std::string& string) {
     std::stringstream transformed;
     bool capitalize = false; // Start by capitalizing
@@ -120,6 +124,7 @@ std::string swapr_transform(const std::string& string) {
 }
 
 
+// Function to rename to pascalCase
 std::string to_camel_case(const std::string& string) {
     bool hasUpperCase = false;
     bool hasSpace = false;
@@ -167,6 +172,8 @@ std::string to_camel_case(const std::string& string) {
     return result;
 }
 
+
+// Function to reverse camelCase
 std::string from_camel_case(const std::string& string) {
     std::string result;
     result.reserve(string.size() + std::count_if(string.begin(), string.end(), ::isupper)); // Reserve space for the result string
@@ -183,7 +190,7 @@ std::string from_camel_case(const std::string& string) {
     return result;
 }
 
-
+// Function to rename to pascalCase
 std::string to_pascal(const std::string& string) {
     bool hasUpperCase = false;
     bool hasSpace = false;
@@ -233,6 +240,7 @@ std::string to_pascal(const std::string& string) {
 }
 
 
+// Function to reverse pascalCase
 std::string from_pascal_case(const std::string& string) {
     std::string result;
     result.reserve(string.size()); // Reserve space for the result string
@@ -257,6 +265,7 @@ std::string from_pascal_case(const std::string& string) {
 
 // For Files
 
+// Function to add sequencial numbering to files
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string) {
     static std::unordered_map<std::filesystem::path, int> counter_map;
     
@@ -303,7 +312,7 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
     return oss.str();
 }
 
-
+// Function to remove sequencial numbering from files
 std::string remove_numbered_prefix(const std::string& file_string) {
     size_t pos = file_string.find_first_not_of("0123456789");
 
@@ -325,6 +334,7 @@ std::string remove_numbered_prefix(const std::string& file_string) {
 }
 
 
+// Function to add current date to files
 std::string append_date_seq(const std::string& file_string) {
     // Check if the filename already contains a date seq
     size_t dot_position = file_string.find_last_of('.');
@@ -359,6 +369,7 @@ std::string append_date_seq(const std::string& file_string) {
 }
 
 
+// Function to remove date from files
 std::string remove_date_seq(const std::string& file_string) {
     size_t dot_position = file_string.find_last_of('.');
     size_t underscore_position = file_string.find_last_of('_');
@@ -384,7 +395,7 @@ std::string remove_date_seq(const std::string& file_string) {
     return file_string;
 }
 
-
+// Function to remove sequencial numbering from folders
 void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory() && !fs::is_symlink(folder)) { // Check if the folder is not a symlink
@@ -427,6 +438,7 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
 
 // Folder numbering functions mv style
 
+// Function to add sequencial numbering from folders
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled = false) {
     int counter = 1; // Counter for immediate subdirectories
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
@@ -504,6 +516,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, in
 }
 
 
+// Function to append current date to folders
 void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false) {
     auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
@@ -562,6 +575,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
 }
 
 
+// Function to remove date to folders
 void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory() && !fs::is_symlink(folder)) { // Check if the folder is not a symlink
