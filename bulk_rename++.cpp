@@ -221,6 +221,9 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
                     std::lock_guard<std::mutex> lock(files_count_mutex);
                     ++files_count;
                 }
+                if (verbose_enabled && ((fs::is_symlink(old_path) && symlinks) || (fs::is_symlink(new_path) && symlinks))) {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);	
+                }
                 // Print a success message if verbose mode enabled
                 if (verbose_enabled) {
                     print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + " to " + new_path.string(), std::cout);
@@ -491,9 +494,11 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
             try {
                 // Attempt to rename the file/directory
                 fs::rename(item_path, new_path);
+                if (verbose_enabled && ((fs::is_symlink(item_path) && symlinks) || (fs::is_symlink(new_path) && symlinks))) {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink\033[0m " + item_path.string() + " to " + new_path.string(), std::cout);	
+                }
                 if (verbose_enabled) {
                     // Print a success message if verbose mode enabled
-                    std::lock_guard<std::mutex> lock(files_mutex);
                     print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), std::cout);
                 }
                 // Update files_count or dirs_count based on the type of the renamed item
@@ -630,6 +635,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             fs::rename(directory_path, new_path);
 
             if (verbose_enabled && !renaming_message_printed) {
+				if (symlinks && ((fs::is_symlink(directory_path) && symlinks) || (fs::is_symlink(new_path) && symlinks))) {
+				print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink\033[0m " + directory_path.string() + " to " + new_path.string());
+			}
                 // Print a renaming message if verbose mode enabled
                 print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + directory_path.string() + " to " + new_path.string());
                 renaming_message_printed = true; // Set the flag to true after printing the message
