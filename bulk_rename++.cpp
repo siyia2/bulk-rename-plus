@@ -5,6 +5,8 @@
 // Batch size for file processing
 constexpr int batch_size = 10;
 
+bool special = false;
+
 
 // Global print functions
 
@@ -530,6 +532,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
+    
 
     // Determine the maximum number of threads supported by the system
     unsigned int num_threads = 1;
@@ -640,10 +643,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     } else {
         // If the directory name remains unchanged
-        if (verbose_enabled && !transform_files) {
+        if (verbose_enabled && !transform_files && !special) {
             // Print a message indicating that the directory was skipped (no name change)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
-        } else if (verbose_enabled && transform_dirs && transform_files) {
+        } else if (verbose_enabled && transform_dirs && transform_files && !special) {
             // Print a message indicating that the directory was skipped (name unchanged)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
         }

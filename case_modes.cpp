@@ -414,6 +414,7 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
                     // Move the contents of the source directory to the destination directory
                     try {
                         fs::rename(folder.path(), new_name);
+                        special=true;
                     } catch (const fs::filesystem_error& e) {
                         if (e.code() == std::errc::permission_denied) {
                             print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
@@ -489,6 +490,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                 // Move the contents of the source directory to the destination directory
                 try {
                     fs::rename(folder.path(), new_name);
+                    special=true;
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
                         print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
@@ -554,6 +556,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                 // Rename the folder
                 try {
                     fs::rename(folder.path(), new_path);
+                    special=true;
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
                         print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
@@ -575,7 +578,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
 
 
 // Function to remove date to folders
-void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false) {
+void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         if (folder.is_directory() && !fs::is_symlink(folder)) { // Check if the folder is not a symlink
             std::string folder_name = folder.path().filename().string();
@@ -604,6 +607,7 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                 // Rename the folder
                 try {
                     fs::rename(folder.path(), new_path);
+                    special=true;
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
                         print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
@@ -612,6 +616,7 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                 }
                 if (verbose_enabled) {
                     print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+                    
                 }
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename

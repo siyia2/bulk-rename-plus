@@ -22,6 +22,8 @@ extern std::mutex files_count_mutex;
 extern std::mutex files_mutex;
 extern std::mutex cout_mutex;
 
+extern bool special;
+
 // Function prototypes
 
 // case modes
@@ -43,7 +45,7 @@ void remove_sequential_numbering_from_folders(const std::filesystem::path& base_
 void rename_folders_with_sequential_numbering(const std::filesystem::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled);
 void rename_folders_with_sequential_numbering(const std::filesystem::path& base_directory, int& dirs_count, bool verbose_enabled);
 void rename_folders_with_date_suffix(const std::filesystem::path& base_directory, int& dirs_count, bool verbose_enabled);
-void remove_date_suffix_from_folders(const std::filesystem::path& base_directory, int& dirs_count, bool verbose_enabled);
+void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false);
 
 // main
 
