@@ -4,7 +4,6 @@
 
 std::mutex cout_mutex;
 std::mutex files_mutex;
-std::mutex dirs_mutex;
 std::mutex dirs_count_mutex;
 std::mutex files_count_mutex;
 
