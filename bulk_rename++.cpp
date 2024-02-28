@@ -530,6 +530,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
+    bool special= false;
 
     // Determine the maximum number of threads supported by the system
     unsigned int num_threads = 1;
@@ -599,12 +600,16 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "nsequence") {
+					special= true;
                     rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled);
                 } else if (transformation == "rnsequence") {
+					special= true;
                     remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled);
                 } else if (transformation == "date") {
+					special= true;
                     rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled);
                 } else if (transformation == "rdate") {
+					special= true;
                     remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled);
                 } else if (transformation == "sentence") {
                     new_dirname = sentenceCase(new_dirname);
@@ -640,10 +645,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     } else {
         // If the directory name remains unchanged
-        if (verbose_enabled && !transform_files) {
+        if (verbose_enabled && !transform_files && !special) {
             // Print a message indicating that the directory was skipped (no name change)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
-        } else if (verbose_enabled && transform_dirs && transform_files) {
+        } else if (verbose_enabled && transform_dirs && transform_files && !special) {
             // Print a message indicating that the directory was skipped (name unchanged)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
         }
