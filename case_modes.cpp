@@ -1,5 +1,7 @@
 #include "headers.h"
 
+// Necessary redefinition of mutexes
+
 std::mutex cout_mutex;
 std::mutex files_mutex;
 std::mutex dirs_mutex;
