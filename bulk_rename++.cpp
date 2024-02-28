@@ -247,6 +247,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
     }
+		
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
@@ -294,8 +295,11 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                 // Process directories and files
                 if (fs::is_directory(current_fs_path)) {
                     for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                        if (fs::is_directory(entry)) {
-                            directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+                        if (fs::is_directory(entry) && verbose_enabled) {
+							print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mdirectory\033[0m " + entry.path().string() + " (not supported)", std::cout);
+							directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+                        } else if (fs::is_directory(entry)) {
+                        directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                         } else if (fs::is_regular_file(entry)) {
                             rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size);
                         }
