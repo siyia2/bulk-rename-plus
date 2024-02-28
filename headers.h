@@ -17,10 +17,10 @@ namespace fs = std::filesystem;
 
 // Mutexes
 
-extern std::mutex dirs_mutex;
 extern std::mutex dirs_count_mutex;
 extern std::mutex files_count_mutex;
 extern std::mutex files_mutex;
+extern std::mutex dirs_mutex;
 extern std::mutex cout_mutex;
 
 // Function prototypes
@@ -49,7 +49,7 @@ void remove_date_suffix_from_folders(const std::filesystem::path& base_directory
 // main
 
 void print_error(const std::string& error);
-void print_verbose_enabled(const std::string& message);
+void print_verbose_enabled(const std::string& message, std::ostream& os = std::cout);
 void printVersionNumber(const std::string& version);
 void print_help();
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size);

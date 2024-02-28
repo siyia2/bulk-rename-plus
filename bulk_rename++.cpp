@@ -4,6 +4,7 @@
 
 constexpr int batch_size = 10;
 
+
 // Global print functions
 
 // Print an error message to stderr
@@ -13,7 +14,7 @@ void print_error(const std::string& error) {
 }
 
 // Print a message to stdout, assuming verbose mode is enabled
-void print_verbose_enabled(const std::string& message) {
+void print_verbose_enabled(const std::string& message, std::ostream& os) {
     std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cout
     std::cout << message << std::endl; // Output the message
 }
@@ -125,15 +126,16 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
     rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
 
     // Iterate through each item path
-    for (const auto& item_path : item_paths) {
-        // Check if the item is a regular file
-        if (!fs::is_regular_file(item_path)) {
-            // Skip if not a regular file, print a message if verbose mode enabled
-            if (verbose_enabled) {
-                std::cout << "\033[0m\033[93mSkipped\033[0m " << item_path << " (not a regular file)" << std::endl;
-            }
-            continue;
+for (const auto& item_path : item_paths) {
+    // Check if the item is a directory or a symlink
+    if (!fs::is_regular_file(item_path) || fs::is_symlink(item_path)) {
+        // Skip if it's a directory or symlink, print a message if verbose mode enabled
+        if (verbose_enabled) {
+                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + item_path.string() + " (not supported)", std::cout);
+            
         }
+        continue;
+    }
 
         // Get the current extension of the file
         std::string extension = item_path.extension().string();
@@ -334,6 +336,14 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
  
 // Function to rename a file or directory
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size) {
+	
+	if (fs::is_symlink(item_path)) {
+		if (verbose_enabled) {
+			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + item_path.string() + " (not supported)", std::cout);
+		}
+		return;
+	}
+	
     std::vector<std::pair<fs::path, std::string>> rename_data;
 
     // Check if the item is a directory
@@ -517,7 +527,6 @@ void process_forParents(const fs::directory_entry& entry, const std::string& cas
 }
 
 
-
 // Function to rename a directory based on specified transformations
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
     std::string dirname = directory_path.filename().string();
@@ -536,7 +545,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (verbose_enabled) {
             // Print a message if verbose mode enabled
             std::lock_guard<std::mutex> lock(dirs_mutex);
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m symlink " + directory_path.string() + " (not supported)");
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + directory_path.string() + " (not supported)");
         }
         return;
     }
@@ -1014,4 +1023,3 @@ int main(int argc, char *argv[]) {
 	std::system("clear");
 	return 0;
 }
-
