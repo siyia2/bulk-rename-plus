@@ -395,6 +395,7 @@ std::string remove_date_seq(const std::string& file_string) {
     return file_string;
 }
 
+
 // Function to remove sequencial numbering from folders
 void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
