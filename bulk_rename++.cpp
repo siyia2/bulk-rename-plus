@@ -542,7 +542,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (fs::is_symlink(directory_path) && transform_dirs) {
         if (verbose_enabled) {
             // Print a message if verbose mode enabled
-            std::lock_guard<std::mutex> lock(dirs_mutex);
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " + directory_path.string() + " (not supported)");
         }
         return;
@@ -629,7 +628,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
             if (verbose_enabled && !renaming_message_printed) {
                 // Print a renaming message if verbose mode enabled
-                std::lock_guard<std::mutex> lock(dirs_mutex);
                 print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + directory_path.string() + " to " + new_path.string());
                 renaming_message_printed = true; // Set the flag to true after printing the message
             }
@@ -637,19 +635,16 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             ++dirs_count; // Increment the directory count
         } catch (const fs::filesystem_error& e) {
             // Handle any filesystem errors that occur during renaming
-            std::lock_guard<std::mutex> lock(dirs_mutex);
-            std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+            print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
             return; // Stop processing if renaming failed
         }
     } else {
         // If the directory name remains unchanged
         if (verbose_enabled && !transform_files) {
             // Print a message indicating that the directory was skipped (no name change)
-            std::lock_guard<std::mutex> lock(dirs_mutex);
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
         } else if (verbose_enabled && transform_dirs && transform_files) {
             // Print a message indicating that the directory was skipped (name unchanged)
-            std::lock_guard<std::mutex> lock(dirs_mutex);
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m directory\033[0m " + directory_path.string() + " (name unchanged)");
         }
     }
