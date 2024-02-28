@@ -487,6 +487,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 			if (fs::is_symlink(item_path) && symlinks) {
 				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
 			}
+			else if (verbose_enabled && transform_files)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
 
         }
