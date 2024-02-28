@@ -406,12 +406,12 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
                         fs::rename(folder.path(), new_name);
                     } catch (const fs::filesystem_error& e) {
                         if (e.code() == std::errc::permission_denied) {
-                            std::cerr << "Error renaming folder due to permission denied: " << e.what() << std::endl;
+                            print_error("Error renaming folder due to permission denied: " + std::string(e.what()) + "\n");
                         }
                         continue; // Skip renaming if moving fails
                     }
                     if (verbose_enabled) {
-                        std::cout << "\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " << folder.path() << " to " << new_name << std::endl;
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
                     }
                     std::lock_guard<std::mutex> lock(dirs_count_mutex);
                     ++dirs_count; // Increment dirs_count after each successful rename
@@ -424,8 +424,8 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
     }
 }
 
-// Folder numbering functions mv style
 
+// Folder numbering functions mv style
 
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled = false) {
     int counter = 1; // Counter for immediate subdirectories
@@ -480,12 +480,12 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     fs::rename(folder.path(), new_name);
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
                     }
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    std::cout << "\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " << folder.path() << " to " << new_name << std::endl;
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
                 }
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
@@ -544,12 +544,12 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                     fs::rename(folder.path(), new_path);
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
                     }
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    std::cout << "\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " << folder.path() << " to " << new_path << std::endl;
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
                 }
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
@@ -593,12 +593,12 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                     fs::rename(folder.path(), new_path);
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
                     }
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    std::cout << "\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " << folder.path() << " to " << new_path << std::endl;
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
                 }
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename

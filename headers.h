@@ -48,7 +48,7 @@ void remove_date_suffix_from_folders(const std::filesystem::path& base_directory
 
 // main
 
-void print_error(const std::string& error);
+void print_error(const std::string& error, std::ostream& os = std::cerr);
 void print_verbose_enabled(const std::string& message, std::ostream& os = std::cout);
 void printVersionNumber(const std::string& version);
 void print_help();

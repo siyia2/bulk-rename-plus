@@ -8,7 +8,7 @@ constexpr int batch_size = 10;
 // Global print functions
 
 // Print an error message to stderr
-void print_error(const std::string& error) {
+void print_error(const std::string& error, std::ostream& os)   {
     std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cerr
     std::cerr << error << std::endl; // Output the error message
 }
@@ -179,14 +179,7 @@ for (const auto& item_path : item_paths) {
             } else {
                 // Print a message for skipped file if extension remains unchanged
                 if (verbose_enabled) {
-                    std::lock_guard<std::mutex> lock(files_mutex);
-                    std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
-                    if (extension.empty()) {
-                        std::cout << " (no extension)";
-                    } else {
-                        std::cout << " (extension unchanged)";
-                    }
-                    std::cout << std::endl;
+					print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
                 }
             }
         }
@@ -228,13 +221,12 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
                 }
                 // Print a success message if verbose mode enabled
                 if (verbose_enabled) {
-                    std::lock_guard<std::mutex> lock(files_mutex);
-                    std::cout << "\033[0m\033[92mRenamed\033[0m file " << old_path.string() << " to " << new_path.string() << std::endl;
+                    
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + " to " + new_path.string(), std::cout);
                 }
             } catch (const fs::filesystem_error& e) {
                 // Print an error message if renaming fails
-                std::lock_guard<std::mutex> lock(files_mutex);
-                std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+                print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
             }
         }
     );
@@ -466,14 +458,8 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         
         // Verbose output for skipped files with unchanged names
         if (name == new_name && verbose_enabled) {
-            std::lock_guard<std::mutex> lock(files_mutex);
-            std::cout << "\033[0m\033[93mSkipped\033[0m file " << item_path.string();
-            if (name.empty()) {
-                std::cout << " (no name change)";
-            } else {
-                std::cout << " (name unchanged)";
-            }
-            std::cout << std::endl;
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
+
         }
     }
 }
@@ -496,7 +482,7 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                 if (verbose_enabled) {
                     // Print a success message if verbose mode enabled
                     std::lock_guard<std::mutex> lock(files_mutex);
-                    std::cout << "\033[0m\033[92mRenamed\033[0m file " << item_path.string() << " to " << new_path.string() << std::endl;
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), std::cout);
                 }
                 // Update files_count or dirs_count based on the type of the renamed item
                 std::filesystem::directory_entry entry(new_path);
@@ -511,8 +497,7 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                 }
             } catch (const fs::filesystem_error& e) {
                 // Print an error message if renaming fails
-                std::lock_guard<std::mutex> lock(dirs_mutex);
-                std::cerr << "\033[1;91mError\033[0m: " << e.what() << "\n" << std::endl;
+                print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
             }
         }
     );
