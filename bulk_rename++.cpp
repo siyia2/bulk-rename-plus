@@ -51,13 +51,13 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  reverse    Reverse current case in names (e.g., Test => tEST)\n"
           << "Special CASE Modes:\n"
           << "  snake      Convert names to snakeCase (e.g., Te st => Te_st)\n"
-          << "  rsnake     Revert snakeCase in names (e.g., Te_st => Te st)\n"
+          << "  rsnake     Reverse snakeCase in names (e.g., Te_st => Te st)\n"
           << "  kebab      Convert names to kebabCase (e.g., Te st => Te-st)\n"
-          << "  rkebab     Revert kebabCase in names (e.g., Te-st => Te st)\n"
+          << "  rkebab     Reverse kebabCase in names (e.g., Te-st => Te st)\n"
           << "  camel      Convert names to camelCase (e.g., Te st => teSt)\n"
-          << "  rcamel     Revert camelCase in names (e.g., TeSt => te st)\n"
+          << "  rcamel     Reverse camelCase in names (e.g., TeSt => te st)\n"
           << "  pascal     Convert names to pascalCase (e.g., Te st => TeSt)\n"
-          << "  rpascal    Revert pascalCase in names (e.g., TeSt => Te St)\n"
+          << "  rpascal    Reverse pascalCase in names (e.g., TeSt => Te St)\n"
           << "  sentence   Convert names to sentenceCase (e.g., Te st => Te St)\n"
           << "Extension CASE Modes:\n"
           << "  bak        Add .bak on file extension names (e.g., Test.txt => Test.txt.bak)\n"
@@ -288,7 +288,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                 // Process directories and files
                 if (fs::is_directory(current_fs_path)) {
                     for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                        if (fs::is_directory(entry) && verbose_enabled && !fs::is_symlink(entry)) {
+						if (fs::is_symlink(entry)) {
+                            // Skip symbolic links
+                            if (verbose_enabled) {
+                                std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " << entry.path().string() << " (not supported)\n";
+							}
+                        } else if (fs::is_directory(entry) && verbose_enabled && !fs::is_symlink(entry)) {
 							print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mdirectory\033[0m " + entry.path().string() + " (not supported)", std::cout);
 							directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
 						} else if (fs::is_directory(entry) && fs::is_symlink(entry)) {
@@ -939,7 +944,7 @@ int main(int argc, char *argv[]) {
 	std::string confirmation;
 	if (rename_parents) {
 		// Display the paths and their lowest parent directories that will be renamed
-		std::cout << "\033[0m\033[1mThe following path(s) and their \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m";
+		std::cout << "\033[0m\033[1mThe following path(s) and their \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
 			std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
 		}
@@ -955,7 +960,7 @@ int main(int argc, char *argv[]) {
 		}
 	} else if (rename_extensions) {
 		// Display the paths where file extensions will be recursively renamed
-		std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m";
+		std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
 			std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
 		}
@@ -965,7 +970,7 @@ int main(int argc, char *argv[]) {
 		}
 	} else {
 		// Display the paths that will be recursively renamed
-		std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "_case\033[0m";
+		std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
 			std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
 		}
