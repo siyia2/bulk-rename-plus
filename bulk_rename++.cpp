@@ -130,13 +130,14 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
     std::vector<std::pair<fs::path, fs::path>> rename_batch;
     rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
 
-    // Iterate through each item path
+// Iterate through each item path
 	for (const auto& item_path : item_paths) {
 		// Check if the item is a directory or a symlink
-		if (!fs::is_regular_file(item_path) || (fs::is_symlink(item_path)  && !symlinks)) {
+		
+		if (fs::is_symlink(item_path) && !symlinks) {
 			// Skip if it's a directory or symlink, print a message if verbose mode enabled
-			if (verbose_enabled && !symlinks) {
-                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + item_path.string() + " (not supported)", std::cout);
+			if (verbose_enabled) {
+                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " (excluded)", std::cout);
             
 			}
 			continue;
@@ -185,7 +186,10 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
                 // Print a message for skipped file if extension remains unchanged and parent directory is not a symlink
 			if (verbose_enabled && !fs::is_symlink(item_path.parent_path()) && !symlinks) {
 				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
+				} else {
+					print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
 				}
+					
             }
         }
 
@@ -264,59 +268,59 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     // Define the function to process each subset of paths asynchronously
     auto process_paths_async = [&case_input, verbose_enabled, depth, &files_count, batch_size, symlinks](const std::vector<std::string>& paths_subset) {
-        for (const auto& path : paths_subset) {
-            std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
-            directories.push({path, 0}); // Push the initial path onto the queue with depth 0
+    for (const auto& path : paths_subset) {
+        std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
+        directories.push({path, 0}); // Push the initial path onto the queue with depth 0
 
-            std::string depth_limit_reached_path; // Store the path where depth limit is reached
+        std::string depth_limit_reached_path; // Store the path where depth limit is reached
 
-            while (!directories.empty()) {
-                auto [current_path, current_depth] = directories.front();
-                directories.pop();
+        while (!directories.empty()) {
+            auto [current_path, current_depth] = directories.front();
+            directories.pop();
 
-                // Check if depth limit is reached
-                if (current_depth >= depth && depth_limit_reached_path.empty()) {
-                    depth_limit_reached_path = current_path; // Store the path where depth limit is reached
-                    continue; // Skip processing this directory
-                }
+            // Check if depth limit is reached
+            if (current_depth >= depth && depth_limit_reached_path.empty()) {
+                depth_limit_reached_path = current_path; // Store the path where depth limit is reached
+                continue; // Skip processing this directory
+            }
 
-                fs::path current_fs_path(current_path);
+            fs::path current_fs_path(current_path);
 
-                // Check if path exists
-                if (verbose_enabled && !fs::exists(current_fs_path)) {
-                    print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
-                    continue;
-                }
+            // Check if path exists
+            if (verbose_enabled && !fs::exists(current_fs_path)) {
+                print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
+                continue;
+            }
 
-                // Process directories and files
-                if (fs::is_directory(current_fs_path)) {
-                    for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                        if (fs::is_symlink(entry)) {
+            // Process directories and files
+            if (fs::is_directory(current_fs_path)) {
+                for (const auto& entry : fs::directory_iterator(current_fs_path)) {
+                    if (fs::is_symlink(entry)) {
+                        if (!symlinks) {
+                            // Print message for symlinked folder or file if symlinks flag is false
                             if (fs::is_directory(entry)) {
-                                // Print message for symlinked folder
-                                if (verbose_enabled && !symlinks) {
-                                    std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " << entry.path().string() << " (not supported)\n";
-                                }
+                                std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
                             } else {
-                                // Print message for symlinked file
-                                if (verbose_enabled && !symlinks) {
-                                    std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (not supported)\n";
-                                }
+                                std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
                             }
-                        } else if (fs::is_directory(entry)) {
-                            directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
-                        } else if (fs::is_regular_file(entry)) {
-                            rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks);
+                        } else {
+                            // Process symlink if symlinks flag is true
+                            directories.push({entry.path().string(), current_depth + 1}); // Push symlink as regular directory
                         }
+                    } else if (fs::is_directory(entry)) {
+                        directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+                    } else if (fs::is_regular_file(entry)) {
+                        rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks);
                     }
-                } else if (fs::is_regular_file(current_fs_path)) {
-                    rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks);
-                } else {
-                    print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
+            } else if (fs::is_regular_file(current_fs_path)) {
+                rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks);
+            } else {
+                print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
         }
-    };
+    }
+};
 
     // Launch asynchronous tasks for each subset of paths
     for (unsigned int i = 0; i < num_threads; ++i) {
@@ -350,7 +354,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 	// Check if the item is a symbolic link
     if (!fs::is_regular_file(item_path) || (fs::is_symlink(item_path) && !symlinks)) {
         if (verbose_enabled && transform_files && !symlinks) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " (not supported)", std::cout);
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " (excluded)", std::cout);
         }
         return; // Skip processing symbolic links
     }
@@ -548,7 +552,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (fs::is_symlink(directory_path) && transform_dirs && !symlinks) {
         if (verbose_enabled) {
             // Print a message if verbose mode enabled
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " + directory_path.string() + " (not supported)");
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
         }
         return;
     }
@@ -814,7 +818,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.4.0");
+        printVersionNumber("1.4.1");
         return 0;
     }
 
