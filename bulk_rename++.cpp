@@ -463,11 +463,13 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
     // Check if batch size is reached and perform renaming
     if (rename_data.size() >= batch_size) {
+		std::lock_guard<std::mutex> lock(files_mutex);
         rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         rename_data.clear();
     } else {
         // Rename any remaining data after processing the loop
         if (!rename_data.empty()) {
+			std::lock_guard<std::mutex> lock(files_mutex);
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         }
         // Verbose output for skipped files with unchanged names
