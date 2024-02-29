@@ -348,8 +348,8 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size, bool symlinks ) {
 	
 	// Check if the item is a symbolic link
-    if (fs::is_symlink(item_path) && !symlinks) {
-        if (verbose_enabled && transform_files) {
+    if (!fs::is_regular_file(item_path) || (fs::is_symlink(item_path) && !symlinks)) {
+        if (verbose_enabled && transform_files && !symlinks) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " (not supported)", std::cout);
         }
         return; // Skip processing symbolic links
@@ -494,7 +494,6 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                 fs::rename(item_path, new_path);
                 if (verbose_enabled) {
                     // Print a success message if verbose mode enabled
-                    std::lock_guard<std::mutex> lock(files_mutex);
                     print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), std::cout);
                 }
                 // Update files_count or dirs_count based on the type of the renamed item
