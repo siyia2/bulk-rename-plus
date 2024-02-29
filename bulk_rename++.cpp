@@ -344,48 +344,47 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 }
 
 
-
 // Rename file&directory stuff
  
 // Function to rename a file or directory
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size, bool symlinks ) {
-	
-	// Check if the item is a symbolic link
+    
+    // Check if the item is a symbolic link
     if (!fs::is_regular_file(item_path) || (fs::is_symlink(item_path) && !symlinks)) {
         if (verbose_enabled && transform_files && !symlinks) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " (excluded)", std::cout);
         }
         return; // Skip processing symbolic links
     }
-	
+    
     std::vector<std::pair<fs::path, std::string>> rename_data;
 
-// Check if the item is a directory
-if (is_directory) {
-    // If it is a directory, recursively process its contents
-    for (const auto& entry : fs::directory_iterator(item_path)) {
-        if (entry.is_directory()) {
-            // Recursively call rename_file for subdirectories
-            rename_file(entry.path(), case_input, true, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
-        } else {
-            // Check if it's a symbolic link
-            if (fs::is_symlink(entry.path())) {
-                // If it's a symbolic link, process it based on transform_dirs
-                if (transform_dirs) {
-                    // Process symbolic link files within regular directories
+    // Check if the item is a directory
+    if (is_directory) {
+        // If it is a directory, recursively process its contents
+        for (const auto& entry : fs::directory_iterator(item_path)) {
+            if (entry.is_directory()) {
+                // Recursively call rename_file for subdirectories
+                rename_file(entry.path(), case_input, true, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
+            } else {
+                // Check if it's a symbolic link
+                if (fs::is_symlink(entry.path())) {
+                    // If it's a symbolic link, process it based on transform_dirs
+                    if (transform_dirs) {
+                        // Process symbolic link files within regular directories
+                        rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
+                    }
+                } else {
+                    // Process regular files within regular directories
                     rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
                 }
-            } else {
-                // Process regular files within regular directories
-                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
             }
         }
+        // Increment the directory count
+        std::lock_guard<std::mutex> lock(dirs_count_mutex);
+        ++dirs_count;
+        return;
     }
-    // Increment the directory count
-    std::lock_guard<std::mutex> lock(dirs_count_mutex);
-    ++dirs_count;
-    return;
-}
 
     // Extract the relative path of the item from its parent directory
     fs::path relative_path = item_path.filename();
@@ -475,21 +474,21 @@ if (is_directory) {
 
     // Check if batch size is reached and perform renaming
     if (rename_data.size() >= batch_size) {
-		std::lock_guard<std::mutex> lock(files_mutex);
+        std::lock_guard<std::mutex> lock(files_mutex);
         rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         rename_data.clear();
     } else {
         // Rename any remaining data after processing the loop
         if (!rename_data.empty()) {
-			std::lock_guard<std::mutex> lock(files_mutex);
+            std::lock_guard<std::mutex> lock(files_mutex);
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         }
         // Verbose output for skipped files with unchanged names
-		if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path) && !symlinks) {
-			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
-		} else if (name == new_name && verbose_enabled && transform_files && symlinks) {
-		print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
-	}
+        if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path) && !symlinks) {
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
+        } else if (name == new_name && verbose_enabled && transform_files && symlinks) {
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
+        }
     }
 }
 
