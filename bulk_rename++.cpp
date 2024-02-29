@@ -298,7 +298,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                         if (!symlinks) {
                             // Print message for symlinked folder or file if symlinks flag is false
                             if (fs::is_directory(entry)) {
-                                std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
+                                std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
                             } else {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
                             }
@@ -551,7 +551,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (fs::is_symlink(directory_path) && transform_dirs && !symlinks) {
         if (verbose_enabled) {
             // Print a message if verbose mode enabled
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
         }
         return;
     }
