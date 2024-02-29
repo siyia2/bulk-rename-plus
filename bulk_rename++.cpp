@@ -32,20 +32,20 @@ void printVersionNumber(const std::string& version) {
 // Function to print help
 void print_help() {
 
-std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
+std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "Renames all files and folders under the specified path(s).\n"
           << "\n"
           << "Options:\n"
           << "  -h, --help               Print this message and exit\n"
+          << "  --version                Print version\n"
           << "  -v, --verbose            Enable verbose mode\n"
           << "  -fi                      Rename files exclusively (optional)\n"
           << "  -fo                      Rename folders exclusively (optional)\n"
-          << "  -sym                     Rename symbolic links, can be combined with -fi or -fo (optional)\n"
-          << "  -d  [DEPTH]              Set traverse depth level (optional)\n"
+          << "  -sym                     Include symbolic links when renaming, can be combined with -fi or -fo (optional)\n"
+          << "  -d  [DEPTH]              Set recursive depth level (optional)\n"
           << "  -c  [MODE]               Set the case conversion mode for file and dir name(s)\n"
           << "  -cp [MODE]               Set the case conversion mode for file and dir name(s), including parent dir(s)\n"
           << "  -ce [MODE]               Set the case conversion mode for file extension(s)\n"
-          << "  --version                Print version\n"
           << "\n"
           << "Modes for file, directory and extension renaming:\n"
           << "Regular CASE Modes:\n"
@@ -88,6 +88,8 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  bulk_rename++ -d 2 -c upper -v [path1]\n"
           << "  bulk_rename++ -fi -c lower -v [path1]\n"
           << "  bulk_rename++ -ce noext -v [path1]\n"
+          << "  bulk_rename++ -sym -c lower -v [path1]\n"
+          << "  bulk_rename++ -sym -fi -c title -v [path1]\n"
           << "\x1B[0m\n";
 }
 
