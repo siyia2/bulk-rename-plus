@@ -13,6 +13,7 @@ Options:
 - `-d` stands for recursion depth level (optional).
 - `-fi` stands for exclusive file renaming (optional).
 - `-fo` stands for exclusive folder renaming (optional).
+- `-sym` stands for processing symlinks like folders and files (optional).
 - `-c` option stands for case set.
 - `-ce` option stands for case set for file extensions.
 - `-cp` option stands for case set including the lowest parent dir(s).
