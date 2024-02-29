@@ -526,7 +526,8 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
     struct std::tm* parts = std::localtime(&time);
     
     for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory() && (!symlinks || !fs::is_symlink(folder))) { // Check if the folder is not a symlink
+        bool skip = !symlinks && fs::is_symlink(folder);
+        if (folder.is_directory() && !skip) { // Check if the folder is not a symlink
             std::string folder_name = folder.path().filename().string();
 
             // Check if the folder name ends with the date suffix format "_YYYYMMDD"
@@ -582,7 +583,8 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
 // Function to remove date to folders
 void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory() && (!symlinks || !fs::is_symlink(folder))) { // Check if the folder is not a symlink
+        bool skip = !symlinks && fs::is_symlink(folder);
+        if (folder.is_directory() && !skip) {  // Check if the folder is not a symlink
             std::string folder_name = folder.path().filename().string();
 
             // Check if the folder name ends with the date suffix format "_YYYYMMDD"
