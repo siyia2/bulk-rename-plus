@@ -473,7 +473,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         }
         // Verbose output for skipped files with unchanged names
-		if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path) && !symlinks) {
+		if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path)) {
 			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
 		}
     }
@@ -814,7 +814,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.3.9");
+        printVersionNumber("1.4.0");
         return 0;
     }
 
