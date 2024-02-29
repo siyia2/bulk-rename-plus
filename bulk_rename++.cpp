@@ -557,12 +557,18 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         max_threads = 1; // If hardware concurrency is not available, default to 1 thread
     }
     
-    if (!transform_dirs && (fs::is_symlink(directory_path) && symlinks && !transform_dirs)) {
-    print_verbose_enabled("\033[0m\033[93mSkipped\033[0m renaming \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
-	}
 
     // Early exit if the directory is a symlink
     if (fs::is_symlink(directory_path) && transform_dirs && !symlinks) {
+        if (verbose_enabled) {
+            // Print a message if verbose mode enabled
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
+        }
+        return;
+    }
+    
+    // Early exit if the directory is a symlink
+    if (fs::is_symlink(directory_path) && !transform_dirs && !symlinks) {
         if (verbose_enabled) {
             // Print a message if verbose mode enabled
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
