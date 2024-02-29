@@ -13,7 +13,7 @@ Options:
 - `-d` stands for recursion depth level (optional).
 - `-fi` stands for exclusive file renaming (optional).
 - `-fo` stands for exclusive folder renaming (optional).
-- `-sym` stands for processing symlinks like folders and files (optional).
+- `-sym` stands for processing symlinks like regular files and folders (optional).
 - `-c` option stands for case set.
 - `-ce` option stands for case set for file extensions.
 - `-cp` option stands for case set including the lowest parent dir(s).
@@ -23,15 +23,15 @@ Options:
 ### Current suported case modes: 
 
 #### Regular CASE Modes:
-- `title`      Convert names to Title Case (e.g., test => Test)
-- `upper`      Convert names to UPPERCASE (e.g., Test => TEST)
-- `lower`      Convert names to lowercase (e.g., Test => test)
+- `title`      Convert names to titleCase (e.g., test => Test)
+- `upper`      Convert names to upperCase (e.g., Test => TEST)
+- `lower`      Convert names to lowerCase (e.g., Test => test)
 - `reverse`    Reverse current case in names (e.g., Test => tEST)
 #### Special CASE Modes:
-- `snake`      Convert spaces to underscores in names (e.g., Te st => Te_st)
-- `rsnake`     Convert underscores to spaces in names (e.g., Te_st => Te st)
-- `kebab`      Convert spaces to hyphens in names (e.g., Te st => Te-st)
-- `rkebab`     Convert hyphens to spaces in names (e.g., Te-st => Te st)
+- `snake`      Convert names to snakeCase (e.g., Te st => Te_st)
+- `rsnake`     Reverse snakeCase in names (e.g., Te_st => Te st)
+- `kebab`      Convert names to kebabCase (e.g., Te st => Te-st)
+- `rkebab`     Reverse kebabCase in names (e.g., Te-st => Te st)
 - `camel`      Convert names to camelCase (e.g., Te st => teSt)
 - `rcamel`     Reverse camelCase in names (e.g., TeSt => te st)
 - `pascal`     Convert names to pascalCase (e.g., Te st => TeSt)
