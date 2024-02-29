@@ -301,7 +301,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                             // Print message for symlinked folder or file if symlinks flag is false
                             if (fs::is_directory(entry)) {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
-                            } else if (fs::is_directory(entry)) {
+                            } else if (!fs::is_directory(entry)) {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
                             }
                         } else if (symlinks) {
