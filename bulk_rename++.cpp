@@ -38,8 +38,9 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "Options:\n"
           << "  -h, --help               Print this message and exit\n"
           << "  -v, --verbose            Enable verbose mode\n"
-          << "  -fi                      Rename files exclusively, by default everything is renamed\n"
-          << "  -fo                      Rename folders exclusively, by default everything is renamed\n"
+          << "  -fi                      Rename files exclusively, everything is renamed by default\n"
+          << "  -fo                      Rename folders exclusively, everything is renamed by default\n"
+          << "  -sym                     Process symbolic links like regular files and folders, disabled by default\n"
           << "  -d  [DEPTH]              Set traverse depth level otherwise maximum (-1) is used. -d 0 and -cp together rename only parent dir(s)\n"
           << "  -c  [MODE]               Set the case conversion mode for file and dir name(s)\n"
           << "  -cp [MODE]               Set the case conversion mode for file and dir name(s), including parent dir(s)\n"
@@ -124,7 +125,7 @@ static const std::vector<std::string> transformation_commands = {
 
 
 // Function to rename file extensions for a batch of items
-void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size) {
+void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size, bool symlinks) {
     // Vector to store pairs of old and new paths for renaming
     std::vector<std::pair<fs::path, fs::path>> rename_batch;
     rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
@@ -132,9 +133,9 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
     // Iterate through each item path
 	for (const auto& item_path : item_paths) {
 		// Check if the item is a directory or a symlink
-		if (!fs::is_regular_file(item_path) || fs::is_symlink(item_path)) {
+		if (!fs::is_regular_file(item_path) || (fs::is_symlink(item_path)  && !symlinks)) {
 			// Skip if it's a directory or symlink, print a message if verbose mode enabled
-			if (verbose_enabled) {
+			if (verbose_enabled && !symlinks) {
                 print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink\033[0m " + item_path.string() + " (not supported)", std::cout);
             
 			}
@@ -182,7 +183,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
                 rename_batch.emplace_back(item_path, new_path); // Add to the batch
             } else {
                 // Print a message for skipped file if extension remains unchanged and parent directory is not a symlink
-			if (verbose_enabled && !fs::is_symlink(item_path.parent_path())) {
+			if (verbose_enabled && !fs::is_symlink(item_path.parent_path()) && !symlinks) {
 				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
 				}
             }
@@ -238,7 +239,7 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
 
 
 // Function to rename file extensions recursively for multiple paths in parallel
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, bool symlinks) {
     // If depth is negative, set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
@@ -262,7 +263,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     int batch_size = paths.size() / num_threads;
 
     // Define the function to process each subset of paths asynchronously
-    auto process_paths_async = [&case_input, verbose_enabled, depth, &files_count, batch_size](const std::vector<std::string>& paths_subset) {
+    auto process_paths_async = [&case_input, verbose_enabled, depth, &files_count, batch_size, symlinks](const std::vector<std::string>& paths_subset) {
         for (const auto& path : paths_subset) {
             std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
             directories.push({path, 0}); // Push the initial path onto the queue with depth 0
@@ -293,23 +294,23 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                         if (fs::is_symlink(entry)) {
                             if (fs::is_directory(entry)) {
                                 // Print message for symlinked folder
-                                if (verbose_enabled) {
+                                if (verbose_enabled && !symlinks) {
                                     std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " << entry.path().string() << " (not supported)\n";
                                 }
                             } else {
                                 // Print message for symlinked file
-                                if (verbose_enabled) {
+                                if (verbose_enabled && !symlinks) {
                                     std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (not supported)\n";
                                 }
                             }
                         } else if (fs::is_directory(entry)) {
                             directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                         } else if (fs::is_regular_file(entry)) {
-                            rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size);
+                            rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks);
                         }
                     }
                 } else if (fs::is_regular_file(current_fs_path)) {
-                    rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size);
+                    rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks);
                 } else {
                     print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
@@ -344,10 +345,10 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 // Rename file&directory stuff
  
 // Function to rename a file or directory
-void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size) {
+void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size, bool symlinks ) {
 	
 	// Check if the item is a symbolic link
-    if (fs::is_symlink(item_path)) {
+    if (fs::is_symlink(item_path) && !symlinks) {
         if (verbose_enabled && transform_files) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " (not supported)", std::cout);
         }
@@ -362,10 +363,10 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         for (const auto& entry : fs::directory_iterator(item_path)) {
             if (entry.is_directory()) {
                 // Recursively call rename_file for subdirectories
-                rename_file(entry.path(), case_input, true, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size);
+                rename_file(entry.path(), case_input, true, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
             } else {
                 // Rename files within the subdirectory
-                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size);
+                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
             }
         }
         // Increment the directory count
@@ -470,7 +471,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         }
         // Verbose output for skipped files with unchanged names
-		if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path)) {
+		if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path) && !symlinks) {
 			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
 		}
     }
@@ -517,19 +518,19 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
 
 
 // Function to process a directory entry (file or directory) based on specified transformations
-void process_forParents(const fs::directory_entry& entry, const std::string& case_input, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
+void process_forParents(const fs::directory_entry& entry, const std::string& case_input, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, bool symlinks) {
     if (entry.is_directory()) {
         // If the entry is a directory, rename it accordingly
-        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
     } else {
         // If the entry is a file, rename it accordingly
-        rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size);
+        rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
     }
 }
 
 
 // Function to rename a directory based on specified transformations
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, bool symlinks) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
@@ -543,7 +544,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     }
 
     // Early exit if the directory is a symlink
-    if (fs::is_symlink(directory_path) && transform_dirs) {
+    if (fs::is_symlink(directory_path) && transform_dirs && !symlinks) {
         if (verbose_enabled) {
             // Print a message if verbose mode enabled
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_folder\033[0m " + directory_path.string() + " (not supported)");
@@ -603,13 +604,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "nsequence") {
-                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled);
+                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "rnsequence") {
-                    remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled);
+                    remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "date") {
-                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled);
+                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "rdate") {
-                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled);
+                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "sentence") {
                     new_dirname = sentenceCase(new_dirname);
                 } else if (transformation == "pascal") {
@@ -672,17 +673,17 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 ++num_threads;
                 if (rename_parents && num_threads <= max_threads) {
                     // Process subdirectories asynchronously if renaming parents is enabled
-                    futures.push_back(std::async(std::launch::async, process_forParents, entry, case_input, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth));
+                    futures.push_back(std::async(std::launch::async, process_forParents, entry, case_input, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth, symlinks));
                 } else if (futures.size() < num_threads) {
                     // Process subdirectories asynchronously if max_threads is not reached
-                    futures.push_back(std::async(std::launch::async, rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth));
+                    futures.push_back(std::async(std::launch::async, rename_directory, entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth, symlinks));
                 } else {
                     // Process subdirectories in the main thread if max_threads is reached
-                    rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+                    rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
                 }
             } else {
                 // Process files in the main thread
-                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size);
+                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
             }
         }
 
@@ -695,7 +696,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
 
 // Function to rename paths (directories and files) based on specified transformations
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, bool symlinks) {
     // Check if case_input is empty
     if (case_input.empty()) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
@@ -720,7 +721,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
     // Process paths asynchronously
     for (unsigned int i = 0; i < num_threads; ++i) {
-        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count]() {
+        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, symlinks, &files_count, &dirs_count]() {
             // Obtain the current path
             fs::path current_path(paths[i]);
 
@@ -729,14 +730,14 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                     if (rename_parents) {
                         // If -p option is used, only rename the immediate parent
                         fs::path immediate_parent_path = current_path.parent_path();
-                        rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+                        rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
                     } else {
                         // Otherwise, rename the entire path
-                        rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+                        rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
                     }
                 } else if (fs::is_regular_file(current_path)) {
                     // For files, directly rename the item without considering the parent directory
-                    rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size);
+                    rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
                 } else {
                     print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                 }
@@ -760,19 +761,19 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 if (rename_parents) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
                 } else {
                     // Otherwise, rename the entire path in the main thread
-                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth);
+                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
-                rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size);
+                rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
             } else {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
             }
         } else {
-            print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
+           // print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
         }
     }
 
@@ -800,6 +801,7 @@ int main(int argc, char *argv[]) {
     bool case_specified = false;
     bool transform_dirs = true;
     bool transform_files = true;
+    bool symlinks = false;
 
     // Handle command-line arguments
     // Display help message if no arguments provided
@@ -811,7 +813,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.3.7");
+        printVersionNumber("1.3.8");
         return 0;
     }
 
@@ -827,6 +829,8 @@ int main(int argc, char *argv[]) {
         if (arg == "-fi") {
             transform_dirs = false;
             fi_flag = true;
+        } else if (arg == "-sym") {
+            symlinks = true;
         } else if (arg == "-fo") {
             transform_files = false;
             fo_flag = true;
@@ -935,9 +939,9 @@ int main(int argc, char *argv[]) {
     }
 
     std::system("clear");
-    if (case_input == "rnumeric" || case_input == "rspecial" || case_input == "rbra" || case_input == "roperand" || case_input == "noext") {
-        std::cout << "\033[1;93m!!! WARNING SELECTED OPERATION IRREVERSIBLE !!!\033[0m\n\n";
-    }
+    //if (case_input == "rnumeric" || case_input == "rspecial" || case_input == "rbra" || case_input == "roperand" || case_input == "noext") {
+    //    std::cout << "\033[1;93m!!! WARNING SELECTED OPERATION IRREVERSIBLE !!!\033[0m\n\n";
+    //}
 
 	// Prompt the user for confirmation before proceeding
 	std::string confirmation;
@@ -1007,11 +1011,11 @@ int main(int argc, char *argv[]) {
 
 	// Perform the renaming operation based on the selected mode
 	if (rename_parents) {
-		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth); // Pass true for rename_parents
+		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, symlinks); // Pass true for rename_parents
 	} else if (rename_extensions) {
-		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count);
+		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, symlinks);
 	} else {
-		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth);
+		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, symlinks);
 	}
 
 	// Prompt the user to press enter to exit

@@ -396,10 +396,10 @@ std::string remove_date_seq(const std::string& file_string) {
 
 // Folder numbering functions mv style
 
-// Function to remove sequencial numbering from folders
-void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false) {
+void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory() && !fs::is_symlink(folder)) { // Check if the folder is not a symlink
+        bool skip = !symlinks && fs::is_symlink(folder);
+        if (folder.is_directory() && !skip) { // Check if the folder is not a symlink based on the symlinks parameter
             std::string folder_name = folder.path().filename().string();
 
             // Check if the folder is numbered
@@ -431,7 +431,7 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
                 }
 
                 // Recursively process subdirectories
-                remove_sequential_numbering_from_folders(new_name, dirs_count, verbose_enabled);
+                remove_sequential_numbering_from_folders(new_name, dirs_count, verbose_enabled, symlinks);
             }
         }
     }
@@ -439,12 +439,13 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
 
 
 // Function to add sequencial numbering from folders
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled = false) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled = false, bool symlinks = false) {
     int counter = 1; // Counter for immediate subdirectories
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
 
     for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory() && !fs::is_symlink(folder)) { // Check if the folder is not a symlink
+        bool skip = !symlinks && fs::is_symlink(folder);
+        if (folder.is_directory() && !skip) { // Check if the folder is not a symlink based on the symlinks parameter
             std::string folder_name = folder.path().filename().string();
 
             // Extract number from the folder name if it is already numbered
@@ -471,7 +472,8 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
     }
 
     for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory() && !fs::is_symlink(folder)) { // Check if the folder is not a symlink
+        bool skip = !symlinks && fs::is_symlink(folder);
+        if (folder.is_directory() && !skip) { // Check if the folder is not a symlink based on the symlinks parameter
             std::string folder_name = folder.path().filename().string();
 
             // Check if the folder is already numbered
@@ -505,26 +507,26 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             }
 
             // Recursively process subdirectories with updated prefix
-            rename_folders_with_sequential_numbering(new_name, prefix + ss.str(), dirs_count, verbose_enabled);
+            rename_folders_with_sequential_numbering(new_name, prefix + ss.str(), dirs_count, verbose_enabled, symlinks);
             counter++; // Increment counter after each directory is processed
         }
     }
 }
 
 // Overloaded function with default verbose_enabled = false
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, bool verbose_enabled) {
-    rename_folders_with_sequential_numbering(base_directory, "", dirs_count, verbose_enabled);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks) {
+    rename_folders_with_sequential_numbering(base_directory, "", dirs_count, verbose_enabled, symlinks);
 }
 
 
 // Function to append current date to folders
-void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false) {
+void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false) {
     auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
     struct std::tm* parts = std::localtime(&time);
     
     for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory() && !fs::is_symlink(folder)) { // Check if the folder is not a symlink
+        if (folder.is_directory() && (!symlinks || !fs::is_symlink(folder))) { // Check if the folder is not a symlink
             std::string folder_name = folder.path().filename().string();
 
             // Check if the folder name ends with the date suffix format "_YYYYMMDD"
@@ -571,16 +573,16 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
             }
 
             // Recursively process subdirectories
-            rename_folders_with_date_suffix(new_path, dirs_count, verbose_enabled);
+            rename_folders_with_date_suffix(new_path, dirs_count, verbose_enabled, symlinks);
         }
     }
 }
 
 
 // Function to remove date to folders
-void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled) {
+void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks) {
     for (const auto& folder : fs::directory_iterator(base_directory)) {
-        if (folder.is_directory() && !fs::is_symlink(folder)) { // Check if the folder is not a symlink
+        if (folder.is_directory() && (!symlinks || !fs::is_symlink(folder))) { // Check if the folder is not a symlink
             std::string folder_name = folder.path().filename().string();
 
             // Check if the folder name ends with the date suffix format "_YYYYMMDD"
@@ -623,7 +625,7 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
             }
 
             // Recursively process subdirectories
-            remove_date_suffix_from_folders(new_path, dirs_count, verbose_enabled);
+            remove_date_suffix_from_folders(new_path, dirs_count, verbose_enabled, symlinks);
         }
     }
 }
