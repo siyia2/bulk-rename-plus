@@ -40,7 +40,7 @@ std::cout << "\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  -v, --verbose            Enable verbose mode\n"
           << "  -fi                      Rename files exclusively (optional)\n"
           << "  -fo                      Rename folders exclusively (optional)\n"
-          << "  -sym                     Process symbolic links like regular files and folders (optional)\n"
+          << "  -sym                     Rename symbolic links can be combined with -fi or -fo (optional)\n"
           << "  -d  [DEPTH]              Set traverse depth level (optional)\n"
           << "  -c  [MODE]               Set the case conversion mode for file and dir name(s)\n"
           << "  -cp [MODE]               Set the case conversion mode for file and dir name(s), including parent dir(s)\n"
@@ -130,7 +130,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
     std::vector<std::pair<fs::path, fs::path>> rename_batch;
     rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
 
-// Iterate through each item path
+	// Iterate through each item path
 	for (const auto& item_path : item_paths) {
 		// Check if the item is a directory or a symlink
 		if (fs::is_symlink(item_path) && !symlinks) {
@@ -569,15 +569,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     
     // Early exit if the directory is a symlink
     if (fs::is_symlink(directory_path) && !transform_dirs && !symlinks) {
-        if (verbose_enabled) {
-            // Print a message if verbose mode enabled
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
-        }
-        return;
-    }
-    
-     // Early exit if the directory is a symlink
-    if (fs::is_symlink(directory_path) && !transform_dirs && symlinks) {
         if (verbose_enabled) {
             // Print a message if verbose mode enabled
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
