@@ -368,9 +368,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 rename_file(entry.path(), case_input, true, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
             } else {
                 // Check if it's a symbolic link
-                if (fs::is_symlink(entry.path())) {
+                if (fs::is_symlink(entry.path()) && symlinks) {
                     // If it's a symbolic link, process it based on transform_dirs
-                    if (transform_dirs) {
+                    if (transform_dirs && symlinks) {
                         // Process symbolic link files within regular directories
                         rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
                     }
