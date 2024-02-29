@@ -360,23 +360,32 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 	
     std::vector<std::pair<fs::path, std::string>> rename_data;
 
-    // Check if the item is a directory
-    if (is_directory) {
-        // If it is a directory, recursively process its contents
-        for (const auto& entry : fs::directory_iterator(item_path)) {
-            if (entry.is_directory()) {
-                // Recursively call rename_file for subdirectories
-                rename_file(entry.path(), case_input, true, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
+// Check if the item is a directory
+if (is_directory) {
+    // If it is a directory, recursively process its contents
+    for (const auto& entry : fs::directory_iterator(item_path)) {
+        if (entry.is_directory()) {
+            // Recursively call rename_file for subdirectories
+            rename_file(entry.path(), case_input, true, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
+        } else {
+            // Check if it's a symbolic link
+            if (fs::is_symlink(entry.path())) {
+                // If it's a symbolic link, process it based on transform_dirs
+                if (transform_dirs) {
+                    // Process symbolic link files within regular directories
+                    rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
+                }
             } else {
-                // Rename files within the subdirectory
+                // Process regular files within regular directories
                 rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
             }
         }
-        // Increment the directory count
-        std::lock_guard<std::mutex> lock(dirs_count_mutex);
-        ++dirs_count;
-        return;
     }
+    // Increment the directory count
+    std::lock_guard<std::mutex> lock(dirs_count_mutex);
+    ++dirs_count;
+    return;
+}
 
     // Extract the relative path of the item from its parent directory
     fs::path relative_path = item_path.filename();
@@ -476,9 +485,11 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         }
         // Verbose output for skipped files with unchanged names
-		if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path)) {
+		if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path) && !symlinks) {
 			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
-		}
+		} else if (name == new_name && verbose_enabled && transform_files && symlinks) {
+		print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
+	}
     }
 }
 
@@ -546,6 +557,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     if (max_threads == 0) {
         max_threads = 1; // If hardware concurrency is not available, default to 1 thread
     }
+    
+    if (!transform_dirs && (fs::is_symlink(directory_path) && symlinks && !transform_dirs)) {
+    print_verbose_enabled("\033[0m\033[93mSkipped\033[0m renaming \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
+	}
 
     // Early exit if the directory is a symlink
     if (fs::is_symlink(directory_path) && transform_dirs && !symlinks) {
