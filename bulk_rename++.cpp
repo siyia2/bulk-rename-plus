@@ -296,15 +296,15 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
             // Process directories and files
             if (fs::is_directory(current_fs_path)) {
                 for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                    if (fs::is_symlink(entry) && verbose_enabled) {
-                        if (!symlinks) {
+                    if (fs::is_symlink(entry)) {
+                        if (!symlinks && verbose_enabled) {
                             // Print message for symlinked folder or file if symlinks flag is false
                             if (fs::is_directory(entry)) {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
-                            } else{
+                            } else if (fs::is_directory(entry)) {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
                             }
-                        } else {
+                        } else if (symlinks) {
                             // Process symlink if symlinks flag is true
                             directories.push({entry.path().string(), current_depth + 1}); // Push symlink as regular directory
                         }
