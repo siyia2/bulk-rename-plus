@@ -604,13 +604,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "nsequence") {
-                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled);
+                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "rnsequence") {
-                    remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled);
+                    remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "date") {
-                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled);
+                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "rdate") {
-                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled);
+                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "sentence") {
                     new_dirname = sentenceCase(new_dirname);
                 } else if (transformation == "pascal") {
