@@ -187,7 +187,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
                 // Print a message for skipped file if extension remains unchanged and parent directory is not a symlink
 			if (verbose_enabled && !fs::is_symlink(item_path.parent_path()) && !symlinks) {
 				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
-				} else {
+				} else if (verbose_enabled) {
 					print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
 				}
 					
@@ -296,12 +296,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
             // Process directories and files
             if (fs::is_directory(current_fs_path)) {
                 for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                    if (fs::is_symlink(entry)) {
+                    if (fs::is_symlink(entry) && verbose_enabled) {
                         if (!symlinks) {
                             // Print message for symlinked folder or file if symlinks flag is false
                             if (fs::is_directory(entry)) {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
-                            } else {
+                            } else{
                                 std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
                             }
                         } else {
@@ -839,7 +839,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.4.2");
+        printVersionNumber("1.4.3");
         return 0;
     }
 
