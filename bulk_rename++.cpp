@@ -133,7 +133,6 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 // Iterate through each item path
 	for (const auto& item_path : item_paths) {
 		// Check if the item is a directory or a symlink
-		
 		if (fs::is_symlink(item_path) && !symlinks) {
 			// Skip if it's a directory or symlink, print a message if verbose mode enabled
 			if (verbose_enabled) {
