@@ -41,11 +41,11 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  -v, --verbose            Enable verbose mode\n"
           << "  -fi                      Rename files exclusively (optional)\n"
           << "  -fo                      Rename folders exclusively (optional)\n"
-          << "  -sym                     Include symbolic links when renaming, can be combined with -fi or -fo (optional)\n"
+          << "  -sym                     Treat symbolic links like regular files or folders (optional)\n"
           << "  -d  [DEPTH]              Set recursive depth level (optional)\n"
-          << "  -c  [MODE]               Set the case conversion mode for file and dir name(s)\n"
-          << "  -cp [MODE]               Set the case conversion mode for file and dir name(s), including parent dir(s)\n"
-          << "  -ce [MODE]               Set the case conversion mode for file extension(s)\n"
+          << "  -c  [MODE]               Set the case conversion mode for file and folder names\n"
+          << "  -cp [MODE]               Set the case conversion mode for file, folder and parent directory names\n"
+          << "  -ce [MODE]               Set the case conversion mode for file extensions\n"
           << "\n"
           << "Modes for file, directory and extension renaming:\n"
           << "Regular CASE Modes:\n"
@@ -839,7 +839,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.4.3");
+        printVersionNumber("1.4.4");
         return 0;
     }
 
@@ -911,7 +911,13 @@ int main(int argc, char *argv[]) {
             if (c_flag || cp_flag || ce_flag) {
                 print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
                 return 1;
+            } else if (arg == "-ce") {
+            // Check if -c, -cp, -ce options are mixed
+            if (fi_flag || fo_flag || ce_flag) {
+                print_error("\033[1;91mError: Cannot use -fi or -fo options with -ce.\033[0m\n");
+                return 1;
             }
+		}
             
             ce_flag = true;
             rename_extensions = true;
