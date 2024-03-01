@@ -178,7 +178,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path new_path;
 
     if (transform_files && !rename_extensions) {
-         // Perform transformations on file names if requested
+        // Perform transformations on file names if requested
         for (const auto& transformation : transformation_commands) {
             if (case_input.find(transformation) != std::string::npos) {
                 // Apply the corresponding transformation
@@ -247,7 +247,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             }
         }
     }
-    
+
     if (rename_extensions) {
         // Perform transformations on extensions if requested
         // Get the current extension of the file
@@ -256,38 +256,36 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
         // Check if the requested case transformation is valid and apply it to extension only
         if (std::find(transformation_commands.begin(), transformation_commands.end(), case_input) != transformation_commands.end()) {
-            for (const auto& transformation : transformation_commands) {
-			if (case_input.find(transformation) != std::string::npos) {
-        // Case input is valid, perform appropriate transformation
-        if (case_input == "lower") {
-            std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
-        } else if (case_input == "upper") {
-            std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
-        } else if (case_input == "reverse") {
-            std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
-                return std::islower(c) ? std::toupper(c) : std::tolower(c);
-            });
-        } else if (case_input == "title") {
-            new_extension = capitalizeFirstLetter(new_extension);
-        } else if (case_input == "bak") {
-            if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
-                new_extension = extension + ".bak";
-            } else {
-                new_extension = extension; // Keep the extension unchanged
+            // Case input is valid, perform appropriate transformation
+            if (case_input == "lower") {
+                std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
+            } else if (case_input == "upper") {
+                std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
+            } else if (case_input == "reverse") {
+                std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
+                    return std::islower(c) ? std::toupper(c) : std::tolower(c);
+                });
+            } else if (case_input == "title") {
+                new_extension = capitalizeFirstLetter(new_extension);
+            } else if (case_input == "bak") {
+                if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
+                    new_extension = extension + ".bak";
+                } else {
+                    new_extension = extension; // Keep the extension unchanged
+                }
+            } else if (case_input == "rbak") {
+                if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
+                    new_extension = extension.substr(0, extension.length() - 4);
+                }
+            } else if (case_input == "noext") {
+                new_extension.clear(); // Clearing extension removes it
+            } else if (case_input == "swap") {
+                new_extension = swapr_transform(extension);
+            } else if (case_input == "swapr") {
+                new_extension = swap_transform(extension);
             }
-        } else if (case_input == "rbak") {
-            if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
-                new_extension = extension.substr(0, extension.length() - 4);
-            }
-        } else if (case_input == "noext") {
-            new_extension.clear(); // Clearing extension removes it
-        } else if (case_input == "swap") {
-            new_extension = swapr_transform(extension);
-        } else if (case_input == "swapr") {
-            new_extension = swap_transform(extension);
-        }
 
-        // If extension changed, create new path and add to rename batch
+            // If extension changed, create new path and add to rename batch
             if (extension != new_extension) {
                 fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
                 rename_data.emplace_back(item_path, new_path); // Add to the batch
@@ -327,9 +325,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         }
     }
 }
-}
-}
-
 
 
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count) {
