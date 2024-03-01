@@ -36,23 +36,23 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "Renames all files and folders under the specified path(s).\n"
           << "\n"
           << "Options:\n"
-          << "  -h, --help               Print this message and exit\n"
+          << "  -h, --help               Print help\n"
           << "  --version                Print version\n"
-          << "  -v, --verbose            Enable verbose mode\n"
+          << "  -v, --verbose            Enable verbose mode (optional)\n"
           << "  -fi                      Rename files exclusively (optional)\n"
           << "  -fo                      Rename folders exclusively (optional)\n"
-          << "  -sym                     Treat symbolic links like regular files or folders (optional)\n"
+          << "  -sym                     Handle symbolic links like regular files/folders (optional)\n"
           << "  -d  [DEPTH]              Set recursive depth level (optional)\n"
-          << "  -c  [MODE]               Set the case conversion mode for file and folder names\n"
-          << "  -cp [MODE]               Set the case conversion mode for file folder and parent directory names\n"
-          << "  -ce [MODE]               Set the case conversion mode for file extensions\n"
+          << "  -c  [MODE]               Set Case Mode for file/folder names\n"
+          << "  -cp [MODE]               Set Case Mode for file/folder/parent names\n"
+          << "  -ce [MODE]               Set Case Mode for file extensions\n"
           << "\n"
-          << "Current suported case modes:\n"
+          << "Available Modes:\n"
           << "Regular CASE Modes:\n"
           << "  title      Convert names to titleCase (e.g., test => Test)\n"
           << "  upper      Convert names to upperCase (e.g., Test => TEST)\n"
           << "  lower      Convert names to lowerCase (e.g., Test => test)\n"
-          << "  reverse    Reverse current case in names (e.g., Test => tEST)\n"
+          << "  reverse    Reverse current Case in names (e.g., Test => tEST)\n"
           << "Special CASE Modes:\n"
           << "  snake      Convert names to snakeCase (e.g., Te st => Te_st)\n"
           << "  rsnake     Reverse snakeCase in names (e.g., Te_st => Te st)\n"
@@ -866,7 +866,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.4.5");
+        printVersionNumber("1.4.6");
         return 0;
     }
 
