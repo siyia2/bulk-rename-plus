@@ -941,7 +941,7 @@ int main(int argc, char *argv[]) {
             } else if (arg == "-ce") {
             // Check if -c, -cp, -ce options are mixed
             if (fi_flag || fo_flag || ce_flag) {
-                print_error("\033[1;91mError: Cannot use -fi or -fo options with -ce.\033[0m\n");
+                print_error("\033[1;91mError: Cannot mix -fi or -fo with -ce option.\033[0m\n");
                 return 1;
             }
 		}
