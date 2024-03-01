@@ -130,7 +130,7 @@ static const std::vector<std::string> transformation_commands = {
  
 // Function to rename a file or directory
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size, bool symlinks, bool rename_extensions) {
-    
+
     // Check if the item is a symbolic link
     if (!fs::is_regular_file(item_path) || (fs::is_symlink(item_path) && !symlinks)) {
         if (verbose_enabled && transform_files && !symlinks) {
@@ -138,7 +138,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         }
         return; // Skip processing symbolic links
     }
-    
+
     std::vector<std::pair<fs::path, std::string>> rename_data;
 
     // Check if the item is a directory
@@ -177,8 +177,8 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     std::string new_name = name;
     fs::path new_path;
 
-    // Perform transformations on file names if requested
-    if (transform_files) {
+    if (transform_files && !rename_extensions) {
+         // Perform transformations on file names if requested
         for (const auto& transformation : transformation_commands) {
             if (case_input.find(transformation) != std::string::npos) {
                 // Apply the corresponding transformation
@@ -248,57 +248,59 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         }
     }
     
-    if (transform_files && rename_extensions) {
-    // Get the current extension of the file
+    if (rename_extensions) {
+        // Perform transformations on extensions if requested
+        // Get the current extension of the file
         std::string extension = item_path.extension().string();
         std::string new_extension = extension;
-		
-        // Check if the requested case transformation is valid and apply it
-        if (std::find(transformation_commands.begin(), transformation_commands.end(), case_input) != transformation_commands.end()) {
-            // Case input is valid, perform appropriate transformation
-            if (case_input == "lower") {
-                std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
-            } else if (case_input == "upper") {
-                std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
-            } else if (case_input == "reverse") {
-                std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
-                    return std::islower(c) ? std::toupper(c) : std::tolower(c);
-                });
-            } else if (case_input == "title") {
-                new_extension = capitalizeFirstLetter(new_extension);
-            } else if (case_input == "bak") {
-                if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
-                    new_extension = extension + ".bak";
-                } else {
-                    new_extension = extension; // Keep the extension unchanged
-                }
-            } else if (case_input == "rbak") {
-                if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
-                    new_extension = extension.substr(0, extension.length() - 4);
-                }
-            } else if (case_input == "noext") {
-                new_extension.clear(); // Clearing extension removes it
-            } else if (case_input == "swap") {
-                new_extension = swapr_transform(extension);
-            } else if (case_input == "swapr") {
-                new_extension = swap_transform(extension);
-            }
 
-            // If extension changed, create new path and add to rename batch
+        // Check if the requested case transformation is valid and apply it to extension only
+        if (std::find(transformation_commands.begin(), transformation_commands.end(), case_input) != transformation_commands.end()) {
+            for (const auto& transformation : transformation_commands) {
+			if (case_input.find(transformation) != std::string::npos) {
+        // Case input is valid, perform appropriate transformation
+        if (case_input == "lower") {
+            std::transform(extension.begin(), extension.end(), new_extension.begin(), ::tolower);
+        } else if (case_input == "upper") {
+            std::transform(extension.begin(), extension.end(), new_extension.begin(), ::toupper);
+        } else if (case_input == "reverse") {
+            std::transform(extension.begin(), extension.end(), new_extension.begin(), [](char c) {
+                return std::islower(c) ? std::toupper(c) : std::tolower(c);
+            });
+        } else if (case_input == "title") {
+            new_extension = capitalizeFirstLetter(new_extension);
+        } else if (case_input == "bak") {
+            if (extension.length() < 4 || extension.substr(extension.length() - 4) != ".bak") {
+                new_extension = extension + ".bak";
+            } else {
+                new_extension = extension; // Keep the extension unchanged
+            }
+        } else if (case_input == "rbak") {
+            if (extension.length() >= 4 && extension.substr(extension.length() - 4) == ".bak") {
+                new_extension = extension.substr(0, extension.length() - 4);
+            }
+        } else if (case_input == "noext") {
+            new_extension.clear(); // Clearing extension removes it
+        } else if (case_input == "swap") {
+            new_extension = swapr_transform(extension);
+        } else if (case_input == "swapr") {
+            new_extension = swap_transform(extension);
+        }
+
+        // If extension changed, create new path and add to rename batch
             if (extension != new_extension) {
                 fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
-                rename_batch.emplace_back(item_path, new_path); // Add to the batch
+                rename_data.emplace_back(item_path, new_path); // Add to the batch
             } else {
                 // Print a message for skipped file if extension remains unchanged and parent directory is not a symlink
-			if (verbose_enabled && !fs::is_symlink(item_path.parent_path()) && !symlinks) {
-				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
-				} else if (verbose_enabled) {
-					print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
-				}
-					
+                if (verbose_enabled && !fs::is_symlink(item_path.parent_path()) && !symlinks) {
+                    print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
+                } else if (verbose_enabled) {
+                    print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
+                }
             }
         }
-	}
+    }
 
     // Add data to the list if new name differs
     if (name != new_name) {
@@ -325,6 +327,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         }
     }
 }
+}
+}
+
 
 
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count) {
@@ -425,7 +430,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     }
 
     // Apply transformations to the directory name if required
-    if (transform_dirs) {
+    if (transform_dirs && !rename_extensions) {
         for (const auto& transformation : transformation_commands) {
             if (case_input == transformation) {
                 // Apply the corresponding transformation
