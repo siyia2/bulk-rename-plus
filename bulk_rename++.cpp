@@ -140,6 +140,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 
     std::vector<std::pair<fs::path, std::string>> rename_data;
+    std::vector<std::pair<fs::path, std::string>> extension_rename_data;
 
     // Check if the item is a directory
     if (is_directory) {
@@ -173,10 +174,13 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     fs::path parent_path = item_path.parent_path();
 
     // Initialize variables for new name and path
-    std::string name = relative_path.string();
+    std::string name = relative_path.stem().string();
+    std::string extension = item_path.extension().string();
     std::string new_name = name;
+    std::string new_extension = extension;
     fs::path new_path;
 
+    // Handle file name transformations
     if (transform_files && !rename_extensions) {
         // Perform transformations on file names if requested
         for (const auto& transformation : transformation_commands) {
@@ -306,6 +310,15 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         rename_data.push_back({item_path, new_name});
     }
 
+    // Check if extension changed and add to extension rename data
+    if (extension != new_extension) {
+        std::lock_guard<std::mutex> lock(files_mutex);
+        extension_rename_data.push_back({item_path, new_extension});
+    }
+
+    // Combine rename data and extension rename data into a single batch
+    rename_data.insert(rename_data.end(), extension_rename_data.begin(), extension_rename_data.end());
+
     // Check if batch size is reached and perform renaming
     if (rename_data.size() >= batch_size) {
         std::lock_guard<std::mutex> lock(files_mutex);
@@ -317,6 +330,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             std::lock_guard<std::mutex> lock(files_mutex);
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         }
+        
         // Verbose output for skipped files with unchanged names
         if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path) && !symlinks) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
