@@ -44,10 +44,10 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  -sym                     Treat symbolic links like regular files or folders (optional)\n"
           << "  -d  [DEPTH]              Set recursive depth level (optional)\n"
           << "  -c  [MODE]               Set the case conversion mode for file and folder names\n"
-          << "  -cp [MODE]               Set the case conversion mode for file, folder and parent directory names\n"
+          << "  -cp [MODE]               Set the case conversion mode for file folder and parent directory names\n"
           << "  -ce [MODE]               Set the case conversion mode for file extensions\n"
           << "\n"
-          << "Modes for file, directory and extension renaming:\n"
+          << "Current suported case modes:\n"
           << "Regular CASE Modes:\n"
           << "  title      Convert names to titleCase (e.g., test => Test)\n"
           << "  upper      Convert names to upperCase (e.g., Test => TEST)\n"
@@ -327,6 +327,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 }
 
 
+// Function to rename files in batch
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count) {
     // Determine the maximum available cores
     size_t max_cores = std::thread::hardware_concurrency();
@@ -685,7 +686,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.4.5");
+        printVersionNumber("1.4.6");
         return 0;
     }
 
