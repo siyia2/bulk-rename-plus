@@ -3,7 +3,7 @@
 // General purpose stuff
 
 // Batch size for file processing
-constexpr int batch_size = 10;
+constexpr int batch_size = 100;
 
 // For verbose folder renaming
 bool special = false;
@@ -723,7 +723,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         for (const auto& entry : fs::directory_iterator(new_path)) {
             if (entry.is_directory()) {
                 // Increment num_threads for every subdirectory encountered
-                ++num_threads;
                 if (rename_parents && num_threads <= max_threads) {
                     // Process subdirectories asynchronously if renaming parents is enabled
                     futures.push_back(std::async(std::launch::async, process_forParents, entry, case_input, verbose_enabled, transform_dirs, transform_files, std::ref(files_count), std::ref(dirs_count), depth, symlinks));
