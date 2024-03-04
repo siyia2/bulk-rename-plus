@@ -210,7 +210,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 }
 
 
-// Function to rename a batch of files using multiple threads for parallel execution
+// Function to rename a batch of file extensions using multiple threads for parallel execution
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count) {
     // Determine the maximum available cores
     size_t max_cores = std::thread::hardware_concurrency();
@@ -508,6 +508,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 }
 
 
+// Function to rename a batch of files using multiple threads for parallel execution
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count) {
     // Determine the maximum available cores
     size_t max_cores = std::thread::hardware_concurrency();
