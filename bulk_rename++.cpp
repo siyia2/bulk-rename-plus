@@ -126,7 +126,7 @@ static const std::vector<std::string> transformation_commands = {
 };
 
 
-// Function to rename file extensions for a batch of items
+// Function to rename file extensions
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size, bool symlinks) {
     // Vector to store pairs of old and new paths for renaming
     std::vector<std::pair<fs::path, fs::path>> rename_batch;
@@ -256,7 +256,7 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
 }
 
 
-// Function to rename file extensions recursively for multiple paths in parallel
+// Function to search subdirs for file extensions recursively for multiple paths in parallel
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, bool symlinks) {
     // If depth is negative, set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
@@ -361,7 +361,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
 // Rename file&directory stuff
  
-// Function to rename a file or directory
+// Function to rename files
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size, bool symlinks ) {
     
     // Check if the item is a symbolic link
