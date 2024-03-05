@@ -693,9 +693,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count; // Increment the directory count
         } catch (const fs::filesystem_error& e) {
-            // Handle any filesystem errors that occur during renaming
-            print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
-            return; // Stop processing if renaming failed
+            if (e.code() == std::errc::permission_denied) {
+            // Handle permission denied error
+            print_error("\n\033[1;91mError\033[0m: Permission denied: " + directory_path.string());
+            return;
+			}
         }
     } else {
         // If the directory name remains unchanged
@@ -865,7 +867,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.4.7");
+        printVersionNumber("1.4.8");
         return 0;
     }
 
@@ -1005,7 +1007,7 @@ int main(int argc, char *argv[]) {
 	std::string confirmation;
 	if (rename_parents) {
 		// Display the paths and their lowest parent directories that will be renamed
-		std::cout << "\033[0m\033[1mThe following path(s) and their \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+		std::cout << "\033[0m\033[1mThe following path(s) and the \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
 			std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
 		}
