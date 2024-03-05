@@ -1001,7 +1001,7 @@ int main(int argc, char *argv[]) {
     // Check if paths end with '/'
     for (const std::string& path : paths) {
         if (path.back() != '/') {
-            print_error("\033[1;91mError: Path(s) must end with '/' - \033[0m\033[1me.g. \033[1;91m" + path + " \033[0m\033[1m-> \033[1;92m" + path +"/\033[0m" "\n\033[0m");
+            print_error("\033[1;91mError: Path(s) must end with '/' - \033[0m\033[1me.g. \033[1;91m" + path + " \033[0m\033[1m-> \033[1;94m" + path +"/\033[0m" "\n\033[0m");
             return 0;
         }
     }
