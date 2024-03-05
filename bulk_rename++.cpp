@@ -777,15 +777,14 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     for (unsigned int i = 0; i < num_threads; ++i) {
         futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, symlinks, &files_count, &dirs_count]() {
             // Obtain the current path
-            fs::path current_path(paths[i]);
+            fs::path current_path = fs::canonical(fs::path(paths[i]));
 
             if (fs::exists(current_path)) {
                 if (fs::is_directory(current_path)) {
                     if (rename_parents) {
                         // If -p option is used, only rename the immediate parent
-                        fs::path immediate_parent_path = current_path.parent_path();
-                        rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
-                    } else {
+                        rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
+                    } else if (!rename_parents) {
                         // Otherwise, rename the entire path
                         rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
                     }
