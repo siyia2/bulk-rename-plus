@@ -241,8 +241,10 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
                         std::cout << "\033[0m\033[92mRenamed\033[0m file " << old_path.string() << " to " << new_path.string() << std::endl;
                     }
                 } catch (const fs::filesystem_error& e) {
+					if (verbose_enabled) {
                     // Print an error message if renaming fails
                     std::cerr << "\033[1;91mError\033[0m: " << e.what() << std::endl;
+					}
                 }
             }
         });
@@ -330,7 +332,9 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
             } else if (fs::is_regular_file(current_fs_path)) {
                 rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks);
             } else {
+				if (verbose_enabled) {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
+				}
             }
         }
     }
@@ -546,8 +550,10 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                         ++dirs_count;
                     }
                 } catch (const fs::filesystem_error& e) {
+					if (verbose_enabled) {
                     // Print an error message if renaming fails
                     print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
+					}
                 }
             }
         });
@@ -693,11 +699,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count; // Increment the directory count
         } catch (const fs::filesystem_error& e) {
-            if (e.code() == std::errc::permission_denied) {
+            if (e.code() == std::errc::permission_denied && verbose_enabled) {
             // Handle permission denied error
             print_error("\033[1;91mError\033[0m: Permission denied: " + directory_path.string());
-            return;
 			}
+			return;
         }
     } else {
         // If the directory name remains unchanged
@@ -793,10 +799,14 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                     // For files, directly rename the item without considering the parent directory
                     rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
                 } else {
+					if (verbose_enabled) {
                     print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
+					
                 }
-            } else {
+            } }else {
+				if (verbose_enabled) {
                 print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
+				}
             }
         }));
     }
@@ -824,7 +834,9 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 // For files, directly rename the item without considering the parent directory
                 rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
             } else {
+				if (verbose_enabled) {
                 print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
+				}
             }
         } else {
            // print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
