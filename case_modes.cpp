@@ -419,7 +419,7 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
                         special=true;
                     } catch (const fs::filesystem_error& e) {
                         if (e.code() == std::errc::permission_denied) {
-                            print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
+                            print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                         }
                         continue; // Skip renaming if moving fails
                     }
@@ -495,7 +495,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     special=true;
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                     }
                     continue; // Skip renaming if moving fails
                 }
@@ -562,7 +562,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                     special=true;
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                     }
                     continue; // Skip renaming if moving fails
                 }
@@ -614,7 +614,7 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                     special=true;
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                     }
                     continue; // Skip renaming if moving fails
                 }

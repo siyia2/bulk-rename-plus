@@ -695,7 +695,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } catch (const fs::filesystem_error& e) {
             if (e.code() == std::errc::permission_denied) {
             // Handle permission denied error
-            print_error("\n\033[1;91mError\033[0m: Permission denied: " + directory_path.string());
+            print_error("\033[1;91mError\033[0m: Permission denied: " + directory_path.string());
             return;
 			}
         }
@@ -760,7 +760,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     // Check if paths end with '/'
     for (const std::string& path : paths) {
         if (path.back() != '/') {
-            print_error("\033[1;91mError: Path(s) must end with '/' - \033[0m\033[1me.g. \033[1;91m" + path + " \033[0m\033[1m-> \033[1;92m" + path +"/\033[0m" "\033[0m");
+            print_error("\n\033[1;91mError: Path(s) must end with '/' - \033[0m\033[1me.g. \033[1;91m" + path + " \033[0m\033[1m-> \033[1;92m" + path +"/\033[0m" "\033[0m");
             return;
         }
     }
