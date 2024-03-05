@@ -756,6 +756,14 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
         print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
         return;
     }
+    
+    // Check if paths end with '/'
+    for (const std::string& path : paths) {
+        if (path.back() != '/') {
+            print_error("\033[1;91mError: Path must end with '/' - " + path + "\033[0m");
+            return;
+        }
+    }
 
     // Determine the maximum number of threads supported by the system
     unsigned int max_threads = std::thread::hardware_concurrency();
@@ -783,7 +791,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 if (fs::is_directory(current_path)) {
                     if (rename_parents) {
                         // If -p option is used, only rename the immediate parent
-                        fs::path immediate_parent_path = current_path;
+                        fs::path immediate_parent_path = current_path.parent_path();
                         rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, symlinks);
                     } else {
                         // Otherwise, rename the entire path
