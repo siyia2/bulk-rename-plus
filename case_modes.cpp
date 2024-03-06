@@ -398,7 +398,7 @@ std::string remove_date_seq(const std::string& file_string) {
 // Folder numbering functions mv style
 
 // Remove sequencial prefix from folder names
-void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
+void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 10) {
     size_t batch_count = 0; // Track the number of folders processed in the current batch
 
     for (const auto& folder : fs::directory_iterator(base_directory)) {
@@ -452,7 +452,7 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
 
 
 // Add sequencial prefix to folder names
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 10) {
     int counter = 1; // Counter for immediate subdirectories
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
     size_t batch_count = 0; // Track the number of folders processed in the current batch
@@ -536,16 +536,23 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
 
 // Overloaded function with default verbose_enabled = false and batch processing
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 10) {
     rename_folders_with_sequential_numbering(base_directory, "", dirs_count, verbose_enabled, symlinks, batch_size_folders);
 }
 
 // Append date suffix to folder names
-void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders) {
+void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders, int depth) {
+    
+    int batch_count = 0; // Track the number of renames in the current batch
+     // Continue recursion if the depth limit is not reached
+            if (depth != 0) {
+                // Decrement depth only if the depth limit is positive
+                if (depth > 0)
+                    --depth;
+    
     auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
     struct std::tm* parts = std::localtime(&time);
-    int batch_count = 0; // Track the number of renames in the current batch
     
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         bool skip = !symlinks && fs::is_symlink(folder);
@@ -581,7 +588,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                 // Rename the folder
                 try {
                     fs::rename(folder.path(), new_path);
-                    special=true;
+                    special = true;
                 } catch (const fs::filesystem_error& e) {
                     if (e.code() == std::errc::permission_denied && verbose_enabled) {
                         print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
@@ -604,15 +611,27 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
             if (batch_count == batch_size_folders)
                 return;
 
-            // Recursively process subdirectories
-            rename_folders_with_date_suffix(new_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
+           
+
+                // Recursively process subdirectories
+                rename_folders_with_date_suffix(new_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
+            }
         }
     }
 }
 
 // Remove date suffix from folder names
-void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders) {
+void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders, int depth) {
     int batch_count = 0; // Track the number of renames in the current batch
+    
+    // Continue recursion if the depth limit is not reached
+    if (depth != 0) {
+        // Decrement depth only if the depth limit is positive
+        if (depth > 0)
+            --depth;
+    } else {
+        return; // Return if depth limit is reached
+    }
     
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         bool skip = !symlinks && fs::is_symlink(folder);
@@ -652,8 +671,8 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                 }
                 if (verbose_enabled) {
                     if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_path)) {
-						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-					} else {
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+                    } else {
                         print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
                     }
                 }
@@ -667,7 +686,7 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                 return;
 
             // Recursively process subdirectories
-            remove_date_suffix_from_folders(new_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
+            remove_date_suffix_from_folders(new_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
         }
     }
 }

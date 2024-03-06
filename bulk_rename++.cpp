@@ -594,6 +594,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
+    bool track= false;
 
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
@@ -656,13 +657,15 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "nsequence") {
+					track= true;
                     rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rnsequence") {
+					track= true;
                     remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "date") {
-                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
+                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
                 } else if (transformation == "rdate") {
-                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
+                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
                 } else if (transformation == "sentence") {
                     new_dirname = sentenceCase(new_dirname);
                 } else if (transformation == "pascal") {
@@ -719,13 +722,17 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
     }
-
+    if (track) {
+		if (depth > 0)
+            --depth;
+	}
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
+		if (!track) {
         // Decrement depth only if the depth limit is positive
         if (depth > 0)
             --depth;
-
+}
         // Determine the maximum number of threads supported by the system
         unsigned int max_threads = std::thread::hardware_concurrency();
         if (max_threads == 0) {
@@ -902,7 +909,7 @@ int main(int argc, char *argv[]) {
     bool transform_files = true;
     bool symlinks = false;
 	constexpr int batch_size_files = 100;
-	constexpr int batch_size_folders = 50;
+	constexpr int batch_size_folders = 10;
 
     // Handle command-line arguments
     // Display help message if no arguments provided
