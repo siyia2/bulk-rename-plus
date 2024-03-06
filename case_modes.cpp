@@ -418,14 +418,18 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
                         fs::rename(folder.path(), new_name);
                         special=true;
                     } catch (const fs::filesystem_error& e) {
-                        if (e.code() == std::errc::permission_denied) {
-                            print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
+                        if (e.code() == std::errc::permission_denied && verbose_enabled) {
+                            print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                         }
                         continue; // Skip renaming if moving fails
                     }
                     if (verbose_enabled) {
-                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
-                    }
+                       if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_name)) {
+						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+					} else {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+					}
+				}
                     std::lock_guard<std::mutex> lock(dirs_count_mutex);
                     ++dirs_count; // Increment dirs_count after each successful rename
                 }
@@ -494,14 +498,18 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     fs::rename(folder.path(), new_name);
                     special=true;
                 } catch (const fs::filesystem_error& e) {
-                    if (e.code() == std::errc::permission_denied) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
+                    if (e.code() == std::errc::permission_denied && verbose_enabled) {
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                     }
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+					if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_name)) {
+						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+					} else {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
                 }
+			}
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
             }
@@ -561,14 +569,18 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                     fs::rename(folder.path(), new_path);
                     special=true;
                 } catch (const fs::filesystem_error& e) {
-                    if (e.code() == std::errc::permission_denied) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
+                    if (e.code() == std::errc::permission_denied && verbose_enabled) {
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                     }
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+					if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_path)) {
+						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+					} else {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
                 }
+			}
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
             }
@@ -613,15 +625,18 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                     fs::rename(folder.path(), new_path);
                     special=true;
                 } catch (const fs::filesystem_error& e) {
-                    if (e.code() == std::errc::permission_denied) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n");
+                    if (e.code() == std::errc::permission_denied && verbose_enabled) {
+                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                     }
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-                    
+                    if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_path)) {
+						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+					} else {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
                 }
+			}
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
             }
