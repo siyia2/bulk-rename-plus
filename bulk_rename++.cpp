@@ -660,10 +660,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "rnsequence") {
                     remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "date") {
-				std::string new_name = get_renamed_folder_name_with_current_date(new_dirname);
-					new_dirname = new_dirname + dirname;
+                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rdate") {
-                    new_dirname = get_renamed_folder_name_without_date(new_dirname);
+                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "sentence") {
                     new_dirname = sentenceCase(new_dirname);
                 } else if (transformation == "pascal") {
@@ -712,10 +711,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
         // If the directory name remains unchanged
-        if (verbose_enabled && !transform_files) {
+        if (verbose_enabled && !transform_files && !special) {
             // Print a message indicating that the directory was skipped (no name change)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
-        } else if (verbose_enabled && transform_dirs && transform_files) {
+        } else if (verbose_enabled && transform_dirs && transform_files && !special) {
             // Print a message indicating that the directory was skipped (name unchanged)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
