@@ -238,8 +238,12 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
                     }
                     // Print a success message if verbose mode enabled
                     if (verbose_enabled) {
-                        std::cout << "\033[0m\033[92mRenamed\033[0m file " << old_path.string() << " to " << new_path.string() << std::endl;
-                    }
+						if (fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
+							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
+						} else {
+							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + " to " + new_path.string(), std::cout);
+						}
+					}
                 } catch (const fs::filesystem_error& e) {
 					if (verbose_enabled) {
                     // Print an error message if renaming fails
