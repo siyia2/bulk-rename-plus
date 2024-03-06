@@ -424,7 +424,7 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
                         continue; // Skip renaming if moving fails
                     }
                     if (verbose_enabled) {
-                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
                     }
                     std::lock_guard<std::mutex> lock(dirs_count_mutex);
                     ++dirs_count; // Increment dirs_count after each successful rename
@@ -500,7 +500,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
                 }
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
@@ -567,7 +567,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
                 }
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
@@ -619,7 +619,7 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m directory\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
                     
                 }
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
