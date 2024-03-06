@@ -595,23 +595,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     }
     
 
-    // Early exit if the directory is a symlink
-    if (fs::is_symlink(directory_path) && transform_dirs && !symlinks) {
-        if (verbose_enabled) {
-            // Print a message if verbose mode enabled
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
-        }
-        return;
-    }
-    
-    // Early exit if the directory is a symlink
-    if (fs::is_symlink(directory_path) && !transform_dirs && !symlinks) {
-        if (verbose_enabled) {
-            // Print a message if verbose mode enabled
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
-        }
-        return;
-    }
+		// Early exit if the directory is a symlink and should not be transformed
+		if (fs::is_symlink(directory_path) && !symlinks) {
+			if (verbose_enabled) {
+				// Print a message if verbose mode enabled
+				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
+			}
+			return;
+		}
 
     // Apply transformations to the directory name if required
     if (transform_dirs) {
