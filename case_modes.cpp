@@ -527,122 +527,53 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, in
 }
 
 
-// Function to append current date to folders
-void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false) {
+std::string get_renamed_folder_name_with_current_date(const fs::path& folder_path) {
+    std::string folder_name = folder_path.filename().string();
+
+    // Get current date
     auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    struct std::tm* parts = std::localtime(&time);
-    
-    for (const auto& folder : fs::directory_iterator(base_directory)) {
-        bool skip = !symlinks && fs::is_symlink(folder);
-        if (folder.is_directory() && !skip) { // Check if the folder is not a symlink
-            std::string folder_name = folder.path().filename().string();
+    auto now_time = std::chrono::system_clock::to_time_t(now);
+    struct tm* local_tm = std::localtime(&now_time);
 
-            // Check if the folder name ends with the date suffix format "_YYYYMMDD"
-            bool has_date_suffix = false;
-            if (folder_name.length() >= 9) { // Minimum length required for "_YYYYMMDD"
-                bool has_underscore = folder_name[folder_name.length() - 9] == '_';
-                bool is_date_suffix = true;
-                for (size_t i = folder_name.length() - 8; i < folder_name.length(); ++i) {
-                    if (!std::isdigit(folder_name[i])) {
-                        is_date_suffix = false;
-                        break;
-                    }
-                }
-                has_date_suffix = has_underscore && is_date_suffix;
-            }
+    // Format current date
+    std::stringstream date_stream;
+    date_stream << "_" << std::setw(4) << std::setfill('0') << (local_tm->tm_year + 1900)
+               << std::setw(2) << std::setfill('0') << (local_tm->tm_mon + 1)
+               << std::setw(2) << std::setfill('0') << local_tm->tm_mday;
 
-            if (has_date_suffix)
-                continue;
+    std::string current_date = date_stream.str();
 
-            // Construct the new name with date suffix
-            std::stringstream ss;
-            ss << folder_name; // Keep the original folder name
-            ss << "_" << (parts->tm_year + 1900) << std::setw(2) << std::setfill('0') << (parts->tm_mon + 1) << std::setw(2) << std::setfill('0') << parts->tm_mday;
-            std::string new_name = ss.str();
+    // Append current date to the folder name
+    std::string new_folder_name = folder_name + current_date;
 
-            // Check if the folder is already renamed to the new name
-            fs::path new_path = folder.path().parent_path() / new_name;
-            if (folder.path() != new_path) {
-                // Rename the folder
-                try {
-                    fs::rename(folder.path(), new_path);
-                    special=true;
-                } catch (const fs::filesystem_error& e) {
-                    if (e.code() == std::errc::permission_denied && verbose_enabled) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
-                    }
-                    continue; // Skip renaming if moving fails
-                }
-                if (verbose_enabled) {
-					if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_path)) {
-						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-					} else {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-                }
-			}
-                std::lock_guard<std::mutex> lock(dirs_count_mutex);
-                ++dirs_count; // Increment dirs_count after each successful rename
-            }
-
-            // Recursively process subdirectories
-            rename_folders_with_date_suffix(new_path, dirs_count, verbose_enabled, symlinks);
-        }
-    }
+    return new_folder_name;
 }
 
 
-// Function to remove date to folders
-void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks) {
-    for (const auto& folder : fs::directory_iterator(base_directory)) {
-        bool skip = !symlinks && fs::is_symlink(folder);
-        if (folder.is_directory() && !skip) {  // Check if the folder is not a symlink
-            std::string folder_name = folder.path().filename().string();
 
-            // Check if the folder name ends with the date suffix format "_YYYYMMDD"
-            if (folder_name.size() < 9 || folder_name.substr(folder_name.size() - 9, 1) != "_")
-                continue;
 
-            bool is_date_suffix = true;
-            for (size_t i = folder_name.size() - 8; i < folder_name.size(); ++i) {
-                if (!std::isdigit(folder_name[i])) {
-                    is_date_suffix = false;
-                    break;
-                }
-            }
+// Function to remove date suffix from folder name
+std::string get_renamed_folder_name_without_date(const fs::path& folder_path) {
+    std::string folder_name = folder_path.filename().string();
 
-            if (!is_date_suffix)
-                continue;
+    // Check if the folder name ends with the date suffix format "_YYYYMMDD"
+    if (folder_name.size() < 9 || folder_name.substr(folder_name.size() - 9, 1) != "_")
+        return folder_name; // No date suffix found, return original name
 
-            // Remove the date suffix from the folder name
-            std::string new_folder_name = folder_name.substr(0, folder_name.size() - 9);
-
-            // Check if the folder is already renamed to the new name
-            fs::path new_path = folder.path().parent_path() / new_folder_name;
-            if (folder.path() != new_path) {
-                // Rename the folder
-                try {
-                    fs::rename(folder.path(), new_path);
-                    special=true;
-                } catch (const fs::filesystem_error& e) {
-                    if (e.code() == std::errc::permission_denied && verbose_enabled) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
-                    }
-                    continue; // Skip renaming if moving fails
-                }
-                if (verbose_enabled) {
-                    if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_path)) {
-						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-					} else {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-                }
-			}
-                std::lock_guard<std::mutex> lock(dirs_count_mutex);
-                ++dirs_count; // Increment dirs_count after each successful rename
-            }
-
-            // Recursively process subdirectories
-            remove_date_suffix_from_folders(new_path, dirs_count, verbose_enabled, symlinks);
+    bool is_date_suffix = true;
+    for (size_t i = folder_name.size() - 8; i < folder_name.size(); ++i) {
+        if (!std::isdigit(folder_name[i])) {
+            is_date_suffix = false;
+            break;
         }
     }
+
+    if (!is_date_suffix)
+        return folder_name; // Not a valid date suffix, return original name
+
+    // Remove the date suffix from the folder name
+    std::string new_folder_name = folder_name.substr(0, folder_name.size() - 9);
+
+    return new_folder_name;
 }
+
