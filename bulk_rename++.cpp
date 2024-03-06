@@ -759,11 +759,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
 // Function to rename paths (directories and files) based on specified transformations
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, bool symlinks) {
-    // Check if case_input is empty
-    if (case_input.empty()) {
-        print_error("\033[1;91mError: Case conversion mode not specified (-c option is required)\n\033[0m");
-        return;
-    }
 
     // Determine the maximum number of threads supported by the system
     unsigned int max_threads = std::thread::hardware_concurrency();
