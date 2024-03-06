@@ -4,6 +4,7 @@
 
 // Batch size for file processing
 constexpr int batch_size = 100;
+constexpr int batch_size_folders = 10;
 
 // For verbose folder renaming
 bool special = false;
@@ -762,7 +763,7 @@ if (depth != 0) {
             rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size, symlinks);
         }
 
-        if (batch_entries.size() >= batch_size) {
+        if (batch_entries.size() >= batch_size_folders) {
             // Process the batch if it reaches the specified size
             futures.push_back(std::async(std::launch::async, [batch_entries, case_input, verbose_enabled, transform_dirs, transform_files, &files_count, &dirs_count, depth, symlinks]() {
                 for (const auto& batch_entry : batch_entries) {
