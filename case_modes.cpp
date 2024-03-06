@@ -424,8 +424,12 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
                         continue; // Skip renaming if moving fails
                     }
                     if (verbose_enabled) {
-                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
-                    }
+                       if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_name)) {
+						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+					} else {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+					}
+				}
                     std::lock_guard<std::mutex> lock(dirs_count_mutex);
                     ++dirs_count; // Increment dirs_count after each successful rename
                 }
@@ -500,8 +504,12 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
+					if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_name)) {
+						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
+					} else {
                     print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_name.string(), std::cout);
                 }
+			}
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
             }
@@ -567,8 +575,12 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
+					if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_path)) {
+						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+					} else {
                     print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
                 }
+			}
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
             }
@@ -619,9 +631,12 @@ void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_c
                     continue; // Skip renaming if moving fails
                 }
                 if (verbose_enabled) {
+                    if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_path)) {
+						print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
+					} else {
                     print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-                    
                 }
+			}
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);
                 ++dirs_count; // Increment dirs_count after each successful rename
             }
