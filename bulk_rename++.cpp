@@ -184,6 +184,9 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
                 fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
                 rename_batch.emplace_back(item_path, new_path); // Add to the batch
             } else {
+				if (verbose_enabled && ((!fs::is_regular_file(item_path) && !fs::is_symlink(item_path)) || (fs::is_symlink(item_path) && symlinks))) {
+			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + (extension.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
+				}
                 // Print a message for skipped file if extension remains unchanged and parent directory is not a symlink
 			if (verbose_enabled && !fs::is_symlink(item_path.parent_path()) && !symlinks) {
 				print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (extension.empty() ? " (no extension)" : " (extension unchanged)"), std::cout);
