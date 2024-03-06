@@ -398,8 +398,17 @@ std::string remove_date_seq(const std::string& file_string) {
 // Folder numbering functions mv style
 
 // Remove sequencial prefix from folder names
-void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 10) {
+void remove_sequential_numbering_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 10, int depth_limit = -1) {
     size_t batch_count = 0; // Track the number of folders processed in the current batch
+
+    // Continue recursion if the depth limit is not reached
+    if (depth_limit != 0) {
+        // Decrement depth only if the depth limit is positive
+        if (depth_limit > 0)
+            --depth_limit;
+    } else {
+        return; // Return if depth limit is reached
+    }
 
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         bool skip = !symlinks && fs::is_symlink(folder);
@@ -443,8 +452,8 @@ void remove_sequential_numbering_from_folders(const fs::path& base_directory, in
                 if (batch_count == batch_size_folders)
                     return;
 
-                // Recursively process subdirectories with updated prefix
-                remove_sequential_numbering_from_folders(new_name, dirs_count, verbose_enabled, symlinks, batch_size_folders);
+                // Recursively process subdirectories with updated prefix and depth limit
+                remove_sequential_numbering_from_folders(new_name, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth_limit);
             }
         }
     }
