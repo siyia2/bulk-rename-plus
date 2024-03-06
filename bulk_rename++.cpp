@@ -656,13 +656,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "nsequence") {
-                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks);
+                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rnsequence") {
-                    remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled, symlinks);
+                    remove_sequential_numbering_from_folders(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "date") {
-                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks);
+                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rdate") {
-                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled, symlinks);
+                    remove_date_suffix_from_folders(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "sentence") {
                     new_dirname = sentenceCase(new_dirname);
                 } else if (transformation == "pascal") {
@@ -673,7 +673,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 break;
             }
         }
-    }
+    } 
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
