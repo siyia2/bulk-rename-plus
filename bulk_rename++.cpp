@@ -502,6 +502,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             std::lock_guard<std::mutex> lock(files_mutex);
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         }
+        if (name == new_name && verbose_enabled && ((!fs::is_regular_file(item_path) && !fs::is_symlink(item_path)) || (fs::is_symlink(item_path) && symlinks))) {
+			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
+		}
         // Verbose output for skipped files with unchanged names
         if (name == new_name && verbose_enabled && transform_files && !fs::is_symlink(parent_path) && !symlinks) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m file " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
@@ -532,12 +535,16 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                 const auto& [item_path, new_name] = data[j];
                 fs::path new_path = item_path.parent_path() / new_name;
                 try {
-                    // Attempt to rename the file/directory
+                    // Attempt to rename the file
                     fs::rename(item_path, new_path);
                     if (verbose_enabled) {
                         // Print a success message if verbose mode enabled
-                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), std::cout);
-                    }
+						if (fs::is_symlink(item_path) || fs::is_symlink(new_path)) {
+							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " to " + new_path.string(), std::cout);
+						} else {
+							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), std::cout);
+						}
+					}
                     // Update files_count or dirs_count based on the type of the renamed item
                     std::filesystem::directory_entry entry(new_path);
                     if (entry.is_regular_file()) {
