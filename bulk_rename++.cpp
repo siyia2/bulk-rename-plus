@@ -699,11 +699,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count; // Increment the directory count
         } catch (const fs::filesystem_error& e) {
-            if (e.code() == std::errc::permission_denied && verbose_enabled) {
+            if (e.code() == std::errc::permission_denied) {
+				if (verbose_enabled) {
             // Handle permission denied error
             print_error("\033[1;91mError\033[0m: Permission denied: " + directory_path.string());
+				}
 			}
-			return;
+			return; // Exit early if permission errors found
         }
     } else {
         // If the directory name remains unchanged
@@ -879,7 +881,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.4.8");
+        printVersionNumber("1.4.9");
         return 0;
     }
 
