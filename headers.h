@@ -60,6 +60,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count);
 void process_forParents(const fs::directory_entry& entry, const std::string& case_input, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, bool symlinks);
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, bool symlinks);
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, bool symlinks);
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int dirs_count, int files_count, bool symlinks);
 
 #endif // HEADERS_H

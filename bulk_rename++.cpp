@@ -581,6 +581,7 @@ void process_forParents(const fs::directory_entry& entry, const std::string& cas
 
 // Function to rename a directory based on specified transformations
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, bool symlinks) {
+	
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
@@ -758,7 +759,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
 
 // Function to rename paths (directories and files) based on specified transformations
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, bool symlinks) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int dirs_count, int files_count, bool symlinks) {
 
     // Determine the maximum number of threads supported by the system
     unsigned int max_threads = std::thread::hardware_concurrency();
@@ -767,9 +768,6 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     }
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
-
-    int files_count = 0; // Initialize files count
-    int dirs_count = 0;  // Initialize directories count
 
     // Calculate num_threads as the minimum of max_threads and the number of paths
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
@@ -860,6 +858,7 @@ int main(int argc, char *argv[]) {
     bool rename_extensions = false;
     bool verbose_enabled = false;
     int files_count = 0;
+    int dirs_count = 0;
     int depth = -1;
     bool case_specified = false;
     bool transform_dirs = true;
@@ -1088,11 +1087,11 @@ int main(int argc, char *argv[]) {
 
 	// Perform the renaming operation based on the selected mode
 	if (rename_parents) {
-		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, symlinks); // Pass true for rename_parents
+		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, symlinks); // Pass true for rename_parents
 	} else if (rename_extensions) {
 		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, symlinks);
 	} else {
-		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, symlinks);
+		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, symlinks);
 	}
 
 	// Prompt the user to press enter to exit
