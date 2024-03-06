@@ -2,9 +2,8 @@
 
 // General purpose stuff
 
-// For verbose folder renaming
+// Used for verbose folder renaming
 bool special = false;
-
 
 // Global print functions
 
