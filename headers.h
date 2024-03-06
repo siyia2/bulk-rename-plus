@@ -26,7 +26,7 @@ extern bool special;
 
 // Function prototypes
 
-// case modes
+// Case modes
 
 // General
 std::string sentenceCase(const std::string& string);
