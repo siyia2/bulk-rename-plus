@@ -536,7 +536,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 			}
 		}
 		// Print folder names that did not need renaming
-		if (!unchanged_folder_names.empty() && verbose_enabled) {
+		if (!unchanged_folder_names.empty() && verbose_enabled && skipped) {
 			for (const auto& folder_name : unchanged_folder_names) {
 				std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_name << " (name unchanged)\n";
 			}
@@ -662,7 +662,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
     }
 
     // Print folder names that did not need renaming
-    if (!unchanged_folder_names.empty() && verbose_enabled) {
+    if (!unchanged_folder_names.empty() && verbose_enabled && skipped) {
         for (const auto& folder_name : unchanged_folder_names) {
             std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_name << " (name unchanged)\n";
         }

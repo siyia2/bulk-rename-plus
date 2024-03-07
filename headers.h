@@ -20,6 +20,9 @@ namespace fs = std::filesystem;
 extern std::mutex dirs_count_mutex;
 extern std::mutex cout_mutex;
 
+// Global variable to set or not to set verbose output for skipped files/folders
+extern bool skipped;
+
 // Function prototypes
 
 // Case modes
