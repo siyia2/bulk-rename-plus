@@ -66,8 +66,8 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
           << "  noext      Remove file extensions (e.g., Test.txt => Test)\n"
 	  << "Numerical CASE Modes:\n"
-	  << "  nsequence  Append sequential numbering  (e.g., Test => 001_Test)\n"
-          << "  rnsequence Remove sequential numbering from names (e.g., 001_Test => Test)\n"
+	  << "  sequence   Append sequential numbering  (e.g., Test => 001_Test)\n"
+          << "  rsequence  Remove sequential numbering from names (e.g., 001_Test => Test)\n"
 	  << "  date       Append current date to names if no date pre-exists (e.g., Test => Test_20240215)\n"
 	  << "  rdate      Remove date from names (e.g., Test_20240215 => Test)\n"
 	  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
@@ -110,8 +110,8 @@ static const std::vector<std::string> transformation_commands = {
     "rcamel",     // Convert to reverse camelCase
     "kebab",      // Convert to kebab-case
     "rkebab",     // Convert to reverse kebab-case
-    "nsequence",  // Normalize sequence numbers
-    "rnsequence", // Reverse and normalize sequence numbers
+    "sequence",  // Normalize sequence numbers
+    "rsequence", // Reverse and normalize sequence numbers
     "date",       // Format date
     "rdate",      // Reverse date format
     "swap",       // Swap case
@@ -464,10 +464,10 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                     new_name = to_camel_case(new_name);
                 } else if (transformation == "rcamel") {
                     new_name = from_camel_case(new_name);
-                } else if (transformation == "nsequence") {
+                } else if (transformation == "sequence") {
                     // Check if the filename is already numbered
                     new_name = append_numbered_prefix(parent_path, new_name);
-                } else if (transformation == "rnsequence") {
+                } else if (transformation == "rsequence") {
                     new_name = remove_numbered_prefix(new_name);
                 } else if (transformation == "date") {
                     new_name = append_date_seq(new_name);
@@ -594,7 +594,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
-    bool track= false; // Needed to count depth correctly for nsequence
+    bool track= false; // Needed to count depth correctly for sequence
 
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
@@ -656,11 +656,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname = swap_transform(new_dirname);
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
-                } else if (transformation == "nsequence") {
-					// Needed to count depth correctly for nsequence
+                } else if (transformation == "sequence") {
+					// Needed to count depth correctly for sequence
 					track= true;
                     rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
-                } else if (transformation == "rnsequence") {
+                } else if (transformation == "rsequence") {
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
                     rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
@@ -723,7 +723,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
     
-    // Needed to count depth correctly for nsequence
+    // Needed to count depth correctly for sequence
     if (track) {
 		if (depth > 0)
             --depth;
@@ -1038,7 +1038,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","swapr","rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "nsequence", "rnsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","swapr","rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swap", "swapr", "rbak", "bak", "noext"};
     }
