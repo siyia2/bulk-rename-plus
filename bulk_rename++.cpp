@@ -206,14 +206,13 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
             std::lock_guard<std::mutex> lock(files_mutex);
             batch_rename_extension(rename_batch, verbose_enabled, files_count, symlinks);
             rename_batch.clear(); // Clear the batch after processing
-        } else {
-            // Process remaining items in the batch if any
-            if (!rename_batch.empty()) {
-                std::lock_guard<std::mutex> lock(files_mutex);
-                batch_rename_extension(rename_batch, verbose_enabled, files_count, symlinks);
-            }
-        }
+        } 
     }
+	// Process remaining items in the batch if any
+    if (!rename_batch.empty()) {
+		std::lock_guard<std::mutex> lock(files_mutex);
+        batch_rename_extension(rename_batch, verbose_enabled, files_count, symlinks);
+	}
 }
 
 
