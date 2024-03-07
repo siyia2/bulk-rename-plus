@@ -8,15 +8,19 @@ Default and recommended installation path is `~/.local/bin/bulk_rename++`, no ne
 #### Median benchmark results derived from three consecutive runs, conducted on the same ~50GB HDD path:
 
 `bulk-rename-plus v1.0.0`
+
 Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 0.9 second(s)
 
 `bulk-rename-plus v1.44`
+
 Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 1.6 second(s)
 
 `bulk-rename-plus v1.52`
+
 Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 2.5 second(s)
 
 `bulk-rename-plus v1.53`
+
 Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 1.1 second(s)
 
 ## How to use:
