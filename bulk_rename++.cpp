@@ -895,7 +895,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
     // Output summary of the renaming process
-    std::cout << "\n\033[0m\033[1mRenamed to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
+    std::cout << "\n\033[0m\033[1mRenamed to \033[1;38;5;214m" << case_input << "Case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
               << dirs_count << " dir(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
