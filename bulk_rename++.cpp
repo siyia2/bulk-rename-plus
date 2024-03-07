@@ -585,8 +585,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
-    bool track_sequence = false; // Needed to count depth correctly for sequence
-
+    
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
         if (verbose_enabled) {
@@ -648,9 +647,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "sequence") {
-                    // Needed to count depth correctly for sequence
-                    track_sequence = true;
-                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
+                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks);
                 } else if (transformation == "rsequence") {
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
@@ -713,18 +710,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
     }
-    
-    // Needed to count depth correctly for sequence
-    if (track_sequence) {
-        if (depth > 0)
-            --depth;
-    }
 
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
-        if (!track_sequence) {
+        
             // Decrement depth only if the depth limit is positive
-            if (depth > 0)
+            if (depth > 0) {
                 --depth;
         }
         
