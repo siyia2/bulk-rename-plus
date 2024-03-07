@@ -83,7 +83,7 @@ More info here: https://wiki.winehq.org/Case_Insensitive_Filenames
 
 1. Download binary from latest release.
 2. Download from source and compile with `make`.
-3. If on arch, or on an arch based distro `yay -S bulk-rename-plus`
+3. If on arch, or on an arch based distro with `yay -S bulk-rename-plus`
 
 
 
