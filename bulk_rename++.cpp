@@ -5,7 +5,7 @@
 // Used for verbose folder renaming
 bool special = false;
 
-// Define a mutex for controlling access to sequential renaming
+// Define a mutex for controlling access to sequential file and folder renaming
 std::mutex sequence_mutex;
 
 // Global print functions
@@ -426,46 +426,60 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             if (case_input.find(transformation) != std::string::npos) {
                 // Apply the corresponding transformation
                 if (transformation == "lower") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::tolower);
                 } else if (transformation == "upper") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_name.begin(), new_name.end(), new_name.begin(), ::toupper);
                 } else if (transformation == "reverse") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_name.begin(), new_name.end(), new_name.begin(), [](unsigned char c) {
                         return std::islower(c) ? std::toupper(c) : std::tolower(c);
                     });
                 } else if (transformation == "title") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = capitalizeFirstLetter(new_name);
                 } else if (transformation == "snake") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_name.begin(), new_name.end(), ' ', '_');
                 } else if (transformation == "rsnake") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_name.begin(), new_name.end(), '_', ' ');
                 } else if (transformation == "kebab") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_name.begin(), new_name.end(), ' ', '-');
                 } else if (transformation == "rkebab") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_name.begin(), new_name.end(), '-', ' ');
                 } else if (transformation == "rspecial") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove special characters from the name
                     new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
                         return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' '; // Retain
                     }), new_name.end());
                 } else if (transformation == "rnumeric") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove numeric characters from the name
                     new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
                         return std::isdigit(c);
                     }), new_name.end());
                 } else if (transformation == "rbra") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove [ ] { } from the name
                     new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
                         return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
                     }), new_name.end());
                 } else if (transformation == "roperand") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove - + > < = * from the name
                     new_name.erase(std::remove_if(new_name.begin(), new_name.end(), [](char c) {
                         return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                     }), new_name.end());
                 } else if (transformation == "camel") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = to_camel_case(new_name);
                 } else if (transformation == "rcamel") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = from_camel_case(new_name);
                 } else if (transformation == "sequence") {
 					std::lock_guard<std::mutex> lock(sequence_mutex);
@@ -480,14 +494,19 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = remove_date_seq(new_name);
                 } else if (transformation == "sentence") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = sentenceCase(new_name);
                 } else if (transformation == "swap") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = swap_transform(new_name);
                 } else if (transformation == "swapr") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = swapr_transform(new_name);
                 } else if (transformation == "pascal") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = to_pascal(new_name);
                 } else if (transformation == "rpascal") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = from_pascal_case(new_name);
                 }
             }
@@ -605,50 +624,66 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             if (case_input == transformation) {
                 // Apply the corresponding transformation
                 if (transformation == "lower") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
                 } else if (transformation == "upper") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
                 } else if (transformation == "reverse") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
                         return std::islower(c) ? std::toupper(c) : std::tolower(c);
                     });
                 } else if (case_input == "title") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = capitalizeFirstLetter(new_dirname);
                 } else if (transformation == "snake") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_dirname.begin(), new_dirname.end(), ' ', '_');
                 } else if (transformation == "rsnake") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_dirname.begin(), new_dirname.end(), '_', ' ');
                 } else if (transformation == "kebab") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_dirname.begin(), new_dirname.end(), ' ', '-');
                 } else if (transformation == "rkebab") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_dirname.begin(), new_dirname.end(), '-', ' ');
                 } else if (transformation == "rspecial") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove special characters from the directory name
                     new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                         return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' ';
                     }), new_dirname.end());
                 } else if (transformation == "rnumeric") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove numeric characters from the directory name
                     new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                         return std::isdigit(c);
                     }), new_dirname.end());
                 } else if (transformation == "rbra") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove [ ] { } from the directory name
                     new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                         return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
                     }), new_dirname.end());
                 } else if (transformation == "roperand") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove - + > < = * from the directory name
                     new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                         return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                     }), new_dirname.end());
                 } else if (transformation == "camel") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = to_camel_case(new_dirname);
                 } else if (transformation == "rcamel") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = swap_transform(new_dirname);
                 } else if (transformation == "swapr") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "sequence") {
                     // Needed to count depth correctly for sequence
@@ -665,10 +700,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_date(new_dirname);
                 } else if (transformation == "sentence") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = sentenceCase(new_dirname);
                 } else if (transformation == "pascal") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = to_pascal(new_dirname);
                 } else if (transformation == "rpascal") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = from_pascal_case(new_dirname);
                 }
                 break;
@@ -912,8 +950,8 @@ int main(int argc, char *argv[]) {
     bool transform_dirs = true;
     bool transform_files = true;
     bool symlinks = false;
-	constexpr int batch_size_files = 100;
-	constexpr int batch_size_folders = 10;
+	constexpr int batch_size_files = 1000;
+	constexpr int batch_size_folders = 100;
 
     // Handle command-line arguments
     // Display help message if no arguments provided
