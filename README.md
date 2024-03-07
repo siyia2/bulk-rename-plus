@@ -11,15 +11,15 @@ Default and recommended installation path is `~/.local/bin/bulk_rename++`, no ne
 
 Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 0.9 second(s)
 
-`bulk-rename-plus v1.44`
+`bulk-rename-plus v1.4.4`
 
 Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 1.6 second(s)
 
-`bulk-rename-plus v1.52`
+`bulk-rename-plus v1.5.2`
 
 Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 2.5 second(s)
 
-`bulk-rename-plus v1.53`
+`bulk-rename-plus v1.5.3`
 
 Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 1.1 second(s)
 
