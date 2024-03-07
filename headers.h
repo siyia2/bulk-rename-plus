@@ -14,7 +14,7 @@
 
 namespace fs = std::filesystem;
 
-// Mutexes
+// Shared Mutexes
 
 extern std::mutex dirs_count_mutex;
 extern std::mutex files_count_mutex;
