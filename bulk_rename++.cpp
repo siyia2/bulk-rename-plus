@@ -594,7 +594,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
-    bool track= false; // Needed to count depth correctly for sequence
+    bool track = false; // Needed to count depth correctly for sequence
 
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
@@ -657,8 +657,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "sequence") {
-					// Needed to count depth correctly for sequence
-					track= true;
+                    // Needed to count depth correctly for sequence
+                    track = true;
                     rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
@@ -725,18 +725,18 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     
     // Needed to count depth correctly for sequence
     if (track) {
-		if (depth > 0)
-            --depth;
-	}
-	
-    // Continue recursion if the depth limit is not reached
-    if (depth != 0) {
-		if (!track) {
-        // Decrement depth only if the depth limit is positive
         if (depth > 0)
             --depth;
-		}
-		
+    }
+
+    // Continue recursion if the depth limit is not reached
+    if (depth != 0) {
+        if (!track) {
+            // Decrement depth only if the depth limit is positive
+            if (depth > 0)
+                --depth;
+        }
+        
         // Determine the maximum number of threads supported by the system
         unsigned int max_threads = std::thread::hardware_concurrency();
         if (max_threads == 0) {
@@ -745,11 +745,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
         // Vector to store entries in a batch
         std::vector<fs::path> batch_entries;
+        std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
 
         // Iterate over subdirectories of the renamed directory
         for (const auto& entry : fs::directory_iterator(new_path)) {
             if (entry.is_directory() && !rename_parents) {
-                // Collect directories in the batch
+                // Add directories to the batch concurrently
+                std::lock_guard<std::mutex> lock(batch_mutex);
                 batch_entries.push_back(entry.path());
             } else if (entry.is_directory() && rename_parents) {
                 // Process parent directories immediately
@@ -761,7 +763,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
             if (batch_entries.size() >= batch_size_folders) {
                 // Determine the number of threads to use for processing subdirectories
-                unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+                unsigned int num_threads = std::min(std::thread::hardware_concurrency(), static_cast<unsigned int>(batch_entries.size()));
 
                 // Vector to store futures for asynchronous tasks
                 std::vector<std::future<void>> futures;
@@ -786,7 +788,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
         // Process the remaining entries in the batch
         if (!batch_entries.empty()) {
-            unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+            unsigned int num_threads = std::min(std::thread::hardware_concurrency(), static_cast<unsigned int>(batch_entries.size()));
             std::vector<std::future<void>> futures;
 
             for (unsigned int i = 0; i < num_threads; ++i) {
