@@ -675,7 +675,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             }
         }
     } 
-
+ 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
     // Check if renaming is necessary
