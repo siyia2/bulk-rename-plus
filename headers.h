@@ -14,11 +14,9 @@
 
 namespace fs = std::filesystem;
 
-// Shared Mutexes
+// Global and shared mutexes
 
 extern std::mutex dirs_count_mutex;
-extern std::mutex files_count_mutex;
-extern std::mutex files_mutex;
 extern std::mutex cout_mutex;
 
 // For verbose folder renaming

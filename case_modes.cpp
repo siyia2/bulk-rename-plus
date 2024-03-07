@@ -1,11 +1,9 @@
 #include "headers.h"
 
-// Necessary redefinition of mutexes
+// Necessary redefinition of global and shared mutexes
 
 std::mutex cout_mutex;
-std::mutex files_mutex;
 std::mutex dirs_count_mutex;
-std::mutex files_count_mutex;
 
 // Separate string operations
 

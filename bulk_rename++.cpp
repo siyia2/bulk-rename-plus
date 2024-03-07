@@ -5,8 +5,10 @@
 // Used for verbose folder renaming
 bool special = false;
 
-// Define a mutex for controlling access to sequential file and folder renaming
+// Mutexes for main program
 std::mutex sequence_mutex;
+std::mutex files_count_mutex;
+std::mutex files_mutex;
 
 // Global print functions
 
