@@ -440,7 +440,7 @@ std::string remove_date_seq(const std::string& file_string) {
 
 
 // Folder numbering functions mv style
-
+ 
 
 // Add sequencial prefix to folder names
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
