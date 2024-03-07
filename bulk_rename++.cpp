@@ -5,6 +5,9 @@
 // Used for verbose folder renaming
 bool special = false;
 
+// Define a mutex for controlling access to sequential renaming
+std::mutex sequence_mutex;
+
 // Global print functions
 
 // Print an error message to stderr
@@ -465,13 +468,16 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 } else if (transformation == "rcamel") {
                     new_name = from_camel_case(new_name);
                 } else if (transformation == "sequence") {
-                    // Check if the filename is already numbered
-                    new_name = append_numbered_prefix(parent_path, new_name);
+					std::lock_guard<std::mutex> lock(sequence_mutex);
+                        new_name = append_numbered_prefix(parent_path, new_name);
                 } else if (transformation == "rsequence") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = remove_numbered_prefix(new_name);
                 } else if (transformation == "date") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = append_date_seq(new_name);
                 } else if (transformation == "rdate") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = remove_date_seq(new_name);
                 } else if (transformation == "sentence") {
                     new_name = sentenceCase(new_name);
@@ -647,12 +653,16 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "sequence") {
                     // Needed to count depth correctly for sequence
                     track_sequence = true;
+                        std::lock_guard<std::mutex> lock(sequence_mutex);
                     rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
+					    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
                 } else if (transformation == "rdate") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_date(new_dirname);
                 } else if (transformation == "sentence") {
                     new_dirname = sentenceCase(new_dirname);
