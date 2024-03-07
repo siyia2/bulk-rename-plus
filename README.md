@@ -5,6 +5,20 @@ Multithreaded at the top level with each input path being assigned to a separate
 
 Default and recommended installation path is `~/.local/bin/bulk_rename++`, no need to run as `ROOT` unless of course you know what you are doing.
 
+#### Benchmark Resutls:
+
+v1.0.0
+Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 0.9 second(s)
+
+v1.44
+Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 1.6 second(s)
+
+v1.52
+Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 2.5 second(s)
+
+v1.53
+Renamed to upperCase: 20249 file(s) and 2124 dir(s) from 1 input path(s) in 1.1 second(s)
+
 ## How to use:
 
 Usage: bulk_rename++ [OPTIONS] [MODE] [PATHS]
