@@ -609,7 +609,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
-    bool track_sequence = false; // Needed to count depth correctly for sequence
 
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
@@ -689,8 +688,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "sequence") {
                     // Needed to count depth correctly for sequence
-                    track_sequence = true;
-                        std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
 					    std::lock_guard<std::mutex> lock(sequence_mutex);
@@ -762,18 +760,18 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     }
     
     // Needed to count depth correctly for sequence
-    if (track_sequence) {
-        if (depth > 0)
-            --depth;
-    }
+   // if (track_sequence) {
+   //     if (depth > 0)
+   //         --depth;
+   // }
 
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
-        if (!track_sequence) {
+        
             // Decrement depth only if the depth limit is positive
             if (depth > 0)
                 --depth;
-        }
+        
         
         // Determine the maximum number of threads supported by the system
         unsigned int max_threads = std::thread::hardware_concurrency();
