@@ -533,6 +533,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, in
     rename_folders_with_sequential_numbering(base_directory, "", dirs_count, verbose_enabled, symlinks, batch_size_folders);
 }
 
+
 // Append date suffix to folder names
 void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders, int depth) {
     int batch_count = 0; // Track the number of renames in the current batch
