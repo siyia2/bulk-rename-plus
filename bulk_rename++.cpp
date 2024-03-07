@@ -348,7 +348,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
 
     // Print summary
-    std::cout << "\n\033[1mRenamed \033[4mfile extensions\033[0m\033[1m to \033[1;38;5;214m" << case_input << "Case\033[0m\033[1m: for \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
+    std::cout << "\n\033[1mRenamed \033[4mfile extension(s)\033[0m\033[1m to \033[1;38;5;214m" << case_input << "Case\033[0m\033[1m: for \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
@@ -808,8 +808,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
 
 
-
-
 // Function to rename paths (directories and files) based on specified transformations
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks) {
 
@@ -896,7 +894,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
     // Output summary of the renaming process
     std::cout << "\n\033[0m\033[1mRenamed to \033[1;38;5;214m" << case_input << "Case\033[0m\033[1m: \033[1;92m" << files_count << " file(s) \033[0m\033[1mand \033[1;94m"
-              << dirs_count << " dir(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
+              << dirs_count << " folder(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
@@ -929,7 +927,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.5.3");
+        printVersionNumber("1.5.4");
         return 0;
     }
 
