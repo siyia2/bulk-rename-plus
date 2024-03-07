@@ -687,7 +687,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "sequence") {
-                    // Needed to count depth correctly for sequence
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     rename_folders_with_sequential_numbering(directory_path, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
@@ -759,12 +758,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
     
-    // Needed to count depth correctly for sequence
-   // if (track_sequence) {
-   //     if (depth > 0)
-   //         --depth;
-   // }
-
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
         

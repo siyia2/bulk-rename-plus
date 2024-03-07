@@ -447,6 +447,12 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
     int counter = 1; // Counter for immediate subdirectories
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
+    
+    // Continue recursion if the depth limit is not reached
+    if (depth != 0) {
+        // Decrement depth only if the depth limit is positive
+        if (depth > 0)
+            --depth;
 
     // Iterate through the folders to find the first gap in the sequence
     for (const auto& folder : fs::directory_iterator(base_directory)) {
@@ -526,8 +532,9 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             }
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count; // Increment dirs_count after each successful rename
-        }
-    }
+			}
+		}
+	}
 }
 
 
