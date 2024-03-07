@@ -348,7 +348,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
 
     // Print summary
-    std::cout << "\n\033[1mRenamed \033[4mfile extensions\033[0m\033[1m to \033[1;38;5;214m" << case_input << "_case\033[0m\033[1m: for \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
+    std::cout << "\n\033[1mRenamed \033[4mfile extensions\033[0m\033[1m to \033[1;38;5;214m" << case_input << "Case\033[0m\033[1m: for \033[1;92m" << files_count << " file(s) \033[0m\033[1mfrom \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1min " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
