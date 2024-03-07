@@ -43,8 +43,8 @@ std::string remove_numbered_prefix(const std::string& file_string);
 std::string append_date_seq(const std::string& file_string);
 std::string remove_date_seq(const std::string& file_string);
 // Mv style for folder renaming only
-void rename_folders_with_sequential_numbering(const std::filesystem::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled, bool symlinks);
-void rename_folders_with_sequential_numbering(const std::filesystem::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders);
 void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 10, int depth = -1);
 // Simplified folder renaming only
 std::string get_renamed_folder_name_without_numbering(const fs::path& folder_path);
@@ -59,7 +59,7 @@ void printVersionNumber(const std::string& version);
 void print_help();
 // For file extensions
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, bool symlinks);
-void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count,  bool symlinks);
+void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size_files, bool symlinks);
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, size_t batch_size_files, bool symlinks);
 // For file renaming
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size_files, bool symlinks);
