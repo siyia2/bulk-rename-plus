@@ -532,7 +532,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
 
 // Overloaded function with default verbose_enabled = false and batch processing
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 10) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 100) {
     rename_folders_with_sequential_numbering(base_directory, "", dirs_count, verbose_enabled, symlinks, batch_size_folders);
 }
 
