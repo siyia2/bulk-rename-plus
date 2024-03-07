@@ -797,7 +797,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
 
 // Function to rename paths (directories and files) based on specified transformations
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int dirs_count, int files_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks) {
 
     // Determine the maximum number of threads supported by the system
     unsigned int max_threads = std::thread::hardware_concurrency();
