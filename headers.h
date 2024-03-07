@@ -20,9 +20,6 @@ namespace fs = std::filesystem;
 extern std::mutex dirs_count_mutex;
 extern std::mutex cout_mutex;
 
-// For verbose folder renaming
-extern bool special;
-
 // Function prototypes
 
 // Case modes

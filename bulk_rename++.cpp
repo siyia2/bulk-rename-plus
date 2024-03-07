@@ -2,9 +2,6 @@
 
 // General purpose stuff
 
-// Used for verbose folder renaming
-bool special = false;
-
 // Mutexes for main program
 std::mutex sequence_mutex;
 std::mutex files_count_mutex;
@@ -572,6 +569,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
+    bool special= false;
 
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
@@ -651,12 +649,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "sequence") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
+                    special=true;
                     rename_folders_with_sequential_numbering(directory_path, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
 					    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
 					std::lock_guard<std::mutex> lock(sequence_mutex);
+					special=true;
                     rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
                 } else if (transformation == "rdate") {
 					std::lock_guard<std::mutex> lock(sequence_mutex);
