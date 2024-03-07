@@ -262,6 +262,52 @@ std::string from_pascal_case(const std::string& string) {
 }
 
 
+// Function to remove sequential numbering from folder name
+std::string get_renamed_folder_name_without_numbering(const fs::path& folder_path) {
+    std::string folder_name = folder_path.filename().string();
+
+    // Find the position of the first non-zero digit
+    size_t first_non_zero = folder_name.find_first_not_of('0');
+
+    // Check if the folder name starts with a sequence of digits followed by an underscore
+    size_t underscore_pos = folder_name.find('_', first_non_zero);
+    if (underscore_pos != std::string::npos && folder_name.find_first_not_of("0123456789", first_non_zero) == underscore_pos) {
+        // Extract the original name without the numbering
+        std::string original_name = folder_name.substr(underscore_pos + 1);
+        return original_name;
+    }
+
+    // No sequential numbering found, return original name
+    return folder_name;
+}
+
+
+// Function to remove date suffix from folder name
+std::string get_renamed_folder_name_without_date(const fs::path& folder_path) {
+    std::string folder_name = folder_path.filename().string();
+
+    // Check if the folder name ends with the date suffix format "_YYYYMMDD"
+    if (folder_name.size() < 9 || folder_name.substr(folder_name.size() - 9, 1) != "_")
+        return folder_name; // No date suffix found, return original name
+
+    bool is_date_suffix = true;
+    for (size_t i = folder_name.size() - 8; i < folder_name.size(); ++i) {
+        if (!std::isdigit(folder_name[i])) {
+            is_date_suffix = false;
+            break;
+        }
+    }
+
+    if (!is_date_suffix)
+        return folder_name; // Not a valid date suffix, return original name
+
+    // Remove the date suffix from the folder name
+    std::string new_folder_name = folder_name.substr(0, folder_name.size() - 9);
+
+    return new_folder_name;
+}
+
+
 // For Files
 
 // Function to add sequencial numbering to files
@@ -396,25 +442,6 @@ std::string remove_date_seq(const std::string& file_string) {
 
 
 // Folder numbering functions mv style
-
-// Function to remove sequential numbering from folder name
-std::string get_renamed_folder_name_without_numbering(const fs::path& folder_path) {
-    std::string folder_name = folder_path.filename().string();
-
-    // Find the position of the first non-zero digit
-    size_t first_non_zero = folder_name.find_first_not_of('0');
-
-    // Check if the folder name starts with a sequence of digits followed by an underscore
-    size_t underscore_pos = folder_name.find('_', first_non_zero);
-    if (underscore_pos != std::string::npos && folder_name.find_first_not_of("0123456789", first_non_zero) == underscore_pos) {
-        // Extract the original name without the numbering
-        std::string original_name = folder_name.substr(underscore_pos + 1);
-        return original_name;
-    }
-
-    // No sequential numbering found, return original name
-    return folder_name;
-}
 
 
 // Add sequencial prefix to folder names
@@ -584,29 +611,4 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
             }
         }
     }
-}
-
-// Function to remove date suffix from folder name
-std::string get_renamed_folder_name_without_date(const fs::path& folder_path) {
-    std::string folder_name = folder_path.filename().string();
-
-    // Check if the folder name ends with the date suffix format "_YYYYMMDD"
-    if (folder_name.size() < 9 || folder_name.substr(folder_name.size() - 9, 1) != "_")
-        return folder_name; // No date suffix found, return original name
-
-    bool is_date_suffix = true;
-    for (size_t i = folder_name.size() - 8; i < folder_name.size(); ++i) {
-        if (!std::isdigit(folder_name[i])) {
-            is_date_suffix = false;
-            break;
-        }
-    }
-
-    if (!is_date_suffix)
-        return folder_name; // Not a valid date suffix, return original name
-
-    // Remove the date suffix from the folder name
-    std::string new_folder_name = folder_name.substr(0, folder_name.size() - 9);
-
-    return new_folder_name;
 }
