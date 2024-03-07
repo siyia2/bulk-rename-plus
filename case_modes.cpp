@@ -447,6 +447,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
     int counter = 1; // Counter for immediate subdirectories
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
+    std::vector<std::string> unchanged_folder_names; // Store folder names that do not need renaming
     
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
@@ -490,6 +491,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
             // Check if the folder is already numbered
             if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
+				unchanged_folder_names.push_back(folder_name);
                 continue; // Skip renaming if already numbered
             }
 
@@ -531,6 +533,12 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             }
             std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count; // Increment dirs_count after each successful rename
+			}
+		}
+		// Print folder names that did not need renaming
+		if (!unchanged_folder_names.empty() && verbose_enabled) {
+			for (const auto& folder_name : unchanged_folder_names) {
+				std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_name << " (name unchanged)\n";
 			}
 		}
 	}
