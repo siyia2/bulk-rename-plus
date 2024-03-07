@@ -722,11 +722,13 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
     }
+    
     // Needed to count depth correctly for nsequence
     if (track) {
 		if (depth > 0)
             --depth;
 	}
+	
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
 		if (!track) {
@@ -734,6 +736,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         if (depth > 0)
             --depth;
 		}
+		
         // Determine the maximum number of threads supported by the system
         unsigned int max_threads = std::thread::hardware_concurrency();
         if (max_threads == 0) {
