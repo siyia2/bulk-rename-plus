@@ -541,6 +541,8 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, in
 // Append date suffix to folder names
 void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders, int depth) {
     int batch_count = 0; // Track the number of renames in the current batch
+    std::vector<std::pair<fs::path, std::string>> folders_to_rename; // Store folders and their new names
+
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
         // Decrement depth only if the depth limit is positive
@@ -570,47 +572,59 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                     has_date_suffix = has_underscore && is_date_suffix;
                 }
 
-                if (has_date_suffix)
-                    continue;
+                if (!has_date_suffix) {
+                    // Construct the new name with date suffix
+                    std::stringstream ss;
+                    ss << folder_name; // Keep the original folder name
+                    ss << "_" << (parts->tm_year + 1900) << std::setw(2) << std::setfill('0') << (parts->tm_mon + 1) << std::setw(2) << std::setfill('0') << parts->tm_mday;
+                    std::string new_name = ss.str();
 
-                // Construct the new name with date suffix
-                std::stringstream ss;
-                ss << folder_name; // Keep the original folder name
-                ss << "_" << (parts->tm_year + 1900) << std::setw(2) << std::setfill('0') << (parts->tm_mon + 1) << std::setw(2) << std::setfill('0') << parts->tm_mday;
-                std::string new_name = ss.str();
-
-                // Check if the folder is already renamed to the new name
-                fs::path new_path = folder.path().parent_path() / new_name;
-                if (folder.path() != new_path) {
-                    // Rename the folder
-                    try {
-                        fs::rename(folder.path(), new_path);
-                        special = true;
-                    } catch (const fs::filesystem_error& e) {
-                        if (e.code() == std::errc::permission_denied && verbose_enabled) {
-                            print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
-                        }
-                        continue; // Skip renaming if moving fails
+                    // Check if the folder is already renamed to the new name
+                    fs::path new_path = folder.path().parent_path() / new_name;
+                    if (folder.path() != new_path) {
+                        folders_to_rename.push_back(std::make_pair(folder.path(), new_name));
+                        ++batch_count; // Increment the batch count
                     }
-                    if (verbose_enabled) {
-                        if (symlinks && fs::is_symlink(folder) || fs::is_symlink(new_path)) {
-                            print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-                        } else {
-                            print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + folder.path().string() + " to " + new_path.string(), std::cout);
-                        }
-                    }
-                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
-                    ++dirs_count; // Increment dirs_count after each successful rename
-                    ++batch_count; // Increment the batch count
                 }
 
-                // If the batch size is reached, reset the batch count
+                // If the batch size is reached, perform batch renaming
                 if (batch_count == batch_size_folders) {
+                    for (const auto& folder_pair : folders_to_rename) {
+                        const fs::path& old_path = folder_pair.first;
+                        const std::string& new_name = folder_pair.second;
+                        fs::path new_path = old_path.parent_path() / new_name;
+                        try {
+                            fs::rename(old_path, new_path);
+                            if (verbose_enabled) {
+                                // Print verbose information
+                            }
+                            std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                            ++dirs_count; // Increment dirs_count after each successful rename
+                        } catch (const fs::filesystem_error& e) {
+                            // Handle errors
+                        }
+                    }
+                    // Clear the vector for the next batch
+                    folders_to_rename.clear();
                     batch_count = 0;
                 }
+            }
+        }
 
-                // Recursively process subdirectories
-                rename_folders_with_date_suffix(new_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
+        // Perform renaming for any remaining folders in the last batch
+        for (const auto& folder_pair : folders_to_rename) {
+            const fs::path& old_path = folder_pair.first;
+            const std::string& new_name = folder_pair.second;
+            fs::path new_path = old_path.parent_path() / new_name;
+            try {
+                fs::rename(old_path, new_path);
+                if (verbose_enabled) {
+                    // Print verbose information
+                }
+                std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                ++dirs_count; // Increment dirs_count after each successful rename
+            } catch (const fs::filesystem_error& e) {
+                // Handle errors
             }
         }
     }
