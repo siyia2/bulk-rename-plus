@@ -760,8 +760,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
     
-// Continue recursion if the depth limit is not reached
-if (depth != 0) {
+	// Continue recursion if the depth limit is not reached
+	if (depth != 0) {
     
     // Decrement depth only if the depth limit is positive
     if (depth > 0)
@@ -794,21 +794,24 @@ if (depth != 0) {
         if (batch_entries.size() >= batch_size_folders) {
             // Determine the number of threads to use for processing subdirectories
             unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
-
-            // Vector to store futures for asynchronous tasks
-            std::vector<std::future<void>> futures;
+          
             unsigned int chunk_size = (batch_entries.size() + num_threads - 1) / num_threads; // Round up division
 
             // Distribute tasks among available threads
-            for (unsigned int i = 0; i < num_threads; ++i) {
-                unsigned int start_index = i * chunk_size;
-                unsigned int end_index = std::min(static_cast<unsigned int>((i + 1) * chunk_size), static_cast<unsigned int>(batch_entries.size()));
-                futures.push_back(std::async(std::launch::async, [&batch_entries, case_input, verbose_enabled, transform_dirs, transform_files, &files_count, &dirs_count, depth, batch_size_files, batch_size_folders, symlinks, start_index, end_index]() {
-                    for (unsigned int j = start_index; j < end_index; ++j) {
-                        rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-                    }
-                }));
-            }
+        // Vector to store futures for asynchronous tasks
+		std::vector<std::future<void>> futures;
+		for (unsigned int i = 0; i < num_threads; ++i) {
+			unsigned int start_index = i * chunk_size;
+			unsigned int end_index = (i + 1) * chunk_size;
+			if (end_index > batch_entries.size())
+				end_index = batch_entries.size();
+
+			futures.emplace_back(std::async(std::launch::async, [&, start_index, end_index]() {
+				for (unsigned int j = start_index; j < end_index; ++j) {
+					rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
+				}
+			}));
+		}
 
             // Wait for all asynchronous tasks to finish
             for (auto& future : futures) {
@@ -819,21 +822,21 @@ if (depth != 0) {
         }
     }
 
-    // Process the remaining entries in the batch
-    if (!batch_entries.empty()) {
-        unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
-        std::vector<std::future<void>> futures;
-        unsigned int chunk_size = (batch_entries.size() + num_threads - 1) / num_threads; // Round up division
+		// Process the remaining entries in the batch
+		if (!batch_entries.empty()) {
+			unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+			std::vector<std::future<void>> futures;
+			unsigned int chunk_size = (batch_entries.size() + num_threads - 1) / num_threads; // Round up division
 
-        for (unsigned int i = 0; i < num_threads; ++i) {
-            unsigned int start_index = i * chunk_size;
-            unsigned int end_index = std::min(static_cast<unsigned int>((i + 1) * chunk_size), static_cast<unsigned int>(batch_entries.size()));
-            futures.push_back(std::async(std::launch::async, [&batch_entries, case_input, verbose_enabled, transform_dirs, transform_files, &files_count, &dirs_count, depth, batch_size_files, batch_size_folders, symlinks, start_index, end_index]() {
-                for (unsigned int j = start_index; j < end_index; ++j) {
-                    rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-                }
-            }));
-        }
+			for (unsigned int i = 0; i < num_threads; ++i) {
+				unsigned int start_index = i * chunk_size;
+				unsigned int end_index = std::min(static_cast<unsigned int>((i + 1) * chunk_size), static_cast<unsigned int>(batch_entries.size()));
+				futures.push_back(std::async(std::launch::async, [&, start_index, end_index]() {
+			for (unsigned int j = start_index; j < end_index; ++j) {
+				rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
+				}
+			}));
+		}
 
 			// Wait for all asynchronous tasks to finish
 			for (auto& future : futures) {
@@ -965,7 +968,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.5.1");
+        printVersionNumber("1.5.2");
         return 0;
     }
 
