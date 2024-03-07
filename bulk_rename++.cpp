@@ -689,7 +689,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "sequence") {
                     // Needed to count depth correctly for sequence
                     std::lock_guard<std::mutex> lock(sequence_mutex);
-                    rename_folders_with_sequential_numbering(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders);
+                    rename_folders_with_sequential_numbering(directory_path, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
 					    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
