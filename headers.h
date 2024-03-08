@@ -9,24 +9,23 @@
 #include <chrono>
 #include <queue>
 #include <future>
+#include <execution>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace fs = std::filesystem;
 
-// Mutexes
+// Global and shared mutexes
 
 extern std::mutex dirs_count_mutex;
-extern std::mutex files_count_mutex;
-extern std::mutex files_mutex;
 extern std::mutex cout_mutex;
 
-// For verbose folder renaming
-extern bool special;
+// Global variable to set or not to set verbose output for skipped files/folders
+extern bool skipped;
 
 // Function prototypes
 
-// case modes
+// Case modes
 
 // General
 std::string sentenceCase(const std::string& string);
@@ -43,11 +42,12 @@ std::string remove_numbered_prefix(const std::string& file_string);
 std::string append_date_seq(const std::string& file_string);
 std::string remove_date_seq(const std::string& file_string);
 // Mv style for folder renaming only
-void remove_sequential_numbering_from_folders(const std::filesystem::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks);
-void rename_folders_with_sequential_numbering(const std::filesystem::path& base_directory, std::string prefix, int& dirs_count, bool verbose_enabled, bool symlinks);
-void rename_folders_with_sequential_numbering(const std::filesystem::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks);
-void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50);
-void remove_date_suffix_from_folders(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled, bool symlinks, size_t batch_size_folders);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled, bool symlinks, size_t batch_size_folders);
+void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50, int depth = -1);
+// Simplified folder renaming only
+std::string get_renamed_folder_name_without_numbering(const fs::path& folder_path);
+std::string get_renamed_folder_name_without_date(const fs::path& folder_path);
 
 // main
 
@@ -57,14 +57,13 @@ void print_verbose_enabled(const std::string& message, std::ostream& os = std::c
 void printVersionNumber(const std::string& version);
 void print_help();
 // For file extensions
-void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, bool symlinks);
+void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count);
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size_files, bool symlinks);
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, size_t batch_size_files, bool symlinks);
 // For file renaming
 void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size_files, bool symlinks);
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count);
 // For folder renaming
-void process_forParents(const fs::directory_entry& entry, const std::string& case_input, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks);
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks);
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int dirs_count, int files_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks);
 
