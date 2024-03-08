@@ -441,11 +441,13 @@ std::string remove_date_seq(const std::string& file_string) {
 
 // Folder numbering functions mv style
  
-// Apply sequencial numbering to folders
+// Apply sequenctial folder numbering
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
     int counter = 1; // Counter for immediate subdirectories
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
-    std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
+    std::vector<fs::path> skipped_folder_paths; // Store paths of folders that did not need renaming
+    
+    bool unnumbered_folder_exists = false; // Flag to track if at least one unnumbered folder exists
     
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
@@ -453,15 +455,22 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
         if (depth > 0)
             --depth;
 
-        // Iterate through the folders to collect folders to be renamed
+        // Iterate through the folders to collect folders to be renamed and check for unnumbered folders
         for (const auto& folder : fs::directory_iterator(base_directory)) {
             bool skip = !symlinks && fs::is_symlink(folder);
             if (folder.is_directory() && !skip) {
                 std::string folder_name = folder.path().filename().string();
+                skipped_folder_paths.push_back(folder.path()); // Store the path of the folder that did not need renaming
+
+                // Remove the declaration of 'pos' from here
+				size_t pos = folder_name.find('_');
+				// Check if folder is unnumbered
+				if (pos == std::string::npos || !std::all_of(folder_name.begin(), folder_name.begin() + pos, ::isdigit)) {
+					unnumbered_folder_exists = true;
+				}
 
                 // Remove any existing numbering from the folder name
                 std::string original_name;
-                size_t pos = folder_name.find('_');
                 if (pos != std::string::npos && pos > 0 && std::isdigit(folder_name[0])) {
                     original_name = folder_name.substr(pos + 1);
                 } else {
@@ -480,36 +489,47 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             }
         }
 
-        // Rename folders in batches
-        for (size_t i = 0; i < folders_to_rename.size(); i += batch_size_folders) {
-            size_t batch_end = std::min(i + batch_size_folders, folders_to_rename.size());
-            for (size_t j = i; j < batch_end; ++j) {
-                const auto& folder_pair = folders_to_rename[j];
-                const auto& old_path = folder_pair.first;
-                const auto& new_path = folder_pair.second;
+        // Only proceed with renaming if at least one unnumbered folder exists
+        if (unnumbered_folder_exists) {
+            // Rename folders in batches
+            for (size_t i = 0; i < folders_to_rename.size(); i += batch_size_folders) {
+                size_t batch_end = std::min(i + batch_size_folders, folders_to_rename.size());
+                for (size_t j = i; j < batch_end; ++j) {
+                    const auto& folder_pair = folders_to_rename[j];
+                    const auto& old_path = folder_pair.first;
+                    const auto& new_path = folder_pair.second;
 
-                // Move the contents of the source directory to the destination directory
-                try {
-                    fs::rename(old_path, new_path);
-                } catch (const fs::filesystem_error& e) {
-                    if (e.code() == std::errc::permission_denied && verbose_enabled) {
-                        print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
+                    // Move the contents of the source directory to the destination directory
+                    try {
+                        fs::rename(old_path, new_path);
+                    } catch (const fs::filesystem_error& e) {
+                        if (e.code() == std::errc::permission_denied && verbose_enabled) {
+                            std::cout << "\033[1;91mError\033[0m: " << e.what() << std::endl;
+                        }
+                        continue; // Skip renaming if moving fails
                     }
-                    continue; // Skip renaming if moving fails
-                }
-                if (verbose_enabled) {
-                    if (symlinks && fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
-                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
-                    } else {
-                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
+                    if (verbose_enabled) {
+                        if (symlinks && fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
+                            std::cout << "\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " << old_path.string() << " to " << new_path.string() << std::endl;
+                        } else {
+                            std::cout << "\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " << old_path.string() << " to " << new_path.string() << std::endl;
+                        }
                     }
+                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
+                    ++dirs_count; // Increment dirs_count after each successful rename
                 }
-                std::lock_guard<std::mutex> lock(dirs_count_mutex);
-                ++dirs_count; // Increment dirs_count after each successful rename
+            }
+        } else {
+            // Print folder paths that did not need renaming
+            if (!skipped_folder_paths.empty() && verbose_enabled) {
+                for (const auto& folder_path : skipped_folder_paths) {
+                    std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_path.string() << " (name unchanged)" << std::endl;
+                }
             }
         }
     }
 }
+
 
 // Overloaded function with default verbose_enabled = false and batch processing
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
