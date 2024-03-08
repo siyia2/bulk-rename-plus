@@ -447,7 +447,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
     int counter = 1; // Counter for immediate subdirectories
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
-    std::vector<fs::path> unchanged_folder_paths; // Store folder paths that do not need renaming
+    std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
     
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
@@ -491,7 +491,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
             // Check if the folder is already numbered
             if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
-				unchanged_folder_paths.push_back(folder.path()); // Store the entire path
+				unchanged_folder_paths.push_back({folder.path(), fs::is_symlink(folder)}); // Store the path and its symlink status
                 continue; // Skip renaming if already numbered
             }
 
@@ -535,10 +535,16 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             ++dirs_count; // Increment dirs_count after each successful rename
 			}
 		}
-		// Print folder names that did not need renaming
-		if (!unchanged_folder_paths.empty() && verbose_enabled && skipped) {
-			for (const auto& folder_path : unchanged_folder_paths) {
+		 // Print folder paths that did not need renaming
+			if (!unchanged_folder_paths.empty() && verbose_enabled && skipped) {
+				for (const auto& folder_pair : unchanged_folder_paths) {
+				const fs::path& folder_path = folder_pair.first;
+				bool is_symlink = folder_pair.second;
+					if (is_symlink) {
+					std::cout << "\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " << folder_path.string() << " (name unchanged)\n";
+			} else {
 				std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_path.string() << " (name unchanged)\n";
+				}
 			}
 		}
 	}
@@ -554,7 +560,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, in
 void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders, int depth) {
     int batch_count = 0; // Track the number of renames in the current batch
     std::vector<std::pair<fs::path, std::string>> folders_to_rename; // Store folders and their new names
-    std::vector<fs::path> unchanged_folder_paths; // Store folder paths that do not need renaming
+    std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
 
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
@@ -586,7 +592,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                 }
 
                 if (has_date_suffix) {
-                    unchanged_folder_paths.push_back(folder.path()); // Store the entire path
+                    unchanged_folder_paths.push_back({folder.path(), fs::is_symlink(folder)}); // Store the path and its symlink status
                     continue; // Skip renaming if the folder already has a date suffix
                 }
 
@@ -661,10 +667,16 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
         }
     }
 
-    // Print folder names that did not need renaming
-    if (!unchanged_folder_paths.empty() && verbose_enabled && skipped) {
-        for (const auto& folder_path : unchanged_folder_paths) {
-        std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_path.string() << " (name unchanged)\n";
+		// Print folder paths that did not need renaming
+		if (!unchanged_folder_paths.empty() && verbose_enabled && skipped) {
+			for (const auto& folder_pair : unchanged_folder_paths) {
+				const fs::path& folder_path = folder_pair.first;
+				bool is_symlink = folder_pair.second;
+				if (is_symlink) {
+					std::cout << "\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " << folder_path.string() << " (name unchanged)\n";
+        } else {
+            std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_path.string() << " (name unchanged)\n";
+			}
 		}
-    }
+	}
 }
