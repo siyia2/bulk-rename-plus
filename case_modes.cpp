@@ -534,7 +534,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 	}
 
     // Print folder paths that did not need renaming
-    if (!unchanged_folder_paths.empty() && verbose_enabled) {
+    if (!unchanged_folder_paths.empty() && verbose_enabled && skipped) {
         for (const auto& folder_pair : unchanged_folder_paths) {
             const fs::path& folder_path = folder_pair.first;
             bool is_symlink = folder_pair.second;
