@@ -441,13 +441,13 @@ std::string remove_date_seq(const std::string& file_string) {
 
 // Folder numbering functions mv style
  
-
-// Add sequencial prefix to folder names
+// Add sequential prefix to folder names
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
     int counter = 1; // Counter for immediate subdirectories
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
+    int last_numbered_folder = 0; // Track the number of the last numbered folder
     
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
@@ -455,7 +455,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
         if (depth > 0)
             --depth;
 
-    // Iterate through the folders to find the first gap in the sequence
+    // Iterate through the folders to collect folder numbers
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         bool skip = !symlinks && fs::is_symlink(folder);
         if (folder.is_directory() && !skip) {
@@ -466,22 +466,18 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
                 number = std::stoi(folder_name.substr(0, folder_name.find('_')));
                 existing_numbers.insert(number); // Add existing number to set
-            } else {
-                continue; // Skip if not already numbered
+                last_numbered_folder = std::max(last_numbered_folder, number); // Update the last numbered folder
             }
-
-            // Find the first gap in the sequence of numbers
-            int gap = 1;
-            while (existing_numbers.find(gap) != existing_numbers.end()) {
-                gap++;
-            }
-
-            // Increment counter to start from the first gap
-            counter = gap;
-
-            break; // Break loop after finding the first gap
         }
     }
+
+    // Find the first gap in the sequence of numbers
+    int gap = 1;
+    while (existing_numbers.find(gap) != existing_numbers.end()) {
+        gap++;
+    }
+
+    counter = gap; // Start counter from the first gap or the last numbered folder plus one if there's no gap
 
     // Iterate through the folders to collect folders to be renamed
     for (const auto& folder : fs::directory_iterator(base_directory)) {
@@ -491,7 +487,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
             // Check if the folder is already numbered
             if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
-				unchanged_folder_paths.push_back({folder.path(), fs::is_symlink(folder)}); // Store the path and its symlink status
+                unchanged_folder_paths.push_back({folder.path(), fs::is_symlink(folder)}); // Store the path and its symlink status
                 continue; // Skip renaming if already numbered
             }
 
@@ -535,21 +531,21 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             ++dirs_count; // Increment dirs_count after each successful rename
 			}
 		}
-		 // Print folder paths that did not need renaming
-			if (!unchanged_folder_paths.empty() && verbose_enabled && skipped) {
-				for (const auto& folder_pair : unchanged_folder_paths) {
-				const fs::path& folder_path = folder_pair.first;
-				bool is_symlink = folder_pair.second;
-					if (is_symlink) {
-					std::cout << "\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " << folder_path.string() << " (name unchanged)\n";
-			} else {
-				std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_path.string() << " (name unchanged)\n";
-				}
-			}
-		}
 	}
-}
 
+    // Print folder paths that did not need renaming
+    if (!unchanged_folder_paths.empty() && verbose_enabled) {
+        for (const auto& folder_pair : unchanged_folder_paths) {
+            const fs::path& folder_path = folder_pair.first;
+            bool is_symlink = folder_pair.second;
+            if (is_symlink) {
+                std::cout << "\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " << folder_path.string() << " (name unchanged)\n";
+            } else {
+                std::cout << "\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " << folder_path.string() << " (name unchanged)\n";
+            }
+        }
+    }
+}
 
 // Overloaded function with default verbose_enabled = false and batch processing
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
