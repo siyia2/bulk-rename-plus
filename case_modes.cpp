@@ -442,17 +442,13 @@ std::string remove_date_seq(const std::string& file_string) {
 // Folder numbering functions mv style
  
 
-// Add sequencial prefix to folder names
+// Add sequential prefix to folder names
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
     int counter = 1; // Counter for immediate subdirectories
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
     
-    // Separate counters for regular folders and symlink folders
-    int regular_counter = 1;
-    int symlink_counter = 1;
-
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
         // Decrement depth only if the depth limit is positive
@@ -460,7 +456,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             --depth;
     }
 
-    // Iterate through the folders to find the first gap in the sequence
+    // Iterate through the folders to collect folder numbers
     for (const auto& folder : fs::directory_iterator(base_directory)) {
         bool skip = !symlinks && fs::is_symlink(folder);
         if (folder.is_directory() && !skip) {
@@ -471,21 +467,17 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
                 number = std::stoi(folder_name.substr(0, folder_name.find('_')));
                 existing_numbers.insert(number); // Add existing number to set
-            } else {
-                continue; // Skip if not already numbered
-            }
-
-            // Adjust the counters based on whether the folder is a symlink folder or a regular folder
-            if (fs::is_symlink(folder)) {
-                symlink_counter = std::max(symlink_counter, number + 1);
-            } else {
-                regular_counter = std::max(regular_counter, number + 1);
             }
         }
     }
 
-    // Set the counter based on the type of folders encountered
-    counter = symlinks ? symlink_counter : regular_counter;
+    // Find the first gap in the sequence of numbers
+    int gap = 1;
+    while (existing_numbers.find(gap) != existing_numbers.end()) {
+        gap++;
+    }
+
+    counter = gap; // Start counter from the first gap
 
     // Iterate through the folders to collect folders to be renamed
     for (const auto& folder : fs::directory_iterator(base_directory)) {
@@ -507,8 +499,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             // Add folder to the vector for batch renaming
             folders_to_rename.push_back({folder.path(), new_name});
 
-            // Increment counter after each directory is processed
-            counter++;
+            counter++; // Increment counter after each directory is processed
         }
     }
 
