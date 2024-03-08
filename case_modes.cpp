@@ -534,7 +534,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 	}
 
     // Print folder paths that did not need renaming
-    if (!unchanged_folder_paths.empty() && verbose_enabled) {
+    if (!unchanged_folder_paths.empty() && verbose_enabled && skipped) {
         for (const auto& folder_pair : unchanged_folder_paths) {
             const fs::path& folder_path = folder_pair.first;
             bool is_symlink = folder_pair.second;
@@ -568,29 +568,43 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
         auto time = std::chrono::system_clock::to_time_t(now);
         struct std::tm* parts = std::localtime(&time);
 
-        for (const auto& folder : fs::directory_iterator(base_directory)) {
-            bool skip = !symlinks && fs::is_symlink(folder);
-            if (folder.is_directory() && !skip) { // Check if the folder is not a symlink
-                std::string folder_name = folder.path().filename().string();
+for (const auto& folder : fs::directory_iterator(base_directory)) {
+        bool skip = !symlinks && fs::is_symlink(folder);
+        if (folder.is_directory() && !skip) {
+            std::string folder_name = folder.path().filename().string();
 
-                // Check if the folder name ends with the date suffix format "_YYYYMMDD"
-                bool has_date_suffix = false;
-                if (folder_name.length() >= 9) { // Minimum length required for "_YYYYMMDD"
-                    bool has_underscore = folder_name[folder_name.length() - 9] == '_';
-                    bool is_date_suffix = true;
-                    for (size_t i = folder_name.length() - 8; i < folder_name.length(); ++i) {
-                        if (!std::isdigit(folder_name[i])) {
-                            is_date_suffix = false;
-                            break;
-                        }
+            // Check if the folder name already ends with a date suffix
+            bool has_date_suffix = false;
+            if (folder_name.length() >= 9) {
+                bool has_underscore = folder_name[folder_name.length() - 9] == '_';
+                bool is_date_suffix = true;
+                for (size_t i = folder_name.length() - 8; i < folder_name.length(); ++i) {
+                    if (!std::isdigit(folder_name[i])) {
+                        is_date_suffix = false;
+                        break;
                     }
-                    has_date_suffix = has_underscore && is_date_suffix;
                 }
+                has_date_suffix = has_underscore && is_date_suffix;
+            }
 
-                if (has_date_suffix) {
-                    unchanged_folder_paths.push_back({folder.path(), fs::is_symlink(folder)}); // Store the path and its symlink status
-                    continue; // Skip renaming if the folder already has a date suffix
+            // Check if the folder is a symlink and its name indicates a numbered suffix
+            bool is_symlink_with_numbered_suffix = symlinks && fs::is_symlink(folder) && folder_name.length() > 9;
+            if (is_symlink_with_numbered_suffix) {
+                is_symlink_with_numbered_suffix = true;
+                for (size_t i = folder_name.length() - 8; i < folder_name.length(); ++i) {
+                    if (!std::isdigit(folder_name[i])) {
+                        is_symlink_with_numbered_suffix = false;
+                        break;
+                    }
                 }
+            }
+
+            if (has_date_suffix || is_symlink_with_numbered_suffix) {
+                // Skip renaming if the folder already has a date suffix or is a symlink with a numbered suffix
+                unchanged_folder_paths.push_back({folder.path(), fs::is_symlink(folder)});
+                continue;
+            }
+
 
                 // Construct the new name with date suffix
                 std::stringstream ss;
