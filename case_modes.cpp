@@ -441,6 +441,7 @@ std::string remove_date_seq(const std::string& file_string) {
 
 // Folder numbering functions mv style
  
+// Apply sequencial numbering to folders
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
     int counter = 1; // Counter for immediate subdirectories
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
