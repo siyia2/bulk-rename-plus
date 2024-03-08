@@ -35,7 +35,8 @@ Options:
 - `-c` option stands for case set.
 - `-ce` option stands for case set for file extensions.
 - `-cp` option stands for case set including the lowest parent dir(s).
-- `-v` or `--verbose` option stands for enabling verbose output (optional).
+- `-v` or `--verbose` option stands for enabling verbose output without skipped files/folders (optional).
+- `-vs` option stands for enabling verbose output with skipped files/folders (optional).
 - `--version` print version.
 
 ### Current suported case modes: 
