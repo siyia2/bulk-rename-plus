@@ -17,7 +17,7 @@ Renamed to upperCase: 20249 file(s) and 2124 folder(s) from 1 input path(s) in 1
 
 `bulk-rename-plus v1.5.2`
 
-Renamed to upperCase: 20249 file(s) and 2124 folde(s) from 1 input path(s) in 2.5 second(s)
+Renamed to upperCase: 20249 file(s) and 2124 folder(s) from 1 input path(s) in 2.5 second(s)
 
 `bulk-rename-plus v1.5.3`
 
