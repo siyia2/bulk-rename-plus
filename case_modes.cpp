@@ -448,6 +448,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
     std::unordered_set<int> existing_numbers; // Store existing numbers for gap detection
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
+    int last_numbered_folder = 0; // Track the number of the last numbered folder
     
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
@@ -467,6 +468,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             if (folder_name.find('_') != std::string::npos && std::isdigit(folder_name[0])) {
                 number = std::stoi(folder_name.substr(0, folder_name.find('_')));
                 existing_numbers.insert(number); // Add existing number to set
+                last_numbered_folder = std::max(last_numbered_folder, number); // Update the last numbered folder
             }
         }
     }
@@ -477,7 +479,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
         gap++;
     }
 
-    counter = gap; // Start counter from the first gap
+    counter = gap; // Start counter from the first gap or the last numbered folder plus one if there's no gap
 
     // Iterate through the folders to collect folders to be renamed
     for (const auto& folder : fs::directory_iterator(base_directory)) {
