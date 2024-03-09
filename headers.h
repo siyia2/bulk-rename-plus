@@ -16,6 +16,9 @@
 
 namespace fs = std::filesystem;
 
+// Global variable for max_threads
+extern unsigned int max_threads;
+
 // Global and shared mutexes
 
 extern std::mutex dirs_count_mutex;
