@@ -738,74 +738,71 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         max_threads = 1; // If hardware concurrency is not available, default to 1 thread
     }
 
-    // Vector to store entries in a batch
-    std::vector<fs::path> batch_entries;
-    std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
+	// Vector to store entries in a batch
+	std::vector<fs::path> batch_entries;
+	std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
 
-    // Iterate over subdirectories of the renamed directory
-    for (const auto& entry : fs::directory_iterator(new_path)) {
-        if (entry.is_directory() && !rename_parents) {
-            // Add directories to the batch concurrently
-            std::lock_guard<std::mutex> lock(batch_mutex);
-            batch_entries.push_back(entry.path());
-        } else if (entry.is_directory() && rename_parents) {
-            // Process parent directories immediately
-            rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-        } else {
-            // Process files immediately
-            rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks);
-        }
+	// Iterate over subdirectories of the renamed directory
+	for (const auto& entry : fs::directory_iterator(new_path)) {
+    if (entry.is_directory() && !rename_parents) {
+        // Add directories to the batch concurrently
+        std::lock_guard<std::mutex> lock(batch_mutex);
+        batch_entries.push_back(entry.path());
+    } else if (entry.is_directory() && rename_parents) {
+        // Process parent directories immediately
+        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
+    } else {
+        // Process files immediately
+        rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks);
+    }
 
-        if (batch_entries.size() >= batch_size_folders) {
-            // Determine the number of threads to use for processing subdirectories
-            unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
-          
-            unsigned int chunk_size = (batch_entries.size() + num_threads - 1) / num_threads; // Round up division
+    if (batch_entries.size() >= batch_size_folders) {
+        // Determine the number of threads to use for processing subdirectories
+        unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+        unsigned int chunk_size = batch_entries.size() / num_threads;
 
-            // Distribute tasks among available threads
-        // Vector to store futures for asynchronous tasks
+        // Distribute tasks among available threads
+        std::vector<std::future<void>> futures;
+        for (unsigned int i = 0; i < num_threads; ++i) {
+            unsigned int start_index = i * chunk_size;
+            unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
+
+            futures.emplace_back(std::async(std::launch::async, [&, start_index, end_index]() {
+                for (unsigned int j = start_index; j < end_index; ++j) {
+                    rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
+					}
+				}));
+			}
+
+			// Wait for all asynchronous tasks to finish
+			for (auto& future : futures) {
+				future.get();
+			}
+
+			batch_entries.clear(); // Clear the batch after processing
+		}
+	}
+
+	// Process the remaining entries in the batch
+	if (!batch_entries.empty()) {
+		unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
 		std::vector<std::future<void>> futures;
+		unsigned int chunk_size = batch_entries.size() / num_threads;
+
 		for (unsigned int i = 0; i < num_threads; ++i) {
 			unsigned int start_index = i * chunk_size;
-			unsigned int end_index = (i + 1) * chunk_size;
-			if (end_index > batch_entries.size())
-				end_index = batch_entries.size();
-
-			futures.emplace_back(std::async(std::launch::async, [&, start_index, end_index]() {
+			unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
+        
+			futures.push_back(std::async(std::launch::async, [&, start_index, end_index]() {
 				for (unsigned int j = start_index; j < end_index; ++j) {
 					rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
 				}
 			}));
 		}
 
-            // Wait for all asynchronous tasks to finish
-            for (auto& future : futures) {
-                future.get();
-            }
-
-            batch_entries.clear(); // Clear the batch after processing
-        }
-    }
-
-		// Process the remaining entries in the batch
-		if (!batch_entries.empty()) {
-			unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
-			std::vector<std::future<void>> futures;
-			unsigned int chunk_size = (batch_entries.size() + num_threads - 1) / num_threads; // Round up division
-
-			for (unsigned int i = 0; i < num_threads; ++i) {
-				unsigned int start_index = i * chunk_size;
-				unsigned int end_index = std::min(static_cast<unsigned int>((i + 1) * chunk_size), static_cast<unsigned int>(batch_entries.size()));
-				futures.push_back(std::async(std::launch::async, [&, start_index, end_index]() {
-			for (unsigned int j = start_index; j < end_index; ++j) {
-				rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-				}
-			}));
-		}
-
 			// Wait for all asynchronous tasks to finish
 			for (auto& future : futures) {
-				future.get();
+			future.get();
 			}
 		}
 	}
