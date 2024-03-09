@@ -4,68 +4,13 @@
 
 // Mutexes for main program
 std::mutex sequence_mutex;
-std::mutex files_count_mutex;
 std::mutex files_mutex;
+
+// Determine the maximum number of threads supported by the system fallback to 1
+unsigned int max_threads = std::max(std::thread::hardware_concurrency(), static_cast<unsigned int>(1));
 
 // Global variable to set or not to set verbose output for skipped files/folders
 bool skipped = false;
-
-class ThreadPool {
-public:
-    ThreadPool(size_t num_threads) : stop(false) {
-        for (size_t i = 0; i < num_threads; ++i) {
-            workers.emplace_back([this] {
-                while (true) {
-                    std::function<void()> task;
-                    {
-                        std::unique_lock<std::mutex> lock(queue_mutex);
-                        condition.wait(lock, [this] { return stop || !tasks.empty(); });
-                        if (stop && tasks.empty())
-                            return;
-                        task = std::move(tasks.front());
-                        tasks.pop();
-                    }
-                    task();
-                }
-            });
-        }
-    }
-
-    template <class F>
-    void enqueue(F&& f) {
-        {
-            std::unique_lock<std::mutex> lock(queue_mutex);
-            tasks.emplace(std::forward<F>(f));
-        }
-        condition.notify_one();
-    }
-
-    ~ThreadPool() {
-        {
-            std::unique_lock<std::mutex> lock(queue_mutex);
-            stop = true;
-        }
-        condition.notify_all();
-        for (std::thread& worker : workers)
-            worker.join();
-    }
-
-private:
-    std::vector<std::thread> workers;
-    std::queue<std::function<void()>> tasks;
-    std::mutex queue_mutex;
-    std::condition_variable condition;
-    std::atomic<bool> stop;
-};
-
-
-// Declare a global ThreadPool object
-extern ThreadPool pool;
-
-// Initialize the global ThreadPool object
-size_t num_cores = std::thread::hardware_concurrency();
-ThreadPool pool(num_cores != 0 ? num_cores : 2); // Default to 2 threads if hardware_concurrency returns 0
-
 
 // Global print functions
 
@@ -276,34 +221,43 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 
 // Function to rename a batch of files using multiple threads for parallel execution
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count) {
-
     // Use parallel execution with a limited number of threads
-    std::for_each(std::execution::par, data.begin(), data.end(),
-        [&](const auto& item) {
-            // Extract old and new paths from the pair
-            const auto& [old_path, new_path] = item;
-            try {
-                // Attempt to rename the file
-                fs::rename(old_path, new_path);
-                {
-                    // Safely increment files_count when a file is successfully renamed
-                    std::lock_guard<std::mutex> lock(files_count_mutex);
-                    ++files_count;
+    #pragma omp parallel for num_threads(max_threads) shared(data, files_count, verbose_enabled)
+    for (size_t i = 0; i < data.size(); ++i) {
+        // Extract old and new paths from the pair
+        const auto& [old_path, new_path] = data[i];
+        try {
+            // Attempt to rename the file
+            fs::rename(old_path, new_path);
+
+            // Safely increment files_count when a file is successfully renamed
+            #pragma omp critical
+            {
+                ++files_count;
+            }
+
+            // Print a success message if verbose mode enabled
+            if (verbose_enabled) {
+                if (fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
+                    #pragma omp critical
+                    {
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
+                    }
+                } else {
+                    #pragma omp critical
+                    {
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + " to " + new_path.string(), std::cout);
+                    }
                 }
-                // Print a success message if verbose mode enabled
-                if (verbose_enabled) {
-						if (fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
-						} else {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + " to " + new_path.string(), std::cout);
-						}
-					}
-            } catch (const fs::filesystem_error& e) {
-                // Print an error message if renaming fails
+            }
+        } catch (const fs::filesystem_error& e) {
+            // Print an error message if renaming fails
+            #pragma omp critical
+            {
                 print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
             }
         }
-    );
+    }
 }
 
 
@@ -316,89 +270,78 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
-    // Get the maximum number of threads supported by the system
-    unsigned int max_threads = std::thread::hardware_concurrency();
-    if (max_threads == 0) {
-        max_threads = 1; // Default to 1 thread if hardware concurrency is not available
-    }
-
     // Determine the number of threads to create (minimum of max_threads and paths.size())
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
-
-    // Vector to store futures
-    std::vector<std::future<void>> futures;
 
     // Calculate batch size
     int batch_size = paths.size() / num_threads;
 
     // Define the function to process each subset of paths asynchronously
     auto process_paths_async = [&case_input, verbose_enabled, depth, &files_count, batch_size, symlinks](const std::vector<std::string>& paths_subset) {
-    for (const auto& path : paths_subset) {
-        std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
-        directories.push({path, 0}); // Push the initial path onto the queue with depth 0
+        for (const auto& path : paths_subset) {
+            std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
+            directories.push({path, 0}); // Push the initial path onto the queue with depth 0
 
-        std::string depth_limit_reached_path; // Store the path where depth limit is reached
+            std::string depth_limit_reached_path; // Store the path where depth limit is reached
 
-        while (!directories.empty()) {
-            auto [current_path, current_depth] = directories.front();
-            directories.pop();
+            while (!directories.empty()) {
+                auto [current_path, current_depth] = directories.front();
+                directories.pop();
 
-            // Check if depth limit is reached
-            if (current_depth >= depth && depth_limit_reached_path.empty()) {
-                depth_limit_reached_path = current_path; // Store the path where depth limit is reached
-                continue; // Skip processing this directory
-            }
+                // Check if depth limit is reached
+                if (current_depth >= depth && depth_limit_reached_path.empty()) {
+                    depth_limit_reached_path = current_path; // Store the path where depth limit is reached
+                    continue; // Skip processing this directory
+                }
 
-            fs::path current_fs_path(current_path);
+                fs::path current_fs_path(current_path);
 
-            // Check if path exists
-            if (verbose_enabled && !fs::exists(current_fs_path)) {
-                print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
-                continue;
-            }
+                // Check if path exists
+                if (verbose_enabled && !fs::exists(current_fs_path)) {
+                    print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
+                    continue;
+                }
 
-            // Process directories and files
-            if (fs::is_directory(current_fs_path)) {
-                for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                    if (fs::is_symlink(entry)) {
-                        if (!symlinks && verbose_enabled && skipped) {
-                            // Print message for symlinked folder or file if symlinks flag is false
-                            if (fs::is_directory(entry)) {
-                                std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
-                            } else if (!fs::is_directory(entry)) {
-                                std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
+                // Process directories and files
+                if (fs::is_directory(current_fs_path)) {
+                    for (const auto& entry : fs::directory_iterator(current_fs_path)) {
+                        if (fs::is_symlink(entry)) {
+                            if (!symlinks && verbose_enabled && skipped) {
+                                // Print message for symlinked folder or file if symlinks flag is false
+                                if (fs::is_directory(entry)) {
+                                    std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
+                                } else if (!fs::is_directory(entry)) {
+                                    std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
+                                }
+                            } else if (symlinks) {
+                                // Process symlink if symlinks flag is true
+                                directories.push({entry.path().string(), current_depth + 1}); // Push symlink as regular directory
                             }
-                        } else if (symlinks) {
-                            // Process symlink if symlinks flag is true
-                            directories.push({entry.path().string(), current_depth + 1}); // Push symlink as regular directory
+                        } else if (fs::is_directory(entry)) {
+                            directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+                        } else if (fs::is_regular_file(entry)) {
+                            rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks);
                         }
-                    } else if (fs::is_directory(entry)) {
-                        directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
-                    } else if (fs::is_regular_file(entry)) {
-                        rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks);
+                    }
+                } else if (fs::is_regular_file(current_fs_path)) {
+                    rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks);
+                } else {
+                    if (verbose_enabled) {
+                        print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
                     }
                 }
-            } else if (fs::is_regular_file(current_fs_path)) {
-                rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks);
-            } else {
-				if (verbose_enabled) {
-                print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
-				}
             }
         }
-    }
-};
+    };
 
-    // Launch asynchronous tasks for each subset of paths
-    for (unsigned int i = 0; i < num_threads; ++i) {
-        auto future = std::async(std::launch::async, process_paths_async, std::vector<std::string>(paths.begin() + i * batch_size, paths.begin() + (i + 1) * batch_size));
-        futures.push_back(std::move(future));
-    }
-
-    // Wait for all asynchronous tasks to finish
-    for (auto& future : futures) {
-        future.wait();
-    }
+	// Launch asynchronous tasks for each subset of paths
+	#pragma omp parallel for num_threads(num_threads)
+	for (unsigned int i = 0; i < num_threads; ++i) {
+		auto start_index = i * batch_size;
+		auto end_index = (i == num_threads - 1) ? paths.size() : (i + 1) * batch_size;
+		auto paths_subset = std::vector<std::string>(paths.begin() + start_index, paths.begin() + end_index);
+		process_paths_async(paths_subset);
+	}
 
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
@@ -588,40 +531,49 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
 // Function to rename a batch of files/directories using multiple threads for parallel execution
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count) {
-
     // Use parallel execution with a limited number of threads
-    std::for_each(std::execution::par, data.begin(), data.end(),
-        [&](const auto& item) {
-            const auto& [item_path, new_name] = item;
-            fs::path new_path = item_path.parent_path() / new_name;
-            try {
-                // Attempt to rename the file/directory
-                fs::rename(item_path, new_path);
-                if (verbose_enabled) {
-                        // Print a success message if verbose mode enabled
-						if (fs::is_symlink(item_path) || fs::is_symlink(new_path)) {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " to " + new_path.string(), std::cout);
-						} else {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), std::cout);
-						}
-					}
-                // Update files_count or dirs_count based on the type of the renamed item
-                std::filesystem::directory_entry entry(new_path);
-                if (entry.is_regular_file()) {
-                    // Update files_count when a file is successfully renamed
-                    std::lock_guard<std::mutex> lock(files_count_mutex);
-                    ++files_count;
+    #pragma omp parallel for num_threads(max_threads) shared(data, files_count, dirs_count, verbose_enabled)
+    for (size_t i = 0; i < data.size(); ++i) {
+        const auto& [item_path, new_name] = data[i];
+        fs::path new_path = item_path.parent_path() / new_name;
+        try {
+            // Attempt to rename the file/directory
+            fs::rename(item_path, new_path);
+
+            // Print a success message if verbose mode enabled
+            if (verbose_enabled) {
+                if (fs::is_symlink(item_path) || fs::is_symlink(new_path)) {
+                    #pragma omp critical
+                    {
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " to " + new_path.string(), std::cout);
+                    }
                 } else {
-                    // Update dirs_count when a directory is successfully renamed
-                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
-                    ++dirs_count;
+                    #pragma omp critical
+                    {
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), std::cout);
+                    }
                 }
-            } catch (const fs::filesystem_error& e) {
-                // Print an error message if renaming fails
+            }
+
+            // Update files_count or dirs_count based on the type of the renamed item
+            std::filesystem::directory_entry entry(new_path);
+            if (entry.is_regular_file()) {
+                // Update files_count when a file is successfully renamed
+                #pragma omp atomic
+                ++files_count;
+            } else {
+                // Update dirs_count when a directory is successfully renamed
+                #pragma omp atomic
+                ++dirs_count;
+            }
+        } catch (const fs::filesystem_error& e) {
+            // Print an error message if renaming fails
+            #pragma omp critical
+            {
                 print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
             }
         }
-    );
+    }
 }
 
 
@@ -788,81 +740,65 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Decrement depth only if the depth limit is positive
     if (depth > 0)
         --depth;
-    
-    // Determine the maximum number of threads supported by the system
-    unsigned int max_threads = std::thread::hardware_concurrency();
-    if (max_threads == 0) {
-        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
+
+// Vector to store entries in a batch
+std::vector<fs::path> batch_entries;
+std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
+
+// Iterate over subdirectories of the renamed directory
+for (const auto& entry : fs::directory_iterator(new_path)) {
+    if (entry.is_directory() && !rename_parents) {
+        // Add directories to the batch concurrently
+        std::lock_guard<std::mutex> lock(batch_mutex);
+        batch_entries.push_back(entry.path());
+    } else if (entry.is_directory() && rename_parents) {
+        // Process parent directories immediately
+        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
+    } else {
+        // Process files immediately
+        rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks);
     }
 
-    // Vector to store entries in a batch
-    std::vector<fs::path> batch_entries;
-    std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
+    if (batch_entries.size() >= batch_size_folders) {
+        // Determine the number of threads to use for processing subdirectories
+        unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+        unsigned int chunk_size = batch_entries.size() / num_threads;
 
-    // Iterate over subdirectories of the renamed directory
-    for (const auto& entry : fs::directory_iterator(new_path)) {
-        if (entry.is_directory() && !rename_parents) {
-            // Add directories to the batch concurrently
-            std::lock_guard<std::mutex> lock(batch_mutex);
-            batch_entries.push_back(entry.path());
-        } else if (entry.is_directory() && rename_parents) {
-            // Process parent directories immediately
-            rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-        } else {
-            // Process files immediately
-            rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks);
-        }
+        // Set the number of threads to the maximum number of CPU cores
+        omp_set_num_threads(num_threads);
 
-        if (batch_entries.size() >= batch_size_folders) {
-            // Determine the number of threads to use for processing subdirectories
-            unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
-          
-            unsigned int chunk_size = (batch_entries.size() + num_threads - 1) / num_threads; // Round up division
+        // Distribute tasks among available threads using OpenMP parallel for
+#pragma omp parallel for shared(batch_entries)
+        for (unsigned int i = 0; i < num_threads; ++i) {
+            unsigned int start_index = i * chunk_size;
+            unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
 
-            // Distribute tasks among available threads
-        // Vector to store futures for asynchronous tasks
-		std::vector<std::future<void>> futures;
-		for (unsigned int i = 0; i < num_threads; ++i) {
-			unsigned int start_index = i * chunk_size;
-			unsigned int end_index = (i + 1) * chunk_size;
-			if (end_index > batch_entries.size())
-				end_index = batch_entries.size();
-
-			futures.emplace_back(std::async(std::launch::async, [&, start_index, end_index]() {
-				for (unsigned int j = start_index; j < end_index; ++j) {
-					rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-				}
-			}));
-		}
-
-            // Wait for all asynchronous tasks to finish
-            for (auto& future : futures) {
-                future.get();
+            for (unsigned int j = start_index; j < end_index; ++j) {
+                rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
             }
-
-            batch_entries.clear(); // Clear the batch after processing
         }
+
+        batch_entries.clear(); // Clear the batch after processing
     }
+}
 
-		// Process the remaining entries in the batch
-		if (!batch_entries.empty()) {
-			unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
-			std::vector<std::future<void>> futures;
-			unsigned int chunk_size = (batch_entries.size() + num_threads - 1) / num_threads; // Round up division
+// Process the remaining entries in the batch
+if (!batch_entries.empty()) {
+    // Set the number of threads to the maximum number of CPU cores
+    omp_set_num_threads(max_threads);
 
-			for (unsigned int i = 0; i < num_threads; ++i) {
-				unsigned int start_index = i * chunk_size;
-				unsigned int end_index = std::min(static_cast<unsigned int>((i + 1) * chunk_size), static_cast<unsigned int>(batch_entries.size()));
-				futures.push_back(std::async(std::launch::async, [&, start_index, end_index]() {
-			for (unsigned int j = start_index; j < end_index; ++j) {
-				rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
+    unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+    unsigned int chunk_size = batch_entries.size() / num_threads;
+
+    // Distribute tasks among available threads using OpenMP parallel for
+#pragma omp parallel for shared(batch_entries)
+    for (unsigned int i = 0; i < num_threads; ++i) {
+        unsigned int start_index = i * chunk_size;
+        unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
+
+        for (unsigned int j = start_index; j < end_index; ++j) {
+            rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
 				}
-			}));
-		}
-
-			// Wait for all asynchronous tasks to finish
-			for (auto& future : futures) {
-				future.get();
 			}
 		}
 	}
@@ -872,24 +808,23 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 // Function to rename paths (directories and files) based on specified transformations
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks) {
 
-    // Determine the maximum number of threads supported by the system
-    unsigned int max_threads = std::thread::hardware_concurrency();
-    if (max_threads == 0) {
-        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
-    }
-
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     // Calculate num_threads as the minimum of max_threads and the number of paths
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
 
-    std::vector<std::future<void>> futures;
+    // Calculate chunk size
+    unsigned int chunk_size = paths.size() / num_threads;
 
-    // Process paths asynchronously
+    // Process paths in parallel
+    #pragma omp parallel for num_threads(num_threads)
     for (unsigned int i = 0; i < num_threads; ++i) {
-        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, batch_size_files, batch_size_folders, symlinks, &files_count, &dirs_count]() {
+        unsigned int start_index = i * chunk_size;
+        unsigned int end_index = (i == num_threads - 1) ? paths.size() : (i + 1) * chunk_size;
+
+        for (unsigned int j = start_index; j < end_index; ++j) {
             // Obtain the current path
-            fs::path current_path(paths[i]);
+            fs::path current_path(paths[j]);
 
             if (fs::exists(current_path)) {
                 if (fs::is_directory(current_path)) {
@@ -905,47 +840,15 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                     // For files, directly rename the item without considering the parent directory
                     rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks);
                 } else {
-					if (verbose_enabled) {
-                    print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
-					
+                    if (verbose_enabled) {
+                        print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
+                    }
                 }
-            } }else {
-				if (verbose_enabled) {
-                print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
-				}
-            }
-        }));
-    }
-
-    // Wait for all asynchronous tasks to finish
-    for (auto& future : futures) {
-        future.wait();
-    }
-
-    // Process remaining paths in the main thread
-    for (unsigned int i = num_threads; i < paths.size(); ++i) {
-        fs::path current_path(paths[i]);
-
-        if (fs::exists(current_path)) {
-            if (fs::is_directory(current_path)) {
-                if (rename_parents) {
-                    // If -p option is used, only rename the immediate parent
-                    fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-                } else {
-                    // Otherwise, rename the entire path in the main thread
-                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-                }
-            } else if (fs::is_regular_file(current_path)) {
-                // For files, directly rename the item without considering the parent directory
-                rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks);
             } else {
-				if (verbose_enabled) {
-                print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
-				}
+                if (verbose_enabled) {
+                    print_error("\033[1;91mError: path does not exist - " + paths[j] + "\033[0m\n");
+                }
             }
-        } else {
-           // print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
         }
     }
 
@@ -975,9 +878,8 @@ int main(int argc, char *argv[]) {
     bool transform_dirs = true;
     bool transform_files = true;
     bool symlinks = false;
-	constexpr int batch_size_files = 100;
-	constexpr int batch_size_folders = 50;
-	
+	constexpr int batch_size_files = 500;
+	constexpr int batch_size_folders = 100;
 
     // Handle command-line arguments
     // Display help message if no arguments provided
@@ -989,7 +891,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.5.8");
+        printVersionNumber("1.5.9");
         return 0;
     }
 
@@ -1204,9 +1106,7 @@ int main(int argc, char *argv[]) {
 
 	// Perform the renaming operation based on the selected mode
 	if (rename_parents) {
-			 // Pass true for rename_parents
-		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks);
-		
+		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks); // Pass true for rename_parents
 	} else if (rename_extensions) {
 		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, batch_size_files,symlinks);
 	} else {
