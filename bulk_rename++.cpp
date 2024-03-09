@@ -7,6 +7,9 @@ std::mutex sequence_mutex;
 std::mutex files_count_mutex;
 std::mutex files_mutex;
 
+// Determine the maximum number of threads supported by the system fallback to 1
+unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 1u);
+
 // Global variable to set or not to set verbose output for skipped files/folders
 bool skipped = false;
 
@@ -258,12 +261,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     }
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
-
-    // Get the maximum number of threads supported by the system
-    unsigned int max_threads = std::thread::hardware_concurrency();
-    if (max_threads == 0) {
-        max_threads = 1; // Default to 1 thread if hardware concurrency is not available
-    }
 
     // Determine the number of threads to create (minimum of max_threads and paths.size())
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
@@ -573,7 +570,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
-    bool special= false;
+    bool special = false;
 
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
@@ -590,96 +587,96 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             if (case_input == transformation) {
                 // Apply the corresponding transformation
                 if (transformation == "lower") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
                 } else if (transformation == "upper") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::toupper);
                 } else if (transformation == "reverse") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), [](unsigned char c) {
                         return std::islower(c) ? std::toupper(c) : std::tolower(c);
                     });
                 } else if (case_input == "title") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = capitalizeFirstLetter(new_dirname);
                 } else if (transformation == "snake") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_dirname.begin(), new_dirname.end(), ' ', '_');
                 } else if (transformation == "rsnake") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_dirname.begin(), new_dirname.end(), '_', ' ');
                 } else if (transformation == "kebab") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_dirname.begin(), new_dirname.end(), ' ', '-');
                 } else if (transformation == "rkebab") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     std::replace(new_dirname.begin(), new_dirname.end(), '-', ' ');
                 } else if (transformation == "rspecial") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove special characters from the directory name
                     new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                         return !std::isalnum(c) && c != '.' && c != '_' && c != '-' && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '+' && c != '*' && c != '<' && c != '>' && c != ' ';
                     }), new_dirname.end());
                 } else if (transformation == "rnumeric") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove numeric characters from the directory name
                     new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                         return std::isdigit(c);
                     }), new_dirname.end());
                 } else if (transformation == "rbra") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove [ ] { } from the directory name
                     new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                         return c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')';
                     }), new_dirname.end());
                 } else if (transformation == "roperand") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     // Remove - + > < = * from the directory name
                     new_dirname.erase(std::remove_if(new_dirname.begin(), new_dirname.end(), [](char c) {
                         return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                     }), new_dirname.end());
                 } else if (transformation == "camel") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = to_camel_case(new_dirname);
                 } else if (transformation == "rcamel") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = from_camel_case(new_dirname);
                 } else if (transformation == "swap") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = swap_transform(new_dirname);
                 } else if (transformation == "swapr") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "sequence") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
-                    special=true;
+                    special = true;
                     rename_folders_with_sequential_numbering(directory_path, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
-					    std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
-					special=true;
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
+                    special = true;
                     rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
                 } else if (transformation == "rdate") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_date(new_dirname);
                 } else if (transformation == "sentence") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = sentenceCase(new_dirname);
                 } else if (transformation == "pascal") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = to_pascal(new_dirname);
                 } else if (transformation == "rpascal") {
-					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = from_pascal_case(new_dirname);
                 }
                 break;
             }
         }
     } 
- 
+
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
 
     // Check if renaming is necessary
@@ -725,99 +722,80 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         }
     }
     
-	// Continue recursion if the depth limit is not reached
-	if (depth != 0) {
+    // Continue recursion if the depth limit is not reached
+    if (depth != 0) {
     
-    // Decrement depth only if the depth limit is positive
-    if (depth > 0)
-        --depth;
-    
-    // Determine the maximum number of threads supported by the system
-    unsigned int max_threads = std::thread::hardware_concurrency();
-    if (max_threads == 0) {
-        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
-    }
+        // Decrement depth only if the depth limit is positive
+        if (depth > 0)
+            --depth;
 
-	// Vector to store entries in a batch
-	std::vector<fs::path> batch_entries;
-	std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
+        // Vector to store entries in a batch
+        std::vector<fs::path> batch_entries;
+        std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
 
-	// Iterate over subdirectories of the renamed directory
-	for (const auto& entry : fs::directory_iterator(new_path)) {
-    if (entry.is_directory() && !rename_parents) {
-        // Add directories to the batch concurrently
-        std::lock_guard<std::mutex> lock(batch_mutex);
-        batch_entries.push_back(entry.path());
-    } else if (entry.is_directory() && rename_parents) {
-        // Process parent directories immediately
-        rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-    } else {
-        // Process files immediately
-        rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks);
-    }
+        // Iterate over subdirectories of the renamed directory
+        for (const auto& entry : fs::directory_iterator(new_path)) {
+            if (entry.is_directory() && !rename_parents) {
+                // Add directories to the batch concurrently
+                std::lock_guard<std::mutex> lock(batch_mutex);
+                batch_entries.push_back(entry.path());
+            } else if (entry.is_directory() && rename_parents) {
+                // Process parent directories immediately
+                rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
+            } else {
+                // Process files immediately
+                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks);
+            }
 
-    if (batch_entries.size() >= batch_size_folders) {
-        // Determine the number of threads to use for processing subdirectories
-        unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
-        unsigned int chunk_size = batch_entries.size() / num_threads;
+            if (batch_entries.size() >= batch_size_folders) {
+                // Determine the number of threads to use for processing subdirectories
+                unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+                unsigned int chunk_size = batch_entries.size() / num_threads;
 
-        // Distribute tasks among available threads
-        std::vector<std::future<void>> futures;
-        for (unsigned int i = 0; i < num_threads; ++i) {
-            unsigned int start_index = i * chunk_size;
-            unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
+                // Set the number of threads to the maximum number of CPU cores
+                omp_set_num_threads(num_threads);
 
-            futures.emplace_back(std::async(std::launch::async, [&, start_index, end_index]() {
+                // Distribute tasks among available threads using OpenMP parallel for
+#pragma omp parallel for shared(batch_entries)
+                for (unsigned int i = 0; i < num_threads; ++i) {
+                    unsigned int start_index = i * chunk_size;
+                    unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
+
+                    for (unsigned int j = start_index; j < end_index; ++j) {
+                        rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
+                    }
+                }
+
+                batch_entries.clear(); // Clear the batch after processing
+            }
+        }
+
+        // Process the remaining entries in the batch
+        if (!batch_entries.empty()) {
+            // Set the number of threads to the maximum number of CPU cores
+            omp_set_num_threads(max_threads);
+
+            unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+            unsigned int chunk_size = batch_entries.size() / num_threads;
+
+            // Distribute tasks among available threads using OpenMP parallel for
+#pragma omp parallel for shared(batch_entries)
+            for (unsigned int i = 0; i < num_threads; ++i) {
+                unsigned int start_index = i * chunk_size;
+                unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
+
                 for (unsigned int j = start_index; j < end_index; ++j) {
                     rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-					}
-				}));
-			}
-
-			// Wait for all asynchronous tasks to finish
-			for (auto& future : futures) {
-				future.get();
-			}
-
-			batch_entries.clear(); // Clear the batch after processing
-		}
-	}
-
-	// Process the remaining entries in the batch
-	if (!batch_entries.empty()) {
-		unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
-		std::vector<std::future<void>> futures;
-		unsigned int chunk_size = batch_entries.size() / num_threads;
-
-		for (unsigned int i = 0; i < num_threads; ++i) {
-			unsigned int start_index = i * chunk_size;
-			unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
-        
-			futures.push_back(std::async(std::launch::async, [&, start_index, end_index]() {
-				for (unsigned int j = start_index; j < end_index; ++j) {
-					rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks);
-				}
-			}));
-		}
-
-			// Wait for all asynchronous tasks to finish
-			for (auto& future : futures) {
-			future.get();
-			}
-		}
-	}
+                }
+            }
+        }
+    }
 }
 
 
 // Function to rename paths (directories and files) based on specified transformations
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks) {
-
-    // Determine the maximum number of threads supported by the system
-    unsigned int max_threads = std::thread::hardware_concurrency();
-    if (max_threads == 0) {
-        max_threads = 1; // If hardware concurrency is not available, default to 1 thread
-    }
-
+	
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     // Calculate num_threads as the minimum of max_threads and the number of paths
@@ -915,7 +893,7 @@ int main(int argc, char *argv[]) {
     bool transform_dirs = true;
     bool transform_files = true;
     bool symlinks = false;
-	constexpr int batch_size_files = 500;
+	constexpr int batch_size_files = 1000;
 	constexpr int batch_size_folders = 100;
 
     // Handle command-line arguments
@@ -1071,9 +1049,6 @@ int main(int argc, char *argv[]) {
     }
 
     std::system("clear");
-    //if (case_input == "rnumeric" || case_input == "rspecial" || case_input == "rbra" || case_input == "roperand" || case_input == "noext") {
-    //    std::cout << "\033[1;93m!!! WARNING SELECTED OPERATION IRREVERSIBLE !!!\033[0m\n\n";
-    //}
 
 	// Prompt the user for confirmation before proceeding
 	std::string confirmation;

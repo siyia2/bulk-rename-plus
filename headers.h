@@ -9,11 +9,15 @@
 #include <chrono>
 #include <queue>
 #include <future>
+#include <omp.h>
 #include <execution>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace fs = std::filesystem;
+
+// Global variable for max_threads
+extern unsigned int max_threads;
 
 // Global and shared mutexes
 

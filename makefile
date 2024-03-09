@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -O2
+CXXFLAGS = -O2 -fopenmp
 
 # Use the number of available processors from nproc
 NUM_PROCESSORS := $(shell nproc 2>/dev/null)
