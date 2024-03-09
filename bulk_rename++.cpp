@@ -893,8 +893,8 @@ int main(int argc, char *argv[]) {
     bool transform_dirs = true;
     bool transform_files = true;
     bool symlinks = false;
-	constexpr int batch_size_files = 100;
-	constexpr int batch_size_folders = 50;
+	constexpr int batch_size_files = 1000;
+	constexpr int batch_size_folders = 100;
 
     // Handle command-line arguments
     // Display help message if no arguments provided
