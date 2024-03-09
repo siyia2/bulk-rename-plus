@@ -442,7 +442,7 @@ std::string remove_date_seq(const std::string& file_string) {
 // Folder numbering functions mv style
  
 // Apply sequenctial folder numbering
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 100) {
     int counter = 1; // Counter for immediate subdirectories
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
@@ -538,7 +538,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
 
 // Overloaded function with default verbose_enabled = false and batch processing
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 50) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 100) {
     rename_folders_with_sequential_numbering(base_directory, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
 }
 
