@@ -12,6 +12,9 @@
 #include <execution>
 #include <unordered_map>
 #include <unordered_set>
+#include <condition_variable>
+#include <functional>
+#include <atomic>
 
 namespace fs = std::filesystem;
 

@@ -10,6 +10,63 @@ std::mutex files_mutex;
 // Global variable to set or not to set verbose output for skipped files/folders
 bool skipped = false;
 
+class ThreadPool {
+public:
+    ThreadPool(size_t num_threads) : stop(false) {
+        for (size_t i = 0; i < num_threads; ++i) {
+            workers.emplace_back([this] {
+                while (true) {
+                    std::function<void()> task;
+                    {
+                        std::unique_lock<std::mutex> lock(queue_mutex);
+                        condition.wait(lock, [this] { return stop || !tasks.empty(); });
+                        if (stop && tasks.empty())
+                            return;
+                        task = std::move(tasks.front());
+                        tasks.pop();
+                    }
+                    task();
+                }
+            });
+        }
+    }
+
+    template <class F>
+    void enqueue(F&& f) {
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            tasks.emplace(std::forward<F>(f));
+        }
+        condition.notify_one();
+    }
+
+    ~ThreadPool() {
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            stop = true;
+        }
+        condition.notify_all();
+        for (std::thread& worker : workers)
+            worker.join();
+    }
+
+private:
+    std::vector<std::thread> workers;
+    std::queue<std::function<void()>> tasks;
+    std::mutex queue_mutex;
+    std::condition_variable condition;
+    std::atomic<bool> stop;
+};
+
+
+// Declare a global ThreadPool object
+extern ThreadPool pool;
+
+// Initialize the global ThreadPool object
+size_t num_cores = std::thread::hardware_concurrency();
+ThreadPool pool(num_cores != 0 ? num_cores : 2); // Default to 2 threads if hardware_concurrency returns 0
+
+
 // Global print functions
 
 // Print an error message to stderr
@@ -41,14 +98,14 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "Options:\n"
           << "  -h, --help               Print help\n"
           << "  --version                Print version\n"
-          << "  -v, --verbose            Activate verbose mode - skipped files/folders (optional)\n"
-          << "  -vs                      Activate verbose mode + skipped files/folders (optional)\n"
+          << "  -v, --verbose            Activate verbose mode - skipped (optional)\n"
+          << "  -vs                      Activate verbose mode + skipped (optional)\n"
           << "  -fi                      Rename files exclusively (optional)\n"
           << "  -fo                      Rename folders exclusively (optional)\n"
-          << "  -sym                     Handle symbolic links like regular files/folders (optional)\n"
+          << "  -sym                     Handle symlinks like regular files + folders (optional)\n"
           << "  -d  [DEPTH]              Set recursive depth level (optional)\n"
-          << "  -c  [MODE]               Set Case Mode for file/folder names\n"
-          << "  -cp [MODE]               Set Case Mode for file/folder/parent names\n"
+          << "  -c  [MODE]               Set Case Mode for file + folder - parent names\n"
+          << "  -cp [MODE]               Set Case Mode for file + folder + parent names\n"
           << "  -ce [MODE]               Set Case Mode for file extensions\n"
           << "\n"
           << "Available Modes:\n"
@@ -90,7 +147,7 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  bulk_rename++ -v -cp upper [path1]\n"
           << "  bulk_rename++ -c upper -v [path1]\n"
           << "  bulk_rename++ -d 2 -c upper -v [path1]\n"
-          << "  bulk_rename++ -fi -c lower -v [path1]\n"
+          << "  bulk_rename++ -fi -c lower -vs [path1]\n"
           << "  bulk_rename++ -ce noext -v [path1]\n"
           << "  bulk_rename++ -sym -c lower -v [path1]\n"
           << "  bulk_rename++ -sym -fi -c title -v [path1]\n"
@@ -920,6 +977,7 @@ int main(int argc, char *argv[]) {
     bool symlinks = false;
 	constexpr int batch_size_files = 100;
 	constexpr int batch_size_folders = 50;
+	
 
     // Handle command-line arguments
     // Display help message if no arguments provided
@@ -931,7 +989,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.5.7");
+        printVersionNumber("1.5.8");
         return 0;
     }
 
@@ -1146,7 +1204,9 @@ int main(int argc, char *argv[]) {
 
 	// Perform the renaming operation based on the selected mode
 	if (rename_parents) {
-		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks); // Pass true for rename_parents
+			 // Pass true for rename_parents
+		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks);
+		
 	} else if (rename_extensions) {
 		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, batch_size_files,symlinks);
 	} else {
