@@ -11,6 +11,7 @@
 #include <future>
 #include <omp.h>
 #include <execution>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 

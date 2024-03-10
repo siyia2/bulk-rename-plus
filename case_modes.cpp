@@ -481,7 +481,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                 fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str();
 
                 // Add folder to the vector for batch renaming
-                folders_to_rename.push_back({folder.path(), new_name});
+                folders_to_rename.emplace_back(folder.path(), new_name);
 
                 counter++; // Increment counter after each directory is processed
             }
@@ -608,7 +608,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
             if (folder_path != new_path) {
                 #pragma omp critical
                 {
-                    folders_to_rename.push_back(std::make_pair(folder_path, new_name));
+                    folders_to_rename.emplace_back(folder_path, new_name);
                     ++batch_count; // Increment the batch count
                 }
             }
