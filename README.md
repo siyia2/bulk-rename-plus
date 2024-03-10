@@ -39,6 +39,7 @@ Options:
 - `-cp` option stands for case set including the lowest parent dir(s).
 - `-v` or `--verbose` option stands for enabling verbose output without skipped files/folders (optional).
 - `-vs` option stands for enabling verbose output with skipped files/folders (optional).
+- `-vso` option stands for enabling verbose output with skipped files/folders only (optional).
 - `--version` print version.
 
 ### Current suported case modes: 
