@@ -671,10 +671,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "sequence") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     special = true;
-                    if (rename_parents) {
-						skipped_folder_count = skipped_folder_count - 1;
-					}
-                    rename_folders_with_sequential_numbering(directory_path, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
+                    rename_folders_with_sequential_numbering(directory_path, "", dirs_count, skipped_folder_count, depth, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
@@ -684,7 +681,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     if (rename_parents) {
 						skipped_folder_count = skipped_folder_count - 1;
 					}
-                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
+                    rename_folders_with_date_suffix(directory_path, dirs_count, skipped_folder_count, verbose_enabled, symlinks, batch_size_folders, depth);
                 } else if (transformation == "rdate") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_date(new_dirname);
@@ -705,7 +702,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
     
-    if (directory_path == new_path && transform_dirs) {
+    if (directory_path == new_path && transform_dirs && !special) {
         std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
 		++skipped_folder_count;
 	}
