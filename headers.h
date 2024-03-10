@@ -25,7 +25,7 @@ extern std::mutex dirs_count_mutex;
 extern std::mutex skipped_folder_count_mutex;
 extern std::mutex cout_mutex;
 
-// Global variable to set or not to set verbose output for skipped files/folders
+// Global variables to set or not to set verbose output for skipped files/folders
 extern bool skipped;
 extern int skipped_folders_special_count;
 

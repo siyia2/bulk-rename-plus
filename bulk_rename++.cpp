@@ -15,6 +15,8 @@ unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 // Global variable to set or not to set verbose output for skipped files/folders
 bool skipped = false;
 bool special = false;
+
+// Global variable for counting skipped folders for specials
 int skipped_folders_special_count = 0;
 
 // Global print functions
@@ -56,7 +58,7 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  -d  [DEPTH]              Set recursive depth level (optional)\n"
           << "  -c  [MODE]               Set Case Mode for file + folder - parent names\n"
           << "  -cp [MODE]               Set Case Mode for file + folder + parent names\n"
-          << "  -ce [MODE]               Set Case Mode for file extensions\n"
+          << "  -ce [MODE]               Set Case Mode for file extension names\n"
           << "\n"
           << "Available Modes:\n"
           << "Regular CASE Modes:\n"
