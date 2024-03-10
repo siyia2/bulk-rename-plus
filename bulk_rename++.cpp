@@ -532,7 +532,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     // Add data to the list if new name differs
     if (name != new_name) {
         std::lock_guard<std::mutex> lock(files_mutex);
-        rename_data.push_back({item_path, new_name});
+           rename_data.emplace_back(item_path, new_name);
     }
 
     // Check if batch size is reached and perform renaming
@@ -778,7 +778,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             if (entry.is_directory() && !rename_parents) {
                 // Add directories to the batch concurrently
                 std::lock_guard<std::mutex> lock(batch_mutex);
-                batch_entries.push_back(entry.path());
+                batch_entries.emplace_back(entry.path());
             } else if (entry.is_directory() && rename_parents) {
                 // Process parent directories immediately
                 rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count);
