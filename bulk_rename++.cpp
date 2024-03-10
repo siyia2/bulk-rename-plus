@@ -320,15 +320,13 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
             if (fs::is_directory(current_fs_path)) {
                 for (const auto& entry : fs::directory_iterator(current_fs_path)) {
                     if (fs::is_symlink(entry)) {
-                        if (!symlinks) {
-							if (verbose_enabled && skipped) {
+                        if (!symlinks && verbose_enabled && skipped) {
                             // Print message for symlinked folder or file if symlinks flag is false
                             if (fs::is_directory(entry)) {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
                             } else if (!fs::is_directory(entry)) {
                                 std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
                             }
-						}
                         } else if (symlinks) {
                             // Process symlink if symlinks flag is true
                             directories.push({entry.path().string(), current_depth + 1}); // Push symlink as regular directory
@@ -367,10 +365,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
 
     // Print summary
-    std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m" << "| Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0m\033[1m | \033[1mFrom: \033[1;95m" << paths.size()
+    std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0m\033[1m | \033[1mFrom: \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1m" << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 }
+
+
 
 
 // Rename file&directory stuff
@@ -911,14 +911,13 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
               << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m" << skipped_folder_count << " folder(s) \033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
               << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
-		  } else {
+	} else {
 			  // Output summary of the renaming process
     std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
               << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m" << skipped_folders_special_count << " folder(s) \033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
               << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
-		  }
-			  
+	}  
 }
 
 
