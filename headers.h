@@ -1,17 +1,17 @@
 #ifndef HEADERS_H
 #define HEADERS_H
 
-#include <iostream>
-#include <filesystem>
 #include <algorithm>
-#include <vector>
-#include <mutex>
 #include <chrono>
-#include <queue>
-#include <future>
-#include <omp.h>
 #include <execution>
+#include <filesystem>
+#include <future>
+#include <iostream>
+#include <mutex>
+#include <omp.h>
+#include <queue>
 #include <unordered_set>
+#include <vector>
 
 namespace fs = std::filesystem;
 
