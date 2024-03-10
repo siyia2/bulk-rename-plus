@@ -110,7 +110,7 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  bulk_rename++ -d 2 -c upper -v [path1]\n"
           << "  bulk_rename++ -fi -c lower -vs [path1]\n"
           << "  bulk_rename++ -ce noext -v [path1]\n"
-          << "  bulk_rename++ -sym -c lower -v [path1]\n"
+          << "  bulk_rename++ -sym -c lower -vso [path1]\n"
           << "  bulk_rename++ -sym -fi -c title -v [path1]\n"
           << "\x1B[0m\n";
 }
