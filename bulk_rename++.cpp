@@ -17,6 +17,7 @@ unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 // Global variable to set or not to set verbose output for skipped files/folders
 bool skipped = false;
 bool special = false;
+bool skipped_only = false;
 
 
 // Global variable for counting skipped folders for specials
@@ -54,8 +55,9 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "Options:\n"
           << "  -h, --help               Print help\n"
           << "  --version                Print version\n"
-          << "  -v, --verbose            Activate verbose mode - skipped (optional)\n"
-          << "  -vs                      Activate verbose mode + skipped (optional)\n"
+          << "  -v, --verbose            Activate verbose mode renamed - skipped (optional)\n"
+          << "  -vs                      Activate verbose mode renamed + skipped (optional)\n"
+          << "  -vso                     Activate verbose mode skipped - renamed (optional)\n"
           << "  -fi                      Rename files exclusively (optional)\n"
           << "  -fo                      Rename folders exclusively (optional)\n"
           << "  -sym                     Handle symlinks like regular files + folders (optional)\n"
@@ -254,7 +256,7 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
                     ++files_count;
                 }
                 // Print a success message if verbose mode enabled
-                if (verbose_enabled) {
+                if (verbose_enabled && !skipped_only) {
 						if (fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
 							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
 						} else {
@@ -563,7 +565,7 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
             try {
                 // Attempt to rename the file/directory
                 fs::rename(item_path, new_path);
-                if (verbose_enabled) {
+                if (verbose_enabled && !skipped_only) {
                         // Print a success message if verbose mode enabled
 						if (fs::is_symlink(item_path) || fs::is_symlink(new_path)) {
 							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " to " + new_path.string(), std::cout);
@@ -717,7 +719,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             // Attempt to rename the directory
             fs::rename(directory_path, new_path);
 
-            if (verbose_enabled && !renaming_message_printed) {
+            if (verbose_enabled && !renaming_message_printed && !skipped_only) {
                 // Print a renaming message if verbose mode enabled
                 if (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path) && symlinks) {
                     print_verbose_enabled("\033[0m\033[92mRenamed \033[95msymlink_folder\033[0m " + directory_path.string() + " to " + new_path.string());
@@ -986,6 +988,10 @@ int main(int argc, char *argv[]) {
         } else if (arg == "-vs") {
             verbose_enabled = true;
             skipped = true;
+        } else if (arg == "-vso") {
+            verbose_enabled = true;
+            skipped = true;
+            skipped_only = true;
         } else if (arg == "-h" || arg == "--help") {
             std::system("clear");
             print_help();
