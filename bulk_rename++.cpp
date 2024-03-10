@@ -1072,7 +1072,7 @@ int main(int argc, char *argv[]) {
     if ((v_flag && (vs_flag || vso_flag)) || (vs_flag && (v_flag || vso_flag)) || (vso_flag && (v_flag || vs_flag))) {
         print_error("\033[1;91mError: Cannot mix -v, -vs, and -vso options.\033[0m\n");
          return 1;
-       }
+    }
 
     if (!case_specified) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n");
