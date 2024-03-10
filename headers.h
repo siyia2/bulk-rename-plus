@@ -5,11 +5,11 @@
 #include <chrono>
 #include <execution>
 #include <filesystem>
-#include <future>
 #include <iostream>
 #include <mutex>
 #include <omp.h>
 #include <queue>
+#include <thread>
 #include <unordered_set>
 #include <vector>
 
