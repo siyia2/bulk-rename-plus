@@ -671,14 +671,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "sequence") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     special = true;
-                    rename_folders_with_sequential_numbering(directory_path, "", dirs_count, skipped_folder_count, depth, verbose_enabled, symlinks, batch_size_folders);
+                    rename_folders_with_sequential_numbering(directory_path, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     special = true;
-                    rename_folders_with_date_suffix(directory_path, dirs_count, skipped_folder_count, verbose_enabled, symlinks, batch_size_folders, depth);
+                    rename_folders_with_date_suffix(directory_path, dirs_count, verbose_enabled, symlinks, batch_size_folders, depth);
                 } else if (transformation == "rdate") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_date(new_dirname);
