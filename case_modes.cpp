@@ -685,8 +685,8 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
                 print_verbose_enabled( "\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
             } else {
                 print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
-            }
-		}
+				}
+			}
             // Increment the counter for skipped folders
             ++skipped_folders_special_count;
         }
