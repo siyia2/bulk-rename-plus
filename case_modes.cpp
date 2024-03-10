@@ -1,7 +1,6 @@
 #include "headers.h"
 
 // Necessary redefinition of global and shared mutexes
-
 std::mutex cout_mutex;
 std::mutex dirs_count_mutex;
 

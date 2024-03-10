@@ -3,8 +3,8 @@
 // General purpose stuff
 
 // Mutexes for main program
-std::mutex skipped_folder_count_mutex;
 std::mutex skipped_file_count_mutex;
+std::mutex skipped_folder_count_mutex;
 std::mutex sequence_mutex;
 std::mutex files_count_mutex;
 std::mutex files_mutex;
@@ -20,7 +20,7 @@ bool special = false;
 bool skipped_only = false;
 
 
-// Global variable for counting skipped folders for specials
+// Global variable for counting skipped folders for special functions
 int skipped_folders_special_count = 0;
 
 
@@ -28,6 +28,7 @@ int skipped_folders_special_count = 0;
 
 // Print an error message to stderr
 void print_error(const std::string& error, std::ostream& os)   {
+    
     std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cerr
     std::cerr << error << std::endl; // Output the error message
 }
@@ -35,6 +36,7 @@ void print_error(const std::string& error, std::ostream& os)   {
 
 // Print a message to stdout, assuming verbose mode is enabled
 void print_verbose_enabled(const std::string& message, std::ostream& os) {
+    
     std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cout
     std::cout << message << std::endl; // Output the message
 }
@@ -42,6 +44,7 @@ void print_verbose_enabled(const std::string& message, std::ostream& os) {
 
 // Print the version number of the program
 void printVersionNumber(const std::string& version) {
+    
     std::cout << "\x1B[32mBulk-rename-plus v" << version << "\x1B[0m\n" << std::endl; // Output the version number in green color
 }
 
@@ -148,6 +151,7 @@ static const std::vector<std::string> transformation_commands = {
 
 // Function to rename file extensions
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size, bool symlinks, int& skipped_file_count) {
+    
     // Vector to store pairs of old and new paths for renaming
     std::vector<std::pair<fs::path, fs::path>> rename_batch;
     rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
@@ -274,6 +278,7 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
 
 // Function to search subdirs for file extensions recursively for multiple paths in parallel
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, size_t batch_size_files, bool symlinks, int& skipped_file_count) {
+    
     // If depth is negative, set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();

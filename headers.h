@@ -11,8 +11,6 @@
 #include <future>
 #include <omp.h>
 #include <execution>
-#include <unordered_map>
-#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -20,12 +18,14 @@ namespace fs = std::filesystem;
 extern unsigned int max_threads;
 
 // Global and shared mutexes
-
 extern std::mutex dirs_count_mutex;
 extern std::mutex cout_mutex;
 
 // Global variables to set or not to set verbose output for skipped files/folders
 extern bool skipped;
+extern bool skipped_only;
+
+// Global variable for counting skipped folders for special functions
 extern int skipped_folders_special_count;
 
 // Function prototypes
