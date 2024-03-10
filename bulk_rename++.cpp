@@ -9,15 +9,19 @@ std::mutex sequence_mutex;
 std::mutex files_count_mutex;
 std::mutex files_mutex;
 
+
 // Determine the maximum number of threads supported by the system fallback is 2
 unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
+
 
 // Global variable to set or not to set verbose output for skipped files/folders
 bool skipped = false;
 bool special = false;
 
+
 // Global variable for counting skipped folders for specials
 int skipped_folders_special_count = 0;
+
 
 // Global print functions
 

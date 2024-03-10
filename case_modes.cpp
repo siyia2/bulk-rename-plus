@@ -542,6 +542,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, in
     rename_folders_with_sequential_numbering(base_directory, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
 }
 
+
 // Append date suffix to folder names in parallel using OpenMP
 void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders, int depth) {
     std::vector<std::pair<fs::path, bool>> folder_paths; // Store folder paths and their symlink status
