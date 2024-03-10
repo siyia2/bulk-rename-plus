@@ -190,14 +190,17 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
             } else if (case_input == "swapr") {
                 new_extension = swap_transform(extension);
             }
+            
+            if (extension == new_extension) {
+            std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
+				++skipped_file_count;
+			}
 
             // If extension changed, create new path and add to rename batch
             if (extension != new_extension) {
                 fs::path new_path = item_path.parent_path() / (item_path.stem().string() + new_extension);
                 rename_batch.emplace_back(item_path, new_path); // Add to the batch
             } else {
-				std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
-				++skipped_file_count;
 				if (skipped && verbose_enabled && ((!fs::is_regular_file(item_path) && !fs::is_symlink(item_path)) || (fs::is_symlink(item_path) && symlinks))) {
 			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + (extension.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
 				}
@@ -308,8 +311,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                 for (const auto& entry : fs::directory_iterator(current_fs_path)) {
                     if (fs::is_symlink(entry)) {
                         if (!symlinks) {
-							std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
-							++skipped_file_count;
 							if (verbose_enabled && skipped) {
                             // Print message for symlinked folder or file if symlinks flag is false
                             if (fs::is_directory(entry)) {
@@ -507,6 +508,11 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             }
         }
     }
+    
+    if (name == new_name && transform_files) {
+			std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
+		    ++skipped_file_count;
+		}
 
     // Add data to the list if new name differs
     if (name != new_name) {
@@ -525,10 +531,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             std::lock_guard<std::mutex> lock(files_mutex);
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count);
         }
-		if (name == new_name) {
-			std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
-		    ++skipped_file_count;
-		}
         if (name == new_name && verbose_enabled && skipped && transform_files && ((!fs::is_regular_file(item_path) && !fs::is_symlink(item_path)) || (fs::is_symlink(item_path) && symlinks))) {
 			print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + (name.empty() ? " (no name change)" : " (name unchanged)"), std::cout);
 		}
@@ -696,6 +698,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     } 
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
+    
+    if (directory_path == new_path && transform_dirs) {
+        std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
+		++skipped_folder_count;
+	}
 
     // Check if renaming is necessary
     if (directory_path != new_path) {
@@ -738,8 +745,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             // Print a message indicating that the directory was skipped (name unchanged)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
-        std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
-		++skipped_folder_count;
+        
     }
     
     // Continue recursion if the depth limit is not reached
