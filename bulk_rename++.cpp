@@ -1170,9 +1170,12 @@ int main(int argc, char *argv[]) {
 		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count); // Pass true for rename_parents
 	} else if (rename_extensions) {
 		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, batch_size_files,symlinks,skipped_file_count);
+	} else if (transform_files){
+		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count);
 	} else {
 		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - 1);
 	}
+		
 
 	// Prompt the user to press enter to exit
 	std::cout << "\n\033[1mPress enter to exit...\033[0m";
