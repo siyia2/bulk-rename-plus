@@ -15,7 +15,7 @@ unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 // Global variable to set or not to set verbose output for skipped files/folders
 bool skipped = false;
 bool special = false;
-int skipped_folders_special = 0;
+int skipped_folders_special_count = 0;
 
 // Global print functions
 
@@ -906,7 +906,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 		  } else {
 			  // Output summary of the renaming process
     std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
-              << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m" << skipped_folders_special << " folder(s) \033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
+              << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m" << skipped_folders_special_count << " folder(s) \033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
               << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
 		  }

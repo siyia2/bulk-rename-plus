@@ -518,16 +518,20 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             }
         } else {
             // Print folder paths that did not need renaming
-            if (!unchanged_folder_paths.empty() && verbose_enabled && skipped) {
-                for (const auto& folder_pair : unchanged_folder_paths) {
-                    const fs::path& folder_path = folder_pair.first;
-                    bool is_symlink = folder_pair.second;
-                     if (is_symlink) {
-                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
-            } else {
-                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
-            }
-                }
+		if (!unchanged_folder_paths.empty()) {
+			for (const auto& folder_pair : unchanged_folder_paths) {
+				const fs::path& folder_path = folder_pair.first;
+				bool is_symlink = folder_pair.second;
+				if (verbose_enabled && skipped) {
+				if (is_symlink) {
+					print_verbose_enabled( "\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+				} else {
+					print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+				}
+			}
+				// Increment the counter for skipped folders
+				++skipped_folders_special_count;
+			}
             }
         }
     }
@@ -681,7 +685,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
             }
 		}
             // Increment the counter for skipped folders
-            ++skipped_folders_special;
+            ++skipped_folders_special_count;
         }
     }
 }
