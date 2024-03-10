@@ -961,6 +961,9 @@ int main(int argc, char *argv[]) {
     bool c_flag = false;
     bool cp_flag = false;
     bool ce_flag = false;
+    bool v_flag = false;
+    bool vs_flag = false;
+    bool vso_flag = false;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
@@ -984,11 +987,14 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         } else if (arg == "-v" || arg == "--verbose") {
+			v_flag = true;
             verbose_enabled = true;
         } else if (arg == "-vs") {
+			vs_flag = true;
             verbose_enabled = true;
             skipped = true;
         } else if (arg == "-vso") {
+			vso_flag = true;
             verbose_enabled = true;
             skipped = true;
             skipped_only = true;
@@ -1062,6 +1068,11 @@ int main(int argc, char *argv[]) {
         print_error("\033[1;91mError: Cannot mix -fi and -fo options.\033[0m\n");
         return 1;
     }
+    
+    if ((v_flag && (vs_flag || vso_flag)) || (vs_flag && (v_flag || vso_flag)) || (vso_flag && (v_flag || vs_flag))) {
+        print_error("\033[1;91mError: Cannot mix -v, -vs, and -vso options.\033[0m\n");
+         return 1;
+       }
 
     if (!case_specified) {
         print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n");
