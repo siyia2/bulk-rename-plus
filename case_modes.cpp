@@ -342,8 +342,12 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
 
     int& counter = counter_map[parent_path];
 
+    // Check if file_string starts with a number followed by an underscore
     if (!file_string.empty() && std::isdigit(file_string[0])) {
-        return file_string;
+        size_t underscore_pos = file_string.find('_');
+        if (underscore_pos != std::string::npos && underscore_pos > 0 && std::all_of(file_string.begin(), file_string.begin() + underscore_pos, ::isdigit)) {
+            return file_string; // Return directly if file_string starts with a numbered prefix
+        }
     }
 
     std::ostringstream oss;
@@ -354,6 +358,7 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
 
     return oss.str();
 }
+
 
 // Function to remove sequencial numbering from files
 std::string remove_numbered_prefix(const std::string& file_string) {
