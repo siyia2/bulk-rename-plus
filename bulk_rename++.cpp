@@ -834,8 +834,8 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(num_paths));
 
     // Process paths in parallel using OpenMP
-    #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count)
-    for (int i = 0; i < num_paths; ++i) {
+    #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count) num_threads(num_threads)
+	for (int i = 0; i < num_paths; ++i) {
         // Obtain the current path
         fs::path current_path(paths[i]);
 
