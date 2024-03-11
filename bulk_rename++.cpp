@@ -787,7 +787,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 omp_set_num_threads(num_threads);
 
                 // Distribute tasks among available threads using OpenMP parallel for
-#pragma omp parallel for shared(batch_entries)
+				#pragma omp parallel for shared(batch_entries)
                 for (unsigned int i = 0; i < num_threads; ++i) {
                     unsigned int start_index = i * chunk_size;
                     unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
@@ -810,7 +810,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             unsigned int chunk_size = batch_entries.size() / num_threads;
 
             // Distribute tasks among available threads using OpenMP parallel for
-#pragma omp parallel for shared(batch_entries)
+			#pragma omp parallel for shared(batch_entries)
             for (unsigned int i = 0; i < num_threads; ++i) {
                 unsigned int start_index = i * chunk_size;
                 unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
