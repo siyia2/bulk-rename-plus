@@ -4,7 +4,6 @@
 
 // Mutexes for main program
 std::mutex skipped_file_count_mutex;
-std::mutex skipped_folder_count_mutex;
 std::mutex sequence_mutex;
 std::mutex files_count_mutex;
 std::mutex files_mutex;
@@ -370,8 +369,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 }
 
 
-
-
 // Rename file&directory stuff
  
 // Function to rename files
@@ -703,7 +700,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 break;
             }
         }
-    } 
+    }
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
     

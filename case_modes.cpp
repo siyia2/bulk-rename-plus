@@ -3,6 +3,7 @@
 // Necessary redefinition of global and shared mutexes
 std::mutex cout_mutex;
 std::mutex dirs_count_mutex;
+std::mutex skipped_folder_count_mutex;
 
 // Separate string operations
 
@@ -531,6 +532,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                         }
                     }
                     // Increment the counter for skipped folders
+                    std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
                     ++skipped_folders_special_count;
                 }
             }
@@ -687,6 +689,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
 				}
 			}
             // Increment the counter for skipped folders
+            std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
             ++skipped_folders_special_count;
         }
     }
