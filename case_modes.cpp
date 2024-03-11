@@ -475,7 +475,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
                 // Remove any existing numbering from the folder name
                 std::string original_name;
-                if (pos != std::string::npos && pos > 0 && std::isdigit(folder_name[0])) {
+                if (folder_name.substr(0, 2) == "00" && pos != std::string::npos && pos > 0 && std::isdigit(folder_name[0])) {
                     original_name = folder_name.substr(pos + 1);
                 } else {
                     original_name = folder_name;
