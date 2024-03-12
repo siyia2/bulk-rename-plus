@@ -890,7 +890,6 @@ int main(int argc, char *argv[]) {
     bool transform_dirs = true;
     bool transform_files = true;
     bool skipped = false;
-	bool special = false;
 	bool skipped_only = false;
     bool symlinks = false;
     bool isFirstRun = true;
