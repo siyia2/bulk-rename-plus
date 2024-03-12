@@ -1154,7 +1154,7 @@ int main(int argc, char *argv[]) {
 	} else if (!transform_dirs){
 		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only);
 	} else {
-		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - 1, skipped_folder_special_count, skipped, skipped_only);
+		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped_folder_special_count, skipped, skipped_only);
 	}
 		
 
