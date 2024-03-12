@@ -14,6 +14,7 @@ unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 
 // Flag for indicating the execution of special functions
 bool special=false;
+bool parent_escape = true;
 
 // Global print functions
 
@@ -581,16 +582,13 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
 }
 
 
-
-
 // Function to rename a directory based on specified transformations
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int& skipped_file_count, int& skipped_folder_count, int& skipped_folder_special_count, bool skipped, bool skipped_only) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
-    static bool parent_escape = true;
     
-    if (rename_parents){
+    if (rename_parents) {
 		parent_escape = false;
 	}
 
@@ -752,7 +750,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
 			}
 		}
-		parent_escape=false;
     }
     
     // Continue recursion if the depth limit is not reached
@@ -840,15 +837,15 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 	for (int i = 0; i < num_paths; ++i) {
         // Obtain the current path
         fs::path current_path(paths[i]);
-
         if (fs::exists(current_path)) {
             if (fs::is_directory(current_path)) {
                 if (rename_parents) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only);
+                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files,batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only);
                 } else {
                     // Otherwise, rename the entire path
+                    parent_escape = true;
                     rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only);
                 }
             } else if (fs::is_regular_file(current_path)) {
