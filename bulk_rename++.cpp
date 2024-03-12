@@ -16,7 +16,7 @@ unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 bool special=false;
 
 // Flag to fix parent verbose printing
-bool parent_escape = false;
+bool parent_escape = true;
 
 // Global print functions
 
@@ -733,13 +733,18 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             }
             return; // Exit early if permission errors found
         }
+        if (rename_parents) {
+			parent_escape=false;
+		} else {
+			parent_escape=true;
+		}
     } else {
         if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && !transform_files && !special && skipped) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + directory_path.string() + " (name unchanged)");
         } else if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && transform_dirs && transform_files && !special && skipped) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
-         if (parent_escape) {
+         if (!parent_escape) {
 		 } else {
         // If the directory name remains unchanged
         if (verbose_enabled && !transform_files && !special && skipped) {
@@ -751,10 +756,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 			}
 		}
 		if (rename_parents) {
-		parent_escape=true;
-	} else {
-		parent_escape=false;
-	}
+			parent_escape=false;
+		} else {
+			parent_escape=true;
+		}
 		
     }
     
