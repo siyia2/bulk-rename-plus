@@ -12,7 +12,7 @@ std::mutex files_mutex;
 // Determine the maximum number of threads supported by the system fallback is 2
 unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 
-// Flag for indicating execution of special functions
+// Flag for indicating the execution of special functions
 bool special=false;
 
 // Global print functions
