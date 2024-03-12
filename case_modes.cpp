@@ -447,7 +447,7 @@ std::string remove_date_seq(const std::string& file_string) {
 // Folder numbering functions mv style
  
 // Apply sequential folder numbering in parallel using OpenMP
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 100) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100) {
     int counter = 1; // Counter for immediate subdirectories
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
@@ -538,7 +538,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     }
                     // Increment the counter for skipped folders
                     std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
-                    ++skipped_folders_special_count;
+                    ++skipped_folder_special_count;
                 }
             }
         }
@@ -546,13 +546,13 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 }
 
 // Overloaded function with default verbose_enabled = false and batch processing
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, int depth, bool verbose_enabled = false, bool symlinks = false, size_t batch_size_folders = 100) {
-    rename_folders_with_sequential_numbering(base_directory, "", dirs_count, depth, verbose_enabled, symlinks, batch_size_folders);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100) {
+    rename_folders_with_sequential_numbering(base_directory, "", dirs_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders);
 }
 
 
 // Append date suffix to folder names in parallel using OpenMP
-void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, bool verbose_enabled, bool symlinks, size_t batch_size_folders, int depth) {
+void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_count, int& skipped_folder_special_count, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int depth) {
     std::vector<std::pair<fs::path, bool>> folder_paths; // Store folder paths and their symlink status
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths that did not need renaming
 
@@ -695,7 +695,7 @@ void rename_folders_with_date_suffix(const fs::path& base_directory, int& dirs_c
 			}
             // Increment the counter for skipped folders
             std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
-            ++skipped_folders_special_count;
+            ++skipped_folder_special_count;
         }
     }
 }
