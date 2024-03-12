@@ -443,7 +443,7 @@ std::string remove_date_seq(const std::string& file_string) {
     return file_string;
 }
 
-
+ 
 // Folder numbering functions mv style
  
 // Apply sequential folder numbering in parallel using OpenMP
