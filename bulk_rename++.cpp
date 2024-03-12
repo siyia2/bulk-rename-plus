@@ -14,7 +14,6 @@ unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 
 // Flag for indicating the execution of special functions
 bool special=false;
-static bool parent_escape;
 
 // Global print functions
 
@@ -589,9 +588,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
+    static bool parent_escape = true;
     
-    if (!rename_parents) {
-		parent_escape= true;
+    if (rename_parents){
+		parent_escape = false;
 	}
 
     // Early exit if the directory is a symlink and should not be transformed
@@ -752,6 +752,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
 			}
 		}
+		parent_escape=false;
     }
     
     // Continue recursion if the depth limit is not reached
@@ -844,12 +845,10 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
             if (fs::is_directory(current_path)) {
                 if (rename_parents) {
                     // If -p option is used, only rename the immediate parent
-                    parent_escape = false;
                     fs::path immediate_parent_path = current_path.parent_path();
                     rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only);
                 } else {
                     // Otherwise, rename the entire path
-                    parent_escape = true;
                     rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only);
                 }
             } else if (fs::is_regular_file(current_path)) {
