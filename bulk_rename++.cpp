@@ -750,7 +750,12 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
 			}
 		}
+		if (rename_parents) {
+		parent_escape=true;
+	} else {
 		parent_escape=false;
+	}
+		
     }
     
     // Continue recursion if the depth limit is not reached
