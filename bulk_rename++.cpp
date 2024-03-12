@@ -260,7 +260,11 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
 					}
             } catch (const fs::filesystem_error& e) {
                 // Print an error message if renaming fails
-                print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
+                if (e.code() == std::errc::permission_denied) {
+					if (verbose_enabled) {
+					print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
+					}
+				}
             }
         }
     );
@@ -302,12 +306,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
                 fs::path current_fs_path(current_path);
 
-                // Check if path exists
-                if (verbose_enabled && !fs::exists(current_fs_path)) {
-                    print_error("\033[1;91mError: path does not exist - " + current_path + "\033[0m\n");
-                    continue;
-                }
-
                 // Process directories and files
                 if (fs::is_directory(current_fs_path)) {
                     for (const auto& entry : fs::directory_iterator(current_fs_path)) {
@@ -331,10 +329,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                     }
                 } else if (fs::is_regular_file(current_fs_path)) {
                     rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
-                } else {
-                    if (verbose_enabled) {
-                        print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
-                    }
                 }
             }
         }
@@ -574,7 +568,11 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                 }
             } catch (const fs::filesystem_error& e) {
                 // Print an error message if renaming fails
-                print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
+                if (e.code() == std::errc::permission_denied) {
+					if (verbose_enabled) {
+					print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
+					}
+				}
             }
         }
     );
@@ -850,14 +848,6 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
                 rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
-            } else {
-                if (verbose_enabled) {
-                    print_error("\033[1;91mError: specified path is neither a directory nor a regular file\033[0m\n");
-                }
-            }
-        } else {
-            if (verbose_enabled) {
-                print_error("\033[1;91mError: path does not exist - " + paths[i] + "\033[0m\n");
             }
         }
     }
@@ -900,7 +890,6 @@ int main(int argc, char *argv[]) {
     bool transform_dirs = true;
     bool transform_files = true;
     bool skipped = false;
-	bool special = false;
 	bool skipped_only = false;
     bool symlinks = false;
     bool isFirstRun = true;
@@ -917,7 +906,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.6.3");
+        printVersionNumber("1.6.4");
         return 0;
     }
 
@@ -1049,7 +1038,7 @@ int main(int argc, char *argv[]) {
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
         valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","swapr","rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
-    } else { // Valid modes for -c
+    } else { // Valid modes for -ce
         valid_modes = {"lower", "upper", "reverse", "title", "swap", "swapr", "rbak", "bak", "noext"};
     }
 
@@ -1057,6 +1046,14 @@ int main(int argc, char *argv[]) {
         print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\033[0m\n");
         return 1;
     }
+    
+    if (cp_flag && (std::find(valid_modes.begin(), valid_modes.end(), case_input) != valid_modes.end())) {
+		if (case_input == "date" || case_input == "sequence") {
+			print_error("\033[1;91mError: date and sequence modes are available only with -c option.\033[0m\n");
+			return 1;
+		}
+	}
+		
 
     // Check if paths exist
     for (const auto& path : paths) {
