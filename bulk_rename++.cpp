@@ -12,7 +12,7 @@ std::mutex files_mutex;
 // Determine the maximum number of threads supported by the system fallback is 2
 unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 
-// Flag for indicating the execution of special functions
+// Flag for indicating execution of special functions
 bool special=false;
 
 // Global print functions
@@ -588,6 +588,11 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     bool renaming_message_printed = false;
+    static bool parent_escape = true;
+    
+    if (rename_parents){
+		parent_escape = false;
+	}
 
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
@@ -736,6 +741,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && transform_dirs && transform_files && !special && skipped) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
+         if (parent_escape) {
+		 } else {
         // If the directory name remains unchanged
         if (verbose_enabled && !transform_files && !special && skipped) {
             // Print a message indicating that the directory was skipped (no name change)
@@ -743,8 +750,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         } else if (verbose_enabled && transform_dirs && transform_files && !special && skipped) {
             // Print a message indicating that the directory was skipped (name unchanged)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
-        }
-        
+			}
+		}
+		parent_escape=false;
     }
     
     // Continue recursion if the depth limit is not reached
