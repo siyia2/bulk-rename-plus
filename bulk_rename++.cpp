@@ -15,6 +15,8 @@ unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 // Flag for indicating the execution of special functions
 bool special=false;
 
+fs::path immediate_parent_path;
+
 // Global print functions
 
 // Print an error message to stderr
@@ -673,7 +675,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "date") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     special = true;
-                    rename_folders_with_date_suffix(directory_path, dirs_count, skipped_folder_special_count, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders, depth);
+                    new_dirname = append_date_suffix_to_folder_name(new_dirname);
                 } else if (transformation == "rdate") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_dirname = get_renamed_folder_name_without_date(new_dirname);
@@ -843,6 +845,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                     rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files,batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun);
                 } else {
                     // Otherwise, rename the entire path
+                    fs::path immediate_parent_path = current_path.parent_path();
                     rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun);
                 }
             } else if (fs::is_regular_file(current_path)) {
@@ -906,7 +909,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.6.5");
+        printVersionNumber("1.6.6");
         return 0;
     }
 
@@ -1048,7 +1051,7 @@ int main(int argc, char *argv[]) {
     }
     
     if (cp_flag && (std::find(valid_modes.begin(), valid_modes.end(), case_input) != valid_modes.end())) {
-		if (case_input == "date" || case_input == "sequence") {
+		if (case_input == "sequence") {
 			print_error("\033[1;91mError: date and sequence modes are only available with -c option.\033[0m\n");
 			return 1;
 		}
