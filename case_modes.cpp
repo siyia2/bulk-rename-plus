@@ -309,13 +309,23 @@ std::string get_renamed_folder_name_without_date(const fs::path& folder_path) {
 std::string append_date_suffix_to_folder_name(const fs::path& folder_path) {
     std::string folder_name = folder_path.filename().string();
 
-    // If the folder path is the root directory, return the folder name without modification
-    if (folder_path == folder_path.root_directory())
-        return folder_name;
-        
-    // Check if the folder name ends with the date suffix format "_YYYYMMDD"
-    if (!(folder_name.size() < 9 || folder_name.substr(folder_name.size() - 9, 1) != "_"))
-        return folder_name; // if it does do not rename
+    // If the folder name is empty, return an empty string
+    if (folder_name.empty())
+        return "";
+
+    // Check if the folder name already ends with a date suffix
+    if (folder_name.size() >= 9 && folder_name.substr(folder_name.size() - 9, 1) == "_" &&
+        folder_name.substr(folder_name.size() - 8, 8).find_first_not_of("0123456789") == std::string::npos)
+        return folder_name; // If it does, do not rename
+
+    // Find the last underscore character in the folder name, excluding numeric prefix
+    size_t last_underscore_pos = folder_name.find_last_of('_', folder_name.find_first_not_of("0123456789"));
+
+    // Check if there is an underscore and if the substring after it matches the date format
+    if (last_underscore_pos != std::string::npos &&
+        folder_name.size() - last_underscore_pos == 9 &&
+        folder_name.substr(last_underscore_pos + 1, 8).find_first_not_of("0123456789") == std::string::npos)
+        return folder_name; // If it does, do not rename
 
     // Get the current date in YYYYMMDD format
     auto now = std::chrono::system_clock::now();
