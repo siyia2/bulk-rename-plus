@@ -12,6 +12,8 @@ std::mutex files_mutex;
 // Determine the maximum number of threads supported by the system fallback is 2
 unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 
+// Flag for indicating the execution of special function
+bool special=false;
 
 // Global print functions
 
@@ -463,6 +465,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 } else if (transformation == "rcamel") {
                     new_name = from_camel_case(new_name);
                 } else if (transformation == "sequence") {
+					std::lock_guard<std::mutex> lock(sequence_mutex);
                     new_name = append_numbered_prefix(parent_path, new_name);
                 } else if (transformation == "rsequence") {
                     new_name = remove_numbered_prefix(new_name);
@@ -564,14 +567,9 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
 
 
 // Function to rename a directory based on specified transformations
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int& skipped_file_count, int& skipped_folder_count, bool skipped, bool skipped_only, bool isFirstRun) {
-    // Extract the name of the directory
-std::string dirname = directory_path.filename().string();
-std::string new_dirname = dirname; // Initialize with the original name
-    
-// Extract the parent path of the directory
-fs::path parent_path = fs::canonical(directory_path).parent_path();
-
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int& skipped_file_count, int& skipped_folder_count, int& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun) {
+    std::string dirname = directory_path.filename().string();
+    std::string new_dirname = dirname; // Initialize with the original name
         
 
     // Early exit if the directory is a symlink and should not be transformed
@@ -637,7 +635,9 @@ fs::path parent_path = fs::canonical(directory_path).parent_path();
                 } else if (transformation == "swapr") {
                     new_dirname = swapr_transform(new_dirname);
                 } else if (transformation == "sequence") {
-                    new_dirname = append_numeric_sequence_to_folder_name(new_dirname);
+					std::lock_guard<std::mutex> lock(sequence_mutex);
+                    special = true;
+                    rename_folders_with_sequential_numbering(directory_path, "", dirs_count, skipped_folder_special_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
@@ -658,7 +658,7 @@ fs::path parent_path = fs::canonical(directory_path).parent_path();
 
     fs::path new_path = directory_path.parent_path() / std::move(new_dirname); // Move new_dirname instead of copying
     
-    if (directory_path == new_path && transform_dirs) {
+    if (directory_path == new_path && transform_dirs && !special) {
         std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
 		++skipped_folder_count;
 	}
@@ -690,19 +690,19 @@ fs::path parent_path = fs::canonical(directory_path).parent_path();
             return; // Exit early if permission errors found
         }
     } else {
-        if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && !transform_files && skipped) {
+        if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && !transform_files && !special && skipped) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + directory_path.string() + " (name unchanged)");
-        } else if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && transform_dirs && transform_files && skipped) {
+        } else if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && transform_dirs && transform_files && !special && skipped) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + directory_path.string() + " (name unchanged)");
         }
          if (!rename_parents && isFirstRun) {
 			
 		 } else {
         // If the directory name remains unchanged
-        if (verbose_enabled && !transform_files && skipped) {
+        if (verbose_enabled && !transform_files && !special && skipped) {
             // Print a message indicating that the directory was skipped (no name change)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
-        } else if (verbose_enabled && transform_dirs && transform_files && skipped) {
+        } else if (verbose_enabled && transform_dirs && transform_files && !special && skipped) {
             // Print a message indicating that the directory was skipped (name unchanged)
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)");
 			}
@@ -732,7 +732,7 @@ fs::path parent_path = fs::canonical(directory_path).parent_path();
                 batch_entries.emplace_back(entry.path());
             } else if (entry.is_directory() && rename_parents) {
                 // Process parent directories immediately
-                rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only, isFirstRun);
+                rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun);
             } else {
                 // Process files immediately
                 rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
@@ -753,7 +753,7 @@ fs::path parent_path = fs::canonical(directory_path).parent_path();
                     unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
 
                     for (unsigned int j = start_index; j < end_index; ++j) {
-                        rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only, isFirstRun);
+                        rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun);
                     }
                 }
 
@@ -776,7 +776,7 @@ fs::path parent_path = fs::canonical(directory_path).parent_path();
                 unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
 
                 for (unsigned int j = start_index; j < end_index; ++j) {
-                    rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only, isFirstRun);
+                    rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun);
                 }
             }
         }
@@ -785,7 +785,7 @@ fs::path parent_path = fs::canonical(directory_path).parent_path();
  
 
 // Function to rename paths (directories and files) based on specified transformations
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, int skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive) {
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     
     int num_paths = paths.size();
@@ -794,7 +794,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(num_paths));
 
     // Process paths in parallel using OpenMP
-    #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only) num_threads(num_threads)
+    #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only) num_threads(num_threads)
     for (int i = 0; i < num_paths; ++i) {
         // Make isFirstRun true for each iteration to avoid race conditions
         bool isFirstRunLocal = true;
@@ -806,11 +806,10 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                 if (rename_parents) {
                     // If -p option is used, only rename the immediate parent
                     fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only, isFirstRunLocal);
+                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal);
                 } else {
                     // Otherwise, rename the entire path
-                    fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only, isFirstRunLocal);
+                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal);
                 }
             } else if (fs::is_regular_file(current_path)) {
                 // For files, directly rename the item without considering the parent directory
@@ -827,7 +826,9 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
               << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m";
 
-    if (!non_interactive) {
+    if (special && !non_interactive) {
+        std::cout << skipped_folder_special_count << " folder(s) ";
+    } else {
         std::cout << skipped_folder_count << " folder(s) ";
     }
 
@@ -844,6 +845,7 @@ int main(int argc, char *argv[]) {
     bool rename_parents = false;
     bool rename_extensions = false;
     bool verbose_enabled = false;
+    int skipped_folder_special_count = 0;
     int skipped_folder_count = 0;
     int skipped_file_count = 0;
     int files_count = 0;
@@ -875,7 +877,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.7.1");
+        printVersionNumber("1.7.0");
         return 0;
     }
 
@@ -1119,13 +1121,13 @@ int main(int argc, char *argv[]) {
 
     // Perform the renaming operation based on the selected mode
     if (rename_parents) {
-        rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only, isFirstRun, non_interactive); // Pass true for rename_parents
+        rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive); // Pass true for rename_parents
     } else if (rename_extensions) {
         rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, batch_size_files, symlinks, skipped_file_count, skipped, skipped_only, non_interactive);
     } else if (!transform_dirs) {
-        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only, isFirstRun, non_interactive);
+        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive);
     } else {
-        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped, skipped_only, isFirstRun, non_interactive);
+        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive);
     }
 
     if (!ni_flag) {
