@@ -304,31 +304,37 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                     continue; // Skip processing this directory
                 }
 
-                fs::path current_fs_path(current_path);
+                try {
+                    fs::path current_fs_path(current_path);
 
-                // Process directories and files
-                if (fs::is_directory(current_fs_path)) {
-                    for (const auto& entry : fs::directory_iterator(current_fs_path)) {
-                        if (fs::is_symlink(entry)) {
-                            if (!symlinks && verbose_enabled && skipped) {
-                                // Print message for symlinked folder or file if symlinks flag is false
-                                if (fs::is_directory(entry)) {
-                                    std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
-                                } else if (!fs::is_directory(entry)) {
-                                    std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
+                    // Process directories and files
+                    if (fs::is_directory(current_fs_path)) {
+                        for (const auto& entry : fs::directory_iterator(current_fs_path)) {
+                            if (fs::is_symlink(entry)) {
+                                if (!symlinks && verbose_enabled && skipped) {
+                                    // Print message for symlinked folder or file if symlinks flag is false
+                                    if (fs::is_directory(entry)) {
+                                        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + entry.path().string() + " (excluded)", std::cout);
+                                    } else if (!fs::is_directory(entry)) {
+                                        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + entry.path().string() + " (excluded)", std::cout);
+                                    }
+                                } else if (symlinks) {
+                                    // Process symlink if symlinks flag is true
+                                    directories.push({entry.path().string(), current_depth + 1}); // Push symlink as regular directory
                                 }
-                            } else if (symlinks) {
-                                // Process symlink if symlinks flag is true
-                                directories.push({entry.path().string(), current_depth + 1}); // Push symlink as regular directory
+                            } else if (fs::is_directory(entry)) {
+                                directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+                            } else if (fs::is_regular_file(entry)) {
+                                rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
                             }
-                        } else if (fs::is_directory(entry)) {
-                            directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
-                        } else if (fs::is_regular_file(entry)) {
-                            rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
                         }
+                    } else if (fs::is_regular_file(current_fs_path)) {
+                        rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
                     }
-                } else if (fs::is_regular_file(current_fs_path)) {
-                    rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
+                } catch (const std::exception& ex) {
+                    if (verbose_enabled) {
+                         print_error("Error processing path: " + current_path + " - " + ex.what(), std::cerr);
+                    }
                 }
             }
         }
