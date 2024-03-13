@@ -1052,7 +1052,7 @@ int main(int argc, char *argv[]) {
     
     if (cp_flag && (std::find(valid_modes.begin(), valid_modes.end(), case_input) != valid_modes.end())) {
 		if (case_input == "sequence") {
-			print_error("\033[1;91mError: date and sequence modes are only available with -c option.\033[0m\n");
+			print_error("\033[1;91mError: sequence mode is only available with -c option.\033[0m\n");
 			return 1;
 		}
 	}
