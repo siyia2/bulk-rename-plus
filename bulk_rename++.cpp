@@ -12,7 +12,7 @@ std::mutex files_mutex;
 // Determine the maximum number of threads supported by the system fallback is 2
 unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 
-// Flag for indicating the execution of special functions
+// Flag for indicating the execution of special function
 bool special=false;
 
 fs::path immediate_parent_path;
@@ -674,7 +674,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
-                    special = true;
                     new_dirname = append_date_suffix_to_folder_name(new_dirname);
                 } else if (transformation == "rdate") {
                     std::lock_guard<std::mutex> lock(sequence_mutex);
