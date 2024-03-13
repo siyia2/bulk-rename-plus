@@ -502,10 +502,8 @@ std::string rename_folders_with_sequential_numbering(const fs::path& directory_p
                 continue; // Skip if already numbered
             }
 
-            // Construct the new directory name with sequential numbering
-            std::ostringstream ss;
-            ss << std::setw(3) << std::setfill('0') << sequence_counter; // Pad with leading zeros
-            new_dirname = prefix + ss.str() + "_" + filename;
+            // Append numbered prefix to the filename
+            new_dirname = append_numbered_prefix(directory_path, filename);
             fs::path new_path = directory_path / new_dirname;
 
             // Attempt to rename the directory
@@ -527,7 +525,7 @@ std::string rename_folders_with_sequential_numbering(const fs::path& directory_p
 
             // Recursively call the function if depth allows
             if (depth != 0 && fs::is_directory(new_path)) {
-                std::string sub_prefix = prefix + ss.str() + "_";
+                std::string sub_prefix = prefix + new_dirname + "_";
                 rename_folders_with_sequential_numbering(new_path, sub_prefix, dirs_count, skipped_folder_special_count, depth - 1, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders);
             }
 
@@ -538,4 +536,3 @@ std::string rename_folders_with_sequential_numbering(const fs::path& directory_p
 
     return new_dirname;
 }
-
