@@ -855,12 +855,17 @@ int main(int argc, char *argv[]) {
     bool transform_dirs = true;
     bool transform_files = true;
     bool skipped = false;
-	bool skipped_only = false;
+    bool skipped_only = false;
     bool symlinks = false;
     bool isFirstRun = true;
-    bool non_interactive= false;
-	constexpr int batch_size_files = 1000;
-	constexpr int batch_size_folders = 100;
+    bool non_interactive = false;
+    constexpr int batch_size_files = 1000;
+    constexpr int batch_size_folders = 100;
+
+    // Define constants for flag strings
+    const std::unordered_set<std::string> valid_flags = {
+        "-fi", "-sym", "-fo", "-d", "-v", "--verbose", "-vs", "-vso", "-ni", "-h", "--help", "-c", "-cp", "-ce"
+    };
 
     // Handle command-line arguments
     // Display help message if no arguments provided
@@ -868,7 +873,7 @@ int main(int argc, char *argv[]) {
         print_help();
         return 0;
     }
-    
+
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
@@ -889,94 +894,96 @@ int main(int argc, char *argv[]) {
 
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
-        if (arg == "-fi") {
-            transform_dirs = false;
-            fi_flag = true;
-        } else if (arg == "-sym") {
-            symlinks = true;
-        } else if (arg == "-fo") {
-            transform_files = false;
-            fo_flag = true;
-        } else if (arg == "-d" && i + 1 < argc) {
-            // Check if the depth value is empty or not a number
-            if (argv[i + 1] == nullptr || std::string(argv[i + 1]).empty() || !isdigit(argv[i + 1][0])) {
-                print_error("\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n");
-                return 1;
-            }
-            depth = std::atoi(argv[++i]);
-            if (depth < -1) {
-                print_error("\033[1;91mError: Depth value if set must be -1 or greater.\033[0m\n");
-                return 1;
-            }
-        } else if (arg == "-v" || arg == "--verbose") {
-			v_flag = true;
-            verbose_enabled = true;
-        } else if (arg == "-vs") {
-			vs_flag = true;
-            verbose_enabled = true;
-            skipped = true;
-        } else if (arg == "-vso") {
-			vso_flag = true;
-            verbose_enabled = true;
-            skipped = true;
-            skipped_only = true;
-        } else if (arg == "-ni") {
-			non_interactive=true;
-			ni_flag = true;
-        } else if (arg == "-h" || arg == "--help") {
-            std::system("clear");
-            print_help();
-            return 0;
-        } else if (arg == "-c") {
-            // Check if -c, -cp, -ce options are mixed
-            if (c_flag || cp_flag || ce_flag) {
-                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
-                return 1;
-            }
-            c_flag = true;
-            if (i + 1 < argc) {
-                case_input = argv[++i];
-                case_specified = true;
-            } else {
-                print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
-                return 1;
-            }
-        } else if (arg == "-cp") {
-            // Check if -c, -cp, -ce options are mixed
-            if (c_flag || cp_flag || ce_flag) {
-                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
-                return 1;
-            }
-            cp_flag = true;
-            rename_parents = true;
-            if (i + 1 < argc) {
-                case_input = argv[++i];
-                case_specified = true;
-            } else {
-                print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
-                return 1;
-            }
-        } else if (arg == "-ce") {
-            // Check if -c, -cp, -ce options are mixed
-            if (c_flag || cp_flag || ce_flag) {
-                print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
-                return 1;
+        if (valid_flags.count(arg)) {
+            if (arg == "-fi") {
+                transform_dirs = false;
+                fi_flag = true;
+            } else if (arg == "-sym") {
+                symlinks = true;
+            } else if (arg == "-fo") {
+                transform_files = false;
+                fo_flag = true;
+            } else if (arg == "-d" && i + 1 < argc) {
+                // Check if the depth value is empty or not a number
+                if (argv[i + 1] == nullptr || std::string(argv[i + 1]).empty() || !isdigit(argv[i + 1][0])) {
+                    print_error("\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n");
+                    return 1;
+                }
+                depth = std::atoi(argv[++i]);
+                if (depth < -1) {
+                    print_error("\033[1;91mError: Depth value if set must be -1 or greater.\033[0m\n");
+                    return 1;
+                }
+            } else if (arg == "-v" || arg == "--verbose") {
+                v_flag = true;
+                verbose_enabled = true;
+            } else if (arg == "-vs") {
+                vs_flag = true;
+                verbose_enabled = true;
+                skipped = true;
+            } else if (arg == "-vso") {
+                vso_flag = true;
+                verbose_enabled = true;
+                skipped = true;
+                skipped_only = true;
+            } else if (arg == "-ni") {
+                non_interactive = true;
+                ni_flag = true;
+            } else if (arg == "-h" || arg == "--help") {
+                std::system("clear");
+                print_help();
+                return 0;
+            } else if (arg == "-c") {
+                // Check if -c, -cp, -ce options are mixed
+                if (c_flag || cp_flag || ce_flag) {
+                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                    return 1;
+                }
+                c_flag = true;
+                if (i + 1 < argc) {
+                    case_input = argv[++i];
+                    case_specified = true;
+                } else {
+                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                    return 1;
+                }
+            } else if (arg == "-cp") {
+                // Check if -c, -cp, -ce options are mixed
+                if (c_flag || cp_flag || ce_flag) {
+                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                    return 1;
+                }
+                cp_flag = true;
+                rename_parents = true;
+                if (i + 1 < argc) {
+                    case_input = argv[++i];
+                    case_specified = true;
+                } else {
+                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                    return 1;
+                }
             } else if (arg == "-ce") {
-            // Check if -c, -cp, -ce options are mixed
-            if (fi_flag || fo_flag || ce_flag) {
-                print_error("\033[1;91mError: Cannot mix -fi or -fo with -ce option.\033[0m\n");
-                return 1;
-            }
-		}
-            
-            ce_flag = true;
-            rename_extensions = true;
-            if (i + 1 < argc) {
-                case_input = argv[++i];
-                case_specified = true;
-            } else {
-                print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
-                return 1;
+                // Check if -c, -cp, -ce options are mixed
+                if (c_flag || cp_flag || ce_flag) {
+                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                    return 1;
+                } else if (arg == "-ce") {
+                    // Check if -c, -cp, -ce options are mixed
+                    if (fi_flag || fo_flag || ce_flag) {
+                        print_error("\033[1;91mError: Cannot mix -fi or -fo with -ce option.\033[0m\n");
+                        return 1;
+                    }
+                }
+
+                ce_flag = true;
+                rename_extensions = true;
+                if (i + 1 < argc) {
+                    case_input = argv[++i];
+                    case_specified = true;
+                } else {
+                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                    return 1;
+                }
             }
         } else {
             // Check for duplicate paths
@@ -993,10 +1000,10 @@ int main(int argc, char *argv[]) {
         print_error("\033[1;91mError: Cannot mix -fi and -fo options.\033[0m\n");
         return 1;
     }
-    
+
     if ((v_flag && (vs_flag || vso_flag)) || (vs_flag && (v_flag || vso_flag)) || (vso_flag && (v_flag || vs_flag))) {
         print_error("\033[1;91mError: Cannot mix -v, -vs, and -vso options.\033[0m\n");
-         return 1;
+        return 1;
     }
 
     if (!case_specified) {
@@ -1007,7 +1014,7 @@ int main(int argc, char *argv[]) {
     // Check for valid case modes
     std::vector<std::string> valid_modes;
     if (cp_flag || c_flag) { // Valid modes for -cp and -ce
-        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap","swapr","rdate", "pascal", "rpascal", "camel","sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
+        valid_modes = {"lower", "upper", "reverse", "title", "date", "swap", "swapr", "rdate", "pascal", "rpascal", "camel", "sentence", "rcamel", "kebab", "rkebab", "rsnake", "snake", "rnumeric", "rspecial", "rbra", "roperand", "sequence", "rsequence"};
     } else { // Valid modes for -c
         valid_modes = {"lower", "upper", "reverse", "title", "swap", "swapr", "rbak", "bak", "noext"};
     }
@@ -1016,13 +1023,13 @@ int main(int argc, char *argv[]) {
         print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\033[0m\n");
         return 1;
     }
-    
+
     if (cp_flag && (std::find(valid_modes.begin(), valid_modes.end(), case_input) != valid_modes.end())) {
-		if (case_input == "sequence") {
-			print_error("\033[1;91mError: sequence mode is only available with -c option.\033[0m\n");
-			return 1;
-		}
-	}
+        if (case_input == "sequence") {
+            print_error("\033[1;91mError: sequence mode is only available with -c option.\033[0m\n");
+            return 1;
+        }
+    }
 
     // Check if paths exist
     for (const auto& path : paths) {
@@ -1031,7 +1038,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    
+
     // Check if paths end with '/'
     for (const std::string& path : paths) {
         if (path.back() != '/') {
@@ -1040,94 +1047,94 @@ int main(int argc, char *argv[]) {
         }
     }
     if (!ni_flag || verbose_enabled) {
-		std::system("clear");
-	}
+        std::system("clear");
+    }
 
-	// Prompt the user for confirmation before proceeding
-	std::string confirmation;
-	if (rename_parents && !ni_flag) {
-		// Display the paths and their lowest parent directories that will be renamed
-		std::cout << "\033[0m\033[1mThe following path(s) and the \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
-		if (depth != -1) {
-			std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
-		}
-		if (!transform_dirs) {
-			std::cout << "\033[0m\033[1m (excluding directories)";
-		}
-		if (!transform_files) {
-			std::cout << "\033[0m\033[1m (excluding files)";
-		}
-		std::cout << ":\033[1m\n\n";
-		for (const auto& path : paths) {
-			std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
-		}
-	} else if (rename_extensions && !ni_flag) {
-		// Display the paths where file extensions will be recursively renamed
-		std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
-		if (depth != -1) {
-			std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
-		}
-		std::cout << ":\033[1m\n\n";
-		for (const auto& path : paths) {
-			std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
-		}
-	} else if (!ni_flag) {
-		// Display the paths that will be recursively renamed
-		std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
-		if (depth != -1) {
-			std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
-		}
-		if (!transform_dirs && rename_parents) {
-			std::cout << "\033[0m\033[1m (excluding both files and directories)";
-		} else if (!transform_dirs) {
-			std::cout << "\033[0m\033[1m (excluding directories)";
-		} else if (!transform_files) {
-			std::cout << "\033[0m\033[1m (excluding files)";
-		}
-		std::cout << ":\033[1m\n\n";
-		for (const auto& path : paths) {
-			std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
-		}
-	} 
+    // Prompt the user for confirmation before proceeding
+    std::string confirmation;
+    if (rename_parents && !ni_flag) {
+        // Display the paths and their lowest parent directories that will be renamed
+        std::cout << "\033[0m\033[1mThe following path(s) and the \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+        if (depth != -1) {
+            std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
+        }
+        if (!transform_dirs) {
+            std::cout << "\033[0m\033[1m (excluding directories)";
+        }
+        if (!transform_files) {
+            std::cout << "\033[0m\033[1m (excluding files)";
+        }
+        std::cout << ":\033[1m\n\n";
+        for (const auto& path : paths) {
+            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+        }
+    } else if (rename_extensions && !ni_flag) {
+        // Display the paths where file extensions will be recursively renamed
+        std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+        if (depth != -1) {
+            std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
+        }
+        std::cout << ":\033[1m\n\n";
+        for (const auto& path : paths) {
+            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+        }
+    } else if (!ni_flag) {
+        // Display the paths that will be recursively renamed
+        std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+        if (depth != -1) {
+            std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
+        }
+        if (!transform_dirs && rename_parents) {
+            std::cout << "\033[0m\033[1m (excluding both files and directories)";
+        } else if (!transform_dirs) {
+            std::cout << "\033[0m\033[1m (excluding directories)";
+        } else if (!transform_files) {
+            std::cout << "\033[0m\033[1m (excluding files)";
+        }
+        std::cout << ":\033[1m\n\n";
+        for (const auto& path : paths) {
+            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+        }
+    }
 
-	// Prompt the user for confirmation
-	if (!ni_flag) {
-	std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
-	std::getline(std::cin, confirmation);
+    // Prompt the user for confirmation
+    if (!ni_flag) {
+        std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
+        std::getline(std::cin, confirmation);
 
-		// If verbose mode is enabled and the user confirms, output an empty line
-		if (verbose_enabled && confirmation == "y") {
-			std::cout << " " << std::endl;
-		}
-	}
-	if (!ni_flag) {
-	// If the user does not confirm, abort the operation
-		if (confirmation != "y") {
-			std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
-			std::cout << "\n" << std::endl;
-			std::cout << "\033[1mPress enter to exit...";
-			std::cin.get();
-			std::system("clear");
-			return 0;
-		}
-	}
- 
-	// Perform the renaming operation based on the selected mode
-	if (rename_parents) {
-		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive); // Pass true for rename_parents
-	} else if (rename_extensions) {
-		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, batch_size_files,symlinks,skipped_file_count, skipped, skipped_only, non_interactive);
-	} else if (!transform_dirs){
-		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive);
-	} else {
-		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive);
-	}
-		
-	if (!ni_flag) {
-		// Prompt the user to press enter to exit
-		std::cout << "\n\033[1mPress enter to exit...\033[0m";
-		std::cin.get();
-		std::system("clear");
-		return 0;
-	}
+        // If verbose mode is enabled and the user confirms, output an empty line
+        if (verbose_enabled && confirmation == "y") {
+            std::cout << " " << std::endl;
+        }
+    }
+    if (!ni_flag) {
+        // If the user does not confirm, abort the operation
+        if (confirmation != "y") {
+            std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
+            std::cout << "\n" << std::endl;
+            std::cout << "\033[1mPress enter to exit...";
+            std::cin.get();
+            std::system("clear");
+            return 0;
+        }
+    }
+
+    // Perform the renaming operation based on the selected mode
+    if (rename_parents) {
+        rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive); // Pass true for rename_parents
+    } else if (rename_extensions) {
+        rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, batch_size_files, symlinks, skipped_file_count, skipped, skipped_only, non_interactive);
+    } else if (!transform_dirs) {
+        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive);
+    } else {
+        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive);
+    }
+
+    if (!ni_flag) {
+        // Prompt the user to press enter to exit
+        std::cout << "\n\033[1mPress enter to exit...\033[0m";
+        std::cin.get();
+        std::system("clear");
+    }
+    return 0;
 }
