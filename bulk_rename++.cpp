@@ -639,7 +639,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 } else if (transformation == "sequence") {
 					std::lock_guard<std::mutex> lock(sequence_mutex);
                     special = true;
-                    rename_folders_with_sequential_numbering(directory_path, "", dirs_count, skipped_folder_special_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders);
+                    new_dirname = rename_folders_with_sequential_numbering(directory_path, "", dirs_count, skipped_folder_special_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders);
                 } else if (transformation == "rsequence") {
                     new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
                 } else if (transformation == "date") {
