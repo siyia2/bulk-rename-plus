@@ -916,7 +916,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.6.9");
+        printVersionNumber("1.7.0");
         return 0;
     }
 
@@ -1105,7 +1105,7 @@ int main(int argc, char *argv[]) {
 		for (const auto& path : paths) {
 			std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
 		}
-	} else if (rename_extensions && !non_interactive) {
+	} else if (rename_extensions && !ni_flag) {
 		// Display the paths where file extensions will be recursively renamed
 		std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
