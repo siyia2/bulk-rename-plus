@@ -312,6 +312,10 @@ std::string append_date_suffix_to_folder_name(const fs::path& folder_path) {
     // If the folder path is the root directory, return the folder name without modification
     if (folder_path == folder_path.root_directory())
         return folder_name;
+        
+    // Check if the folder name ends with the date suffix format "_YYYYMMDD"
+    if (!(folder_name.size() < 9 || folder_name.substr(folder_name.size() - 9, 1) != "_"))
+        return folder_name; // if it does do not rename
 
     // Get the current date in YYYYMMDD format
     auto now = std::chrono::system_clock::now();
