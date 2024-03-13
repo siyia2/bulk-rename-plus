@@ -1083,12 +1083,13 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
-
-    std::system("clear");
+    if (!ni_flag || verbose_enabled) {
+		std::system("clear");
+	}
 
 	// Prompt the user for confirmation before proceeding
 	std::string confirmation;
-	if (rename_parents && !non_interactive) {
+	if (rename_parents && !ni_flag) {
 		// Display the paths and their lowest parent directories that will be renamed
 		std::cout << "\033[0m\033[1mThe following path(s) and the \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
@@ -1114,7 +1115,7 @@ int main(int argc, char *argv[]) {
 		for (const auto& path : paths) {
 			std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
 		}
-	} else if (!non_interactive) {
+	} else if (!ni_flag) {
 		// Display the paths that will be recursively renamed
 		std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
