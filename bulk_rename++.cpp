@@ -52,6 +52,7 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  -v, --verbose            Activate verbose mode for renamed (optional)\n"
           << "  -vs                      Activate verbose mode for renamed + skipped (optional)\n"
           << "  -vso                     Activate verbose mode for skipped (optional)\n"
+          << "  -ni                      Activate non-interactive mode (optional)\n"
           << "  -fi                      Rename files exclusively (optional)\n"
           << "  -fo                      Rename folders exclusively (optional)\n"
           << "  -sym                     Handle symlinks like regular files + folders (optional)\n"
@@ -272,7 +273,7 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
 
 
 // Function to search subdirs for file extensions recursively for multiple paths in parallel
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, size_t batch_size_files, bool symlinks, int& skipped_file_count, bool skipped, bool skipped_only) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, size_t batch_size_files, bool symlinks, int& skipped_file_count, bool skipped, bool skipped_only, bool non_interactive) {
     // If depth is negative, set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
@@ -333,7 +334,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                     }
                 } catch (const std::exception& ex) {
                     if (verbose_enabled) {
-                         print_error("Error processing path: " + current_path + " - " + ex.what(), std::cerr);
+                         print_error("\033[1;91mError processing path\033[0m: " + current_path + " - " + ex.what(), std::cerr);
                     }
                 }
             }
@@ -355,9 +356,11 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
 
     // Print summary
+    if (!non_interactive) {
     std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0m\033[1m | \033[1mFrom: \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1m" << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+		  }
 }
 
 
@@ -826,7 +829,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
  
 
 // Function to rename paths (directories and files) based on specified transformations
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, int skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, int skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive) {
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     
     int num_paths = paths.size();
@@ -862,13 +865,13 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
 
-    if (!special) {
+    if (!special && !non_interactive) {
     // Output summary of the renaming process
     std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
               << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m" << skipped_folder_count << " folder(s) \033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
               << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
-	} else if (special) {
+	} else if (special && non_interactive) {
 			  // Output summary of the renaming process
     std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
               << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m" << skipped_folder_special_count << " folder(s) \033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
@@ -899,6 +902,7 @@ int main(int argc, char *argv[]) {
 	bool skipped_only = false;
     bool symlinks = false;
     bool isFirstRun = true;
+    bool non_interactive= false;
 	constexpr int batch_size_files = 1000;
 	constexpr int batch_size_folders = 100;
 
@@ -912,7 +916,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.6.8");
+        printVersionNumber("1.6.9");
         return 0;
     }
 
@@ -922,6 +926,7 @@ int main(int argc, char *argv[]) {
     bool c_flag = false;
     bool cp_flag = false;
     bool ce_flag = false;
+    bool ni_flag = false;
     bool v_flag = false;
     bool vs_flag = false;
     bool vso_flag = false;
@@ -959,6 +964,9 @@ int main(int argc, char *argv[]) {
             verbose_enabled = true;
             skipped = true;
             skipped_only = true;
+        } else if (arg == "-ni") {
+			non_interactive=true;
+			ni_flag = true;
         } else if (arg == "-h" || arg == "--help") {
             std::system("clear");
             print_help();
@@ -1080,7 +1088,7 @@ int main(int argc, char *argv[]) {
 
 	// Prompt the user for confirmation before proceeding
 	std::string confirmation;
-	if (rename_parents) {
+	if (rename_parents && !non_interactive) {
 		// Display the paths and their lowest parent directories that will be renamed
 		std::cout << "\033[0m\033[1mThe following path(s) and the \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
@@ -1096,7 +1104,7 @@ int main(int argc, char *argv[]) {
 		for (const auto& path : paths) {
 			std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
 		}
-	} else if (rename_extensions) {
+	} else if (rename_extensions && !non_interactive) {
 		// Display the paths where file extensions will be recursively renamed
 		std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
@@ -1106,7 +1114,7 @@ int main(int argc, char *argv[]) {
 		for (const auto& path : paths) {
 			std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
 		}
-	} else {
+	} else if (!non_interactive) {
 		// Display the paths that will be recursively renamed
 		std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
 		if (depth != -1) {
@@ -1126,39 +1134,43 @@ int main(int argc, char *argv[]) {
 	} 
 
 	// Prompt the user for confirmation
+	if (!ni_flag) {
 	std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
 	std::getline(std::cin, confirmation);
 
-	// If verbose mode is enabled and the user confirms, output an empty line
-	if (verbose_enabled && confirmation == "y") {
-		std::cout << " " << std::endl;
+		// If verbose mode is enabled and the user confirms, output an empty line
+		if (verbose_enabled && confirmation == "y") {
+			std::cout << " " << std::endl;
+		}
 	}
-
+	if (!ni_flag) {
 	// If the user does not confirm, abort the operation
-	if (confirmation != "y") {
-		std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
-		std::cout << "\n" << std::endl;
-		std::cout << "\033[1mPress enter to exit...";
-		std::cin.get();
-		std::system("clear");
-		return 0;
+		if (confirmation != "y") {
+			std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
+			std::cout << "\n" << std::endl;
+			std::cout << "\033[1mPress enter to exit...";
+			std::cin.get();
+			std::system("clear");
+			return 0;
+		}
 	}
  
 	// Perform the renaming operation based on the selected mode
 	if (rename_parents) {
-		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun); // Pass true for rename_parents
+		rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive); // Pass true for rename_parents
 	} else if (rename_extensions) {
-		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, batch_size_files,symlinks,skipped_file_count, skipped, skipped_only);
+		rename_extension_path(paths, case_input, verbose_enabled, depth, files_count, batch_size_files,symlinks,skipped_file_count, skipped, skipped_only, non_interactive);
 	} else if (!transform_dirs){
-		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun);
+		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive);
 	} else {
-		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped_folder_special_count, skipped, skipped_only, isFirstRun);
+		rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive);
 	}
 		
-
-	// Prompt the user to press enter to exit
-	std::cout << "\n\033[1mPress enter to exit...\033[0m";
-	std::cin.get();
-	std::system("clear");
-	return 0;
+	if (!ni_flag) {
+		// Prompt the user to press enter to exit
+		std::cout << "\n\033[1mPress enter to exit...\033[0m";
+		std::cin.get();
+		std::system("clear");
+		return 0;
+	}
 }
