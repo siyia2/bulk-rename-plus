@@ -574,8 +574,10 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
+		if (transform_dirs) {
 		std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
 		    ++skipped_folder_count;
+		}
         if (verbose_enabled && skipped) {
             // Print a message if verbose mode enabled
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + directory_path.string() + " (excluded)");
