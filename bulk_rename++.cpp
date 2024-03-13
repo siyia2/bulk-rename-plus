@@ -15,8 +15,6 @@ unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
 // Flag for indicating the execution of special function
 bool special=false;
 
-fs::path immediate_parent_path;
-
 // Global print functions
 
 // Print an error message to stderr
