@@ -33,7 +33,7 @@ Options:
 - `-d` stands for recursion depth level (optional).
 - `-fi` stands for exclusive file renaming (optional).
 - `-fo` stands for exclusive folder renaming (optional).
-- `-ni` stands for disabling interactive mode (optional).
+- `-ni` stands for headless mode (optional).
 - `-sym` stands for treat symlinks like regular files or folders (optional).
 - `-c` option stands for case set.
 - `-ce` option stands for case set for file extensions.
