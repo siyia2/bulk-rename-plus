@@ -356,11 +356,9 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
 
     // Print summary
-    if (!non_interactive) {
     std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0m\033[1m | \033[1mFrom: \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1m" << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
-		  }
 }
 
 
@@ -879,7 +877,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.7.2");
+        printVersionNumber("1.7.3");
         return 0;
     }
 
