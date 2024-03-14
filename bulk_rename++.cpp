@@ -826,7 +826,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
               << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m";
 
-    if (special && !non_interactive) {
+    if (special) {
         std::cout << skipped_folder_special_count << " folder(s) ";
     } else {
         std::cout << skipped_folder_count << " folder(s) ";
