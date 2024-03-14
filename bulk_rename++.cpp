@@ -354,11 +354,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     // Calculate elapsed time
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
-
+	if (!non_interactive) {
     // Print summary
     std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0m\033[1m | \033[1mFrom: \033[1;95m" << paths.size()
               << " input path(s) \033[0m\033[1m" << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+		  }
 }
 
 
@@ -821,7 +822,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
-
+	if (!non_interactive) {
     // Output summary of the renaming process
     std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
               << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m";
@@ -835,6 +836,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     std::cout << "\033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
               << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
               << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+		  }
 }
 
 
