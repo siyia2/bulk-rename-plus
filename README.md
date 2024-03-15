@@ -34,7 +34,7 @@ Options:
 - `-fi` stands for exclusive file renaming (optional).
 - `-fo` stands for exclusive folder renaming (optional).
 - `-ni` stands for enabling headless mode (optional).
-- `-sym` stands for treat symlinks like regular files or folders (optional).
+- `-sym` stands for treating symlinks like regular files or folders (optional).
 - `-c` option stands for case set.
 - `-ce` option stands for case set for file extensions.
 - `-cp` option stands for case set including the lowest parent dir(s).
