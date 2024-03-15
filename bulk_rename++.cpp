@@ -9,8 +9,7 @@ std::mutex files_count_mutex;
 std::mutex files_mutex;
 
 
-// Determine the maximum number of threads supported by the system fallback is 2
-unsigned int max_threads = std::max(std::thread::hardware_concurrency(), 2u);
+int num_threads = omp_get_num_procs(); // Get the number of available processor cores
 
 // Flag for indicating the execution of special function
 bool special=false;
@@ -280,9 +279,6 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     }
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
-
-    // Determine the number of threads to create (minimum of max_threads and paths.size())
-    unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(paths.size()));
 
     // Calculate batch size
     int batch_size = paths.size() / num_threads;
@@ -741,7 +737,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
             if (batch_entries.size() >= batch_size_folders) {
                 // Determine the number of threads to use for processing subdirectories
-                unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
                 unsigned int chunk_size = batch_entries.size() / num_threads;
 
                 // Set the number of threads to the maximum number of CPU cores
@@ -764,10 +759,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
         // Process the remaining entries in the batch
         if (!batch_entries.empty()) {
-            // Set the number of threads to the maximum number of CPU cores
-            omp_set_num_threads(max_threads);
-
-            unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(batch_entries.size()));
+            
             unsigned int chunk_size = batch_entries.size() / num_threads;
 
             // Distribute tasks among available threads using OpenMP parallel for
@@ -790,9 +782,6 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     
     int num_paths = paths.size();
-    
-    // Calculate num_threads as the minimum of max_threads and the number of paths
-    unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(num_paths));
 
     // Process paths in parallel using OpenMP
     #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only) num_threads(num_threads)
@@ -863,6 +852,9 @@ int main(int argc, char *argv[]) {
     bool non_interactive = false;
     constexpr int batch_size_files = 1000;
     constexpr int batch_size_folders = 100;
+    
+    // Set the number of threads based on available cpu cores
+    omp_set_num_threads(num_threads);
 
     // Define constants for flag strings
     const std::unordered_set<std::string> valid_flags = {
@@ -879,7 +871,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.7.3");
+        printVersionNumber("1.7.4");
         return 0;
     }
 

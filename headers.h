@@ -9,14 +9,14 @@
 #include <mutex>
 #include <omp.h>
 #include <queue>
-#include <thread>
 #include <unordered_set>
 #include <vector>
 
 namespace fs = std::filesystem;
 
 // Global variable for max_threads
-extern unsigned int max_threads;
+extern int num_threads; // Get the number of available processor cores
+
 
 // Global and shared mutexes
 extern std::mutex skipped_folder_count_mutex;

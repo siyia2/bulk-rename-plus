@@ -532,7 +532,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
         // Only proceed with renaming if at least one unnumbered folder exists
         if (unnumbered_folder_exists) {
             // Rename folders in parallel batches
-            #pragma omp parallel for shared(folders_to_rename, dirs_count) schedule(static, 1) num_threads(max_threads)
+            #pragma omp parallel for shared(folders_to_rename, dirs_count) schedule(static, 1) num_threads(num_threads)
             for (size_t i = 0; i < folders_to_rename.size(); ++i) {
                 const auto& folder_pair = folders_to_rename[i];
                 const auto& old_path = folder_pair.first;
