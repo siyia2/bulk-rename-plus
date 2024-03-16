@@ -479,6 +479,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 } else if (transformation == "rpascal") {
                     new_name = from_pascal_case(new_name);
                 }
+                break;
             }
         }
     }
@@ -739,9 +740,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 // Determine the number of threads to use for processing subdirectories
                 unsigned int chunk_size = batch_entries.size() / num_threads;
 
-                // Set the number of threads to the maximum number of CPU cores
-                omp_set_num_threads(num_threads);
-
                 // Distribute tasks among available threads using OpenMP parallel for
 				#pragma omp parallel for shared(batch_entries)
                 for (unsigned int i = 0; i < num_threads; ++i) {
@@ -871,7 +869,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.7.4");
+        printVersionNumber("1.7.5");
         return 0;
     }
 
