@@ -14,7 +14,7 @@
 
 namespace fs = std::filesystem;
 
-// Global variable for max_threads
+// Global variable for num_threads
 extern int num_threads; // Get the number of available processor cores
 
 
