@@ -711,6 +711,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 		}
 		
     }
+    // Determine if it is the first time that recursion occurs needed for sequence transformation
      if (isFirstRun) { 
     isFirstRun = false;
 	}
@@ -1028,7 +1029,7 @@ int main(int argc, char *argv[]) {
     // Check if paths exist
     for (const auto& path : paths) {
         if (!fs::exists(path)) {
-            print_error("\033[1;91mError: Path does not exist - " + path + "\033[0m\n");
+            print_error("\033[1;91mError: Path does not exist or not a directory - " + path + "\033[0m\n");
             return 1;
         }
     }
