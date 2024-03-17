@@ -855,9 +855,6 @@ int main(int argc, char *argv[]) {
     bool non_interactive = false;
     constexpr int batch_size_files = 1000;
     constexpr int batch_size_folders = 100;
-    
-    // Set the number of threads based on available cpu cores
-    omp_set_num_threads(num_threads);
 
     // Define constants for flag strings
     const std::unordered_set<std::string> valid_flags = {
