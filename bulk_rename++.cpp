@@ -281,13 +281,20 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     // Calculate batch size
-    int batch_size = paths.size() / num_threads;
+    int batch_size = paths.size() / omp_get_max_threads();
 
     // Define the function to process each subset of paths
     auto process_paths = [&](int start_index, int end_index) {
+        // Convert paths to fs::path objects outside the loop
+        std::vector<fs::path> fs_paths;
+        fs_paths.reserve(end_index - start_index);
         for (int i = start_index; i < end_index; ++i) {
-            std::queue<std::pair<std::string, int>> directories; // Queue to store directories and their depths
-            directories.push({paths[i], 0}); // Push the initial path onto the queue with depth 0
+            fs_paths.emplace_back(paths[i]);
+        }
+
+        for (const auto& current_fs_path : fs_paths) {
+            std::queue<std::pair<fs::path, int>> directories; // Queue to store directories and their depths
+            directories.push({current_fs_path, 0}); // Push the initial path onto the queue with depth 0
 
             std::string depth_limit_reached_path; // Store the path where depth limit is reached
 
@@ -297,40 +304,40 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
                 // Check if depth limit is reached
                 if (current_depth >= depth && depth_limit_reached_path.empty()) {
-                    depth_limit_reached_path = current_path; // Store the path where depth limit is reached
-                    continue; // Skip processing this directory
+                    depth_limit_reached_path = current_path.string(); // Store the path where depth limit is reached
+                    break; // Stop processing this directory
                 }
 
+                // Rest of the processing logic remains the same
                 try {
-                    fs::path current_fs_path(current_path);
-
-                    // Process directories and files
-                    if (fs::is_directory(current_fs_path)) {
-                        for (const auto& entry : fs::directory_iterator(current_fs_path)) {
+                    if (fs::is_directory(current_path)) {
+                        for (const auto& entry : fs::directory_iterator(current_path)) {
                             if (fs::is_symlink(entry)) {
                                 if (!symlinks && verbose_enabled && skipped) {
                                     // Print message for symlinked folder or file if symlinks flag is false
                                     if (fs::is_directory(entry)) {
-                                        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " + entry.path().string() + " (excluded)", std::cout);
+                                        std::cout << "\033[0m\033[93mSkipped\033[0m processing \033[95msymlink_folder\033[0m " << entry.path().string() << " (excluded)\n";
                                     } else if (!fs::is_directory(entry)) {
-                                        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + entry.path().string() + " (excluded)", std::cout);
+                                        std::cout << "\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " << entry.path().string() << " (excluded)\n";
                                     }
                                 } else if (symlinks) {
                                     // Process symlink if symlinks flag is true
-                                    directories.push({entry.path().string(), current_depth + 1}); // Push symlink as regular directory
+                                    directories.push({entry.path(), current_depth + 1}); // Push symlink as regular directory
                                 }
                             } else if (fs::is_directory(entry)) {
-                                directories.push({entry.path().string(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
+                                directories.push({entry.path(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                             } else if (fs::is_regular_file(entry)) {
+                                // Call the function for batch renaming here
                                 rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
                             }
                         }
-                    } else if (fs::is_regular_file(current_fs_path)) {
-                        rename_extension({current_fs_path}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
+                    } else if (fs::is_regular_file(current_path)) {
+                        // Call the function for batch renaming here
+                        rename_extension({current_path}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
                     }
                 } catch (const std::exception& ex) {
                     if (verbose_enabled) {
-                         print_error("\033[1;91mError processing path\033[0m: " + current_path + " - " + ex.what(), std::cerr);
+                        std::cerr << "\033[1;91mError processing path\033[0m: " << current_path.string() << " - " << ex.what() << std::endl;
                     }
                 }
             }
@@ -338,11 +345,11 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     };
 
     // Launch parallel tasks for each subset of paths
-    #pragma omp parallel num_threads(num_threads)
+    #pragma omp parallel num_threads(omp_get_max_threads())
     {
         int thread_id = omp_get_thread_num();
         int start_index = thread_id * batch_size;
-        int end_index = (thread_id == num_threads - 1) ? paths.size() : (thread_id + 1) * batch_size;
+        int end_index = (thread_id == omp_get_max_threads() - 1) ? paths.size() : (thread_id + 1) * batch_size;
         process_paths(start_index, end_index);
     }
 
@@ -350,12 +357,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     // Calculate elapsed time
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
-	if (!non_interactive || verbose_enabled) {
-    // Print summary
-    std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0m\033[1m | \033[1mFrom: \033[1;95m" << paths.size()
-              << " input path(s) \033[0m\033[1m" << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
-              << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
-		  }
+    if (!non_interactive || verbose_enabled) {
+        // Print summary
+        std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0m\033[1m | \033[1mFrom: \033[1;95m" << paths.size()
+                  << " input path(s) \033[0m\033[1m" << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
+                  << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+    }
 }
 
 
