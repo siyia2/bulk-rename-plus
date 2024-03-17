@@ -345,7 +345,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     };
 
     // Launch parallel tasks for each subset of paths
-    #pragma omp parallel num_threads(omp_get_max_threads())
+    #pragma omp parallel num_threads(num_threads)
     {
         int thread_id = omp_get_thread_num();
         int start_index = thread_id * batch_size;
