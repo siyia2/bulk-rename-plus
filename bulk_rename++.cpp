@@ -281,7 +281,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     // Calculate batch size
-    int batch_size = paths.size() / omp_get_max_threads();
+    int batch_size = paths.size() / num_threads;
 
     // Define the function to process each subset of paths
     auto process_paths = [&](int start_index, int end_index) {
