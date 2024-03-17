@@ -14,8 +14,8 @@
 
 namespace fs = std::filesystem;
 
-// Global variable for num_threads
-extern int num_threads; // Get the number of available processor cores
+// Global variable for getting the num_threads
+extern int num_threads;
 
 
 // Global and shared mutexes
