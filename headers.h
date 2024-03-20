@@ -15,7 +15,7 @@
 namespace fs = std::filesystem;
 
 // Global variable for getting the num_threads
-extern int num_threads;
+extern unsigned int num_threads;
 
 
 // Global and shared mutexes

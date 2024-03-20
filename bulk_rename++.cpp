@@ -9,7 +9,7 @@ std::mutex files_count_mutex;
 std::mutex files_mutex;
 
 
-int num_threads = omp_get_num_procs(); // Get the number of available processor cores
+unsigned int num_threads = omp_get_num_procs(); // Get the number of available processor cores
 
 // Global print functions
 
@@ -673,7 +673,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
             if (verbose_enabled && !skipped_only) {
                 // Print a renaming message if verbose mode enabled
-                if (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path) && symlinks) {
+                if (std::filesystem::is_symlink(directory_path) || (std::filesystem::is_symlink(new_path) && symlinks)) {
                     print_verbose_enabled("\033[0m\033[92mRenamed \033[95msymlink_folder\033[0m " + directory_path.string() + " to " + new_path.string());
                 } else {
                     print_verbose_enabled("\033[0m\033[92mRenamed \033[94mfolder\033[0m " + directory_path.string() + " to " + new_path.string());
@@ -749,7 +749,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 				#pragma omp parallel for shared(batch_entries) num_threads(num_threads)
                 for (unsigned int i = 0; i < num_threads; ++i) {
                     unsigned int start_index = i * chunk_size;
-                    unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
+                    unsigned int end_index = (i == static_cast<unsigned int>(num_threads) - 1) ? batch_entries.size() : (i + 1) * chunk_size;
 
                     for (unsigned int j = start_index; j < end_index; ++j) {
                         rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special);
@@ -769,7 +769,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 			#pragma omp parallel for shared(batch_entries) num_threads(num_threads)
             for (unsigned int i = 0; i < num_threads; ++i) {
                 unsigned int start_index = i * chunk_size;
-                unsigned int end_index = (i == num_threads - 1) ? batch_entries.size() : (i + 1) * chunk_size;
+                unsigned int end_index = (i == static_cast<unsigned int>(num_threads) - 1) ? batch_entries.size() : (i + 1) * chunk_size;
 
                 for (unsigned int j = start_index; j < end_index; ++j) {
                     rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special);
@@ -872,7 +872,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.7.5");
+        printVersionNumber("1.7.6");
         return 0;
     }
 
