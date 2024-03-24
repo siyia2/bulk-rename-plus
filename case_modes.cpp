@@ -389,6 +389,8 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
     return oss.str();
 }
 
+
+// Helper function to add sequencial numbering to files
 void rename_files_sequentially(const std::filesystem::path& parent_path) {
     // Get a vector of all regular files in the directory
     std::vector<std::filesystem::path> files;
