@@ -527,10 +527,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
                 counter++; // Increment counter after each directory is processed
             }
-                 // Sort folders alphabetically
-std::sort(folders_to_rename.begin(), folders_to_rename.end(), [](const std::pair<fs::path, fs::path>& a, const std::pair<fs::path, fs::path>& b) {
-    return a.first.filename().string() < b.first.filename().string();
-});
         }
 
         // Only proceed with renaming if at least one unnumbered folder exists

@@ -78,7 +78,7 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
           << "  noext      Remove file extensions (e.g., Test.txt => Test)\n"
 	  << "Numerical CASE Modes:\n"
-	  << "  sequence   Append sequential numbering  (e.g., Test => 001_Test)\n"
+	  << "  sequence   Append sequential numbering to names based on modification date (e.g., Test => 001_Test)\n"
           << "  rsequence  Remove sequential numbering from names (e.g., 001_Test => Test)\n"
 	  << "  date       Append current date to names if no date pre-exists (e.g., Test => Test_20240215)\n"
 	  << "  rdate      Remove date from names (e.g., Test_20240215 => Test)\n"
@@ -871,7 +871,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.7.8");
+        printVersionNumber("1.7.9");
         return 0;
     }
 
