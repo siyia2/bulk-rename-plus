@@ -517,7 +517,7 @@ std::string remove_date_seq(const std::string& file_string) {
  
 // Define a custom comparator function to sort folders based on modification time
 bool compareFoldersByModificationTime(const std::pair<fs::path, fs::path>& folder1, const std::pair<fs::path, fs::path>& folder2) {
-    return fs::last_write_time(folder1.first) > fs::last_write_time(folder2.first);
+    return fs::last_write_time(folder1.first) < fs::last_write_time(folder2.first);
 }
 
 
