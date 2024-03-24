@@ -517,9 +517,11 @@ std::string remove_date_seq(const std::string& file_string) {
  
 // Define a custom comparator function to sort folders based on modification time
 bool compareFoldersByModificationTime(const std::pair<fs::path, fs::path>& folder1, const std::pair<fs::path, fs::path>& folder2) {
-    return fs::last_write_time(folder1.first) < fs::last_write_time(folder2.first);
+    return fs::last_write_time(folder1.first) > fs::last_write_time(folder2.first);
 }
 
+
+// Apply sequential folder numbering in parallel using OpenMP
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100) {
     int counter = 1;
     int last_number = 0;
