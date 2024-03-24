@@ -28,6 +28,7 @@ extern std::mutex cout_mutex;
 // Case modes
 
 // General
+std::string remove_numbering(const std::string& filename);
 std::string sentenceCase(const std::string& string);
 std::string to_pascal(const std::string& string);
 std::string from_pascal_case(const std::string& string);
@@ -42,8 +43,7 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
 std::string remove_numbered_prefix(const std::string& file_string);
 std::string append_date_seq(const std::string& file_string);
 std::string remove_date_seq(const std::string& file_string);
-// Mv style for folders only
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders);
+// Mv like style for folders only
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders);
 // Simplified for folders only
 std::string get_renamed_folder_name_without_numbering(const fs::path& folder_path);
@@ -57,7 +57,7 @@ void print_error(const std::string& error, std::ostream& os = std::cerr);
 void print_verbose_enabled(const std::string& message, std::ostream& os = std::cout);
 void printVersionNumber(const std::string& version);
 void print_help();
-// For file extensions
+// For file extension renaming
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size, bool symlinks, int& skipped_file_count, bool skipped, bool skipped_only);
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, bool skipped_only);
 void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, size_t batch_size_files, bool symlinks, int& skipped_file_count, bool skipped, bool skipped_only, bool non_interactive);
