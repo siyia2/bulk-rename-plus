@@ -551,9 +551,9 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                 }
                 if (verbose_enabled && !skipped_only) {
                     if ((symlinks && fs::is_symlink(old_path)) || fs::is_symlink(new_path)) {
-                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                     } else {
-                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                     }
                 }
                 std::lock_guard<std::mutex> lock(dirs_count_mutex);

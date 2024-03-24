@@ -250,9 +250,9 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
                 // Print a success message if verbose mode enabled
                 if (verbose_enabled && !skipped_only) {
 						if (fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + " to " + new_path.string(), std::cout);
+							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
 						} else {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + " to " + new_path.string(), std::cout);
+							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
 						}
 					}
             } catch (const fs::filesystem_error& e) {
@@ -536,9 +536,9 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                 if (verbose_enabled && !skipped_only) {
                         // Print a success message if verbose mode enabled
 						if (fs::is_symlink(item_path) || fs::is_symlink(new_path)) {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " to " + new_path.string(), std::cout);
+							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + item_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
 						} else {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + " to " + new_path.string(), std::cout);
+							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
 						}
 					}
                 // Update files_count or dirs_count based on the type of the renamed item
@@ -673,9 +673,9 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             if (verbose_enabled && !skipped_only) {
                 // Print a renaming message if verbose mode enabled
                 if (std::filesystem::is_symlink(directory_path) || (std::filesystem::is_symlink(new_path) && symlinks)) {
-                    print_verbose_enabled("\033[0m\033[92mRenamed \033[95msymlink_folder\033[0m " + directory_path.string() + " to " + new_path.string());
+                    print_verbose_enabled("\033[0m\033[92mRenamed \033[95msymlink_folder\033[0m " + directory_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string());
                 } else {
-                    print_verbose_enabled("\033[0m\033[92mRenamed \033[94mfolder\033[0m " + directory_path.string() + " to " + new_path.string());
+                    print_verbose_enabled("\033[0m\033[92mRenamed \033[94mfolder\033[0m " + directory_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string());
                 }
             }
 
@@ -871,7 +871,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.7.7");
+        printVersionNumber("1.7.8");
         return 0;
     }
 
