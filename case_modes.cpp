@@ -577,7 +577,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
             // Check for numbering consistency
             if (folder_number != last_number + 1 && last_number != 0) {
-                std::cerr << "Numbering inconsistency detected between folders: " << last_number + 1 << " is missing." << std::endl;             
                 unnumbered_folder_exists = true;
             }
 
