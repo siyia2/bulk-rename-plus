@@ -483,7 +483,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                 } else if (transformation == "rpascal") {
                     new_name = from_pascal_case(new_name);
                 }
-                break;
             }
         }
     }
