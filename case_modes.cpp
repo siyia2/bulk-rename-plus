@@ -347,54 +347,87 @@ std::string append_date_suffix_to_folder_name(const fs::path& folder_path) {
 // Function to add sequencial numbering to files
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string) {
     static std::unordered_map<std::filesystem::path, int> counter_map;
-    
-    // Initialize counter if not already initialized
+    static std::unordered_map<std::filesystem::path, std::unordered_set<int>> existing_numbers_map;
+
+    // Initialize counter and existing_numbers if not already initialized
     if (counter_map.find(parent_path) == counter_map.end()) {
-        // Find the highest existing numbered file
-        int max_counter = 0;
-        std::unordered_set<int> existing_numbers;
-
-        for (const auto& entry : std::filesystem::directory_iterator(parent_path)) {
-            if (entry.is_regular_file()) {
-                std::string filename = entry.path().filename().string();
-                if (!filename.empty() && std::isdigit(filename[0])) {
-                    int number = std::stoi(filename.substr(0, filename.find('_')));
-                    existing_numbers.insert(number);
-                    if (number > max_counter) {
-                        max_counter = number;
-                    }
-                }
-            }
-        }
-
-        // Find the first gap in the sequence of numbers
-        int gap = 1;
-        while (existing_numbers.find(gap) != existing_numbers.end()) {
-            gap++;
-        }
-
-        counter_map[parent_path] = gap - 1; // Initialize counter with the first gap
+        counter_map[parent_path] = 0;
+        existing_numbers_map[parent_path] = std::unordered_set<int>();
     }
 
-    int& counter = counter_map[parent_path];
+    auto& existing_numbers = existing_numbers_map[parent_path];
 
-    // Check if file_string starts with a number followed by an underscore
+    // Remove any existing numbered prefix
+    std::string filename_without_prefix;
     if (!file_string.empty() && std::isdigit(file_string[0])) {
         size_t underscore_pos = file_string.find('_');
         if (underscore_pos != std::string::npos && underscore_pos > 0 && std::all_of(file_string.begin(), file_string.begin() + underscore_pos, ::isdigit)) {
-            return file_string; // Return directly if file_string starts with a numbered prefix
+            int number = std::stoi(file_string.substr(0, underscore_pos));
+            existing_numbers.insert(number);
+            filename_without_prefix = file_string.substr(underscore_pos + 1);
+        } else {
+            filename_without_prefix = file_string;
         }
+    } else {
+        filename_without_prefix = file_string;
     }
 
-    std::ostringstream oss;
-    counter++; // Increment counter before using its current value
-    oss << std::setfill('0') << std::setw(3) << counter; // Width set to 3 for leading zeros up to three digits
+    // Find the first gap in the sequence of numbers
+    int gap = 1;
+    while (existing_numbers.find(gap) != existing_numbers.end()) {
+        gap++;
+    }
+    existing_numbers.insert(gap);
 
-    oss << "_" << file_string;
+    int& counter = counter_map[parent_path];
+    counter++;
+
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(3) << counter;
+    oss << "_" << filename_without_prefix;
 
     return oss.str();
 }
 
+void rename_files_sequentially(const std::filesystem::path& parent_path) {
+    // Get a vector of all regular files in the directory
+    std::vector<std::filesystem::path> files;
+    for (const auto& entry : std::filesystem::directory_iterator(parent_path)) {
+        if (entry.is_regular_file()) {
+            files.push_back(entry.path());
+        }
+    }
+
+    // Sort the files by their last modification time
+    std::sort(files.begin(), files.end(), [](const std::filesystem::path& a, const std::filesystem::path& b) {
+        return std::filesystem::last_write_time(a) < std::filesystem::last_write_time(b);
+    });
+
+    // Remove any existing numbering prefixes and get a set of existing numbers
+    static std::unordered_map<std::filesystem::path, int> counter_map;
+    counter_map[parent_path] = 0;
+    std::unordered_set<int> existing_numbers;
+
+    // Find the first gap in the sequence of numbers
+    int gap = 1;
+
+    // Rename files sequentially
+    for (const auto& file_path : files) {
+        std::string filename = file_path.filename().string();
+        if (!filename.empty() && std::isdigit(filename[0])) {
+            int number = std::stoi(filename.substr(0, filename.find('_')));
+            existing_numbers.insert(number);
+            while (existing_numbers.find(gap) != existing_numbers.end()) {
+                gap++;
+            }
+        }
+
+        std::string new_filename = append_numbered_prefix(parent_path, filename);
+        std::filesystem::path new_path = parent_path / new_filename;
+        std::filesystem::rename(file_path, new_path);
+        counter_map[parent_path]++;
+    }
+}
 
 // Function to remove sequencial numbering from files
 std::string remove_numbered_prefix(const std::string& file_string) {
