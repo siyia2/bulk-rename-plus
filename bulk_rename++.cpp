@@ -275,13 +275,18 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         depth = std::numeric_limits<int>::max();
     }
     
-    // Determine the number of threads to create (minimum of max_threads and paths.size())
-    unsigned int num_threads = std::min(static_cast<unsigned int>(paths.size()), max_threads);
+    
+    // Number of paths to be processed based on std::vector<std::string> paths
+    int num_paths = paths.size();
+    
+    // Calculate batch size for path processing
+    int batch_size = 2;
+    
+    // Calculate the number of threads needed based on the number of paths and the desired paths per thread
+	unsigned int num_threads = std::min(static_cast<unsigned int>((num_paths + 1) / 2), max_threads);
+
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
-
-    // Calculate batch size
-    int batch_size = paths.size() / num_threads;
 
     // Define the function to process each subset of paths
     auto process_paths = [&](int start_index, int end_index) {
@@ -343,15 +348,36 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
             }
         }
     };
+    
+	// Calculate batch size for remaining paths
+	int remaining_batch_size = static_cast<int>((paths.size() - num_threads * batch_size) / num_threads);
+	unsigned int remaining_paths_remainder = (paths.size() - num_threads * batch_size) % num_threads;
 
-    // Launch parallel tasks for each subset of paths
-    #pragma omp parallel num_threads(num_threads)
-    {
-        int thread_id = omp_get_thread_num();
-        int start_index = thread_id * batch_size;
-        int end_index = (thread_id == omp_get_max_threads() - 1) ? paths.size() : (thread_id + 1) * batch_size;
-        process_paths(start_index, end_index);
-    }
+
+
+	#pragma omp parallel num_threads(num_threads)
+	{
+    unsigned int thread_id = omp_get_thread_num(); // Declare and initialize thread_id within the parallel region
+
+    // Adjust the following lines to use thread_id appropriately
+    int start_index = thread_id * batch_size;
+    int end_index = (thread_id == num_threads - 1) ? (thread_id + 1) * batch_size + remaining_paths_remainder : (thread_id + 1) * batch_size;
+
+    process_paths(start_index, end_index);
+	}
+
+	// Handle remaining paths in batch
+	#pragma omp parallel for num_threads(num_threads)
+		for (decltype(paths.size()) i = num_threads * batch_size; i < paths.size(); i += remaining_batch_size) {
+		unsigned int thread_id = omp_get_thread_num(); // Redefine thread_id within the loop
+
+		int start_index = i;
+		int num_threads_int = static_cast<int>(num_threads);
+		int end_index = (thread_id == static_cast<unsigned int>(num_threads_int) - 1) ? (thread_id + 1) * batch_size + remaining_paths_remainder : (thread_id + 1) * batch_size;
+
+		process_paths(start_index, end_index);
+	}
+
 
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
@@ -785,37 +811,53 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
  
 
-// Function to rename paths (directories and files) based on specified transformations
+// Function to rename paths in batches
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, int skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive, bool special) {
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     
-    //  Number of paths to be processed based on std::vector<std::string> paths
+    // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
     
-    // Determine the number of threads to create (minimum of max_threads and paths.size())
-    unsigned int num_threads = std::min(static_cast<unsigned int>(num_paths), max_threads);
+    // Calculate the number of threads needed based on the number of paths and the desired paths per thread
+    unsigned int max_threads = omp_get_max_threads(); // Get the maximum number of threads available
+    unsigned int num_threads = std::min(static_cast<unsigned int>((num_paths + 1) / 2), max_threads);
+
+    // Calculate batch size for path processing
+    int initial_batch_size = std::ceil(static_cast<double>(num_paths) / num_threads); // Calculate initial batch size
+    int remaining_paths = num_paths % num_threads; // Calculate the number of remaining paths after division
 
     // Process paths in parallel using OpenMP
-    #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only) num_threads(num_threads)
-    for (int i = 0; i < num_paths; ++i) {
-        // Make isFirstRun true necessary for folder sequence skipped folder counting
-        bool isFirstRunLocal = true;
+    #pragma omp parallel num_threads(num_threads)
+    {
+        int thread_id = omp_get_thread_num(); // Get the thread ID
+        int start_index = thread_id * initial_batch_size; // Calculate the start index for the current thread
+        int end_index = start_index + initial_batch_size; // Calculate the end index for the current thread
+        if (thread_id < remaining_paths) {
+            end_index++; // If there are remaining paths, increment the end index for the current thread
+        }
+        end_index = std::min(end_index, num_paths); // Ensure end index does not exceed the total number of paths
         
-        // Obtain the current path
-        fs::path current_path(paths[i]);
-        if (fs::exists(current_path)) {
-            if (fs::is_directory(current_path)) {
-                if (rename_parents) {
-                    // If -p option is used, only rename the immediate parent
-                    fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special);
-                } else {
-                    // Otherwise, rename the entire path
-                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special);
+        // Process paths assigned to this thread
+        for (int i = start_index; i < end_index; ++i) {
+            // Make isFirstRun true necessary for folder sequence skipped folder counting
+            bool isFirstRunLocal = true;
+            
+            // Obtain the current path
+            fs::path current_path(paths[i]);
+            if (fs::exists(current_path)) {
+                if (fs::is_directory(current_path)) {
+                    if (rename_parents) {
+                        // If -p option is used, only rename the immediate parent
+                        fs::path immediate_parent_path = current_path.parent_path();
+                        rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special);
+                    } else {
+                        // Otherwise, rename the entire path
+                        rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special);
+                    }
+                } else if (fs::is_regular_file(current_path)) {
+                    // For files, directly rename the item without considering the parent directory
+                    rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
                 }
-            } else if (fs::is_regular_file(current_path)) {
-                // For files, directly rename the item without considering the parent directory
-                rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
             }
         }
     }
@@ -823,24 +865,26 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
-	if (!non_interactive || verbose_enabled) {
-    // Output summary of the renaming process
-    std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
-              << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m";
+    if (!non_interactive || verbose_enabled) {
+        // Output summary of the renaming process
+        std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
+                << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m";
 
-    if (special) {
-        std::cout << skipped_folder_special_count << " folder(s) ";
-    } else {
-        std::cout << skipped_folder_count << " folder(s) ";
+        if (special) {
+            std::cout << skipped_folder_special_count << " folder(s) ";
+        } else {
+            std::cout << skipped_folder_count << " folder(s) ";
+        }
+
+        std::cout << "\033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
+                << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
+                << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
     }
-
-    std::cout << "\033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
-              << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
-              << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
-		  }
 }
 
 
+
+// Main function
 int main(int argc, char *argv[]) {
     // Initialize variables and flags
     std::vector<std::string> paths;
@@ -881,7 +925,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.8.6");
+        printVersionNumber("1.8.7");
         return 0;
     }
 
