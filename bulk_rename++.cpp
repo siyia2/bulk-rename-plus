@@ -78,9 +78,9 @@ std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "  rbak       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)\n"
           << "  noext      Remove file extensions (e.g., Test.txt => Test)\n"
 	  << "Numerical CASE Modes:\n"
-	  << "  sequence   Append numeric sequence to names based on modification date unless it pre-exists (e.g., Test => 001_Test)\n"
+	  << "  sequence   Append numeric sequence to names based on modification date (e.g., Test => 001_Test)\n"
           << "  rsequence  Remove numeric sequence from names (e.g., 001_Test => Test)\n"
-	  << "  date       Append current date to names unless it pre-exists (e.g., Test => Test_20240215)\n"
+	  << "  date       Append current date to names (e.g., Test => Test_20240215)\n"
 	  << "  rdate      Remove date from names (e.g., Test_20240215 => Test)\n"
 	  << "  rnumeric   Remove numeric characters from names (e.g., 1Te0st2 => Test)\n"
           << "Custom CASE Modes:\n"
@@ -573,7 +573,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     
-    // Determine the number of threads to create
+    // Use maximum number of available cores for batch size division
 	unsigned int num_threads = max_threads;
         
 
@@ -789,14 +789,16 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, int skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive, bool special) {
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     
+    //  Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
     
-    unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(num_paths));
+    // Determine the number of threads to create (minimum of max_threads and paths.size())
+    unsigned int num_threads = std::min(static_cast<unsigned int>(num_paths), max_threads);
 
     // Process paths in parallel using OpenMP
     #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only) num_threads(num_threads)
     for (int i = 0; i < num_paths; ++i) {
-        // Make isFirstRun true for each iteration to avoid race conditions
+        // Make isFirstRun true necessary for folder sequence skipped folder counting
         bool isFirstRunLocal = true;
         
         // Obtain the current path
@@ -879,7 +881,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.8.5");
+        printVersionNumber("1.8.6");
         return 0;
     }
 
