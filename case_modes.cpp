@@ -554,11 +554,20 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             }
 
             // Extract the number
-            int folder_number = 0;
-            if (pos != std::string::npos) {
-                std::string number_str = folder_name.substr(0, pos);
-                folder_number = std::stoi(number_str);
-            }
+		int folder_number = 0;
+		if (pos != std::string::npos) {
+			std::string number_str;
+			// Start from the beginning of the string and iterate until the first underscore
+			for (size_t i = 0; i < pos; ++i) {
+				if (std::isdigit(folder_name[i])) {
+					number_str += folder_name[i];
+				}
+			}
+			// Convert the extracted digits to an integer
+			if (!number_str.empty()) {
+				folder_number = std::stoi(number_str);
+			}
+		}
 
             // Check for numbering consistency
             if (folder_number != last_number + 1 && last_number != 0) {
