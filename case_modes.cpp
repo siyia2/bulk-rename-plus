@@ -581,6 +581,10 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
         // Only proceed with renaming if at least one unnumbered folder exists
         if (unnumbered_folder_exists) {
+			
+			// Determine the number of threads to create (minimum of max_threads and folders_to_rename.size())
+			unsigned int num_threads = std::min(static_cast<unsigned int>(folders_to_rename.size()), max_threads);
+			
             // Rename folders in parallel batches
             #pragma omp parallel for shared(folders_to_rename, dirs_count) schedule(static, 1) num_threads(num_threads)
             for (size_t i = 0; i < folders_to_rename.size(); ++i) {

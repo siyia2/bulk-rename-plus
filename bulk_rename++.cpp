@@ -9,7 +9,7 @@ std::mutex files_count_mutex;
 std::mutex files_mutex;
 
 
-unsigned int num_threads = omp_get_num_procs(); // Get the number of available processor cores
+unsigned int max_threads = omp_get_num_procs(); // Get the number of available processor cores
 
 // Global print functions
 
@@ -274,6 +274,9 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
     }
+    
+    // Determine the number of threads to create (minimum of max_threads and paths.size())
+    unsigned int num_threads = std::min(static_cast<unsigned int>(paths.size()), max_threads);
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
@@ -569,6 +572,9 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int& skipped_file_count, int& skipped_folder_count, int& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool& special) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
+    
+    // Determine the number of threads to create
+	unsigned int num_threads = max_threads;
         
 
     // Early exit if the directory is a symlink and should not be transformed
@@ -726,28 +732,19 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         std::vector<fs::path> batch_entries;
         std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
 
-		// Create a vector to store the directory entries
-		std::vector<fs::directory_entry> entries;
-		for (const auto& entry : fs::directory_iterator(new_path)) {
-			entries.push_back(entry);
-		}
-
-		// Parallelize the loop using OpenMP
-		#pragma omp parallel for
-		for (int i = 0; i < static_cast<int>(entries.size()); ++i) {
-			const auto& entry = entries[i];
-			if (entry.is_directory() && !rename_parents) {
-				// Add directories to the batch concurrently
-				std::lock_guard<std::mutex> lock(batch_mutex);
-				batch_entries.emplace_back(entry.path());
-			} else if (entry.is_directory() && rename_parents) {
-				// Process parent directories immediately
-				rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special);
-			} else {
-				// Process files immediately
-				rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
-			}
-
+        // Iterate over subdirectories of the renamed directory
+        for (const auto& entry : fs::directory_iterator(new_path)) {
+            if (entry.is_directory() && !rename_parents) {
+                // Add directories to the batch concurrently
+                std::lock_guard<std::mutex> lock(batch_mutex);
+                batch_entries.emplace_back(entry.path());
+            } else if (entry.is_directory() && rename_parents) {
+                // Process parent directories immediately
+                rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special);
+            } else {
+                // Process files immediately
+                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
+            }
 
             if (batch_entries.size() >= batch_size_folders) {
                 // Determine the number of threads to use for processing subdirectories
@@ -793,6 +790,8 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     
     int num_paths = paths.size();
+    
+    unsigned int num_threads = std::min(max_threads, static_cast<unsigned int>(num_paths));
 
     // Process paths in parallel using OpenMP
     #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only) num_threads(num_threads)
