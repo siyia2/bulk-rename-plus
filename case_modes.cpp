@@ -541,7 +541,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
             size_t pos = folder_name.find('_');
             // Check if folder is unnumbered
-            if (pos == std::string::npos || !std::all_of(folder_name.begin(), folder_name.begin() + pos, ::isdigit)) {
+            if ((pos == std::string::npos || !std::all_of(folder_name.begin(), folder_name.begin() + pos, ::isdigit)) && !(folder_name.substr(0, 2) == "00")) {
                 unnumbered_folder_exists = true;
             }
 
