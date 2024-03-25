@@ -350,8 +350,14 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     };
     
 	// Calculate batch size for remaining paths
-	int remaining_batch_size = static_cast<int>((paths.size() - num_threads * batch_size) / num_threads);
+	int remaining_batch_size = (paths.size() - num_threads * batch_size) / num_threads;
 	unsigned int remaining_paths_remainder = (paths.size() - num_threads * batch_size) % num_threads;
+
+	// Adjust remaining batch size if there are paths left after even distribution
+	if (remaining_paths_remainder > 0) {
+		remaining_batch_size++;
+		remaining_paths_remainder--;
+	}
 
 
 
