@@ -65,9 +65,9 @@ Options:
 - `rbak`       Remove .bak from file extension names (e.g., Test.txt.bak => Test.txt)
 - `noext`      Remove file extensions (e.g., Test.txt => Test)
 #### Numerical CASE Modes:
-- `sequence`  Append sequential numbering based on mofication date to names if no numbering pre-exists (e.g., Test => 001_Test)
+- `sequence`  Append sequential numbering based on mofication date to names unless it pre-exists (e.g., Test => 001_Test)
 - `rsequence` Remove sequential numbering from names (e.g., 001_Test => Test)
-- `date`       Append current date to names if no date pre-exists (e.g., Test => Test_20240215)
+- `date`       Append current date to names unless it pre-exists (e.g., Test => Test_20240215)
 - `rdate`      Remove date from names (e.g., Test_20240215 => Test)
 - `rnumeric`   Remove numeric characters from names (e.g., 1Te0st2 => Test)
 #### Custom CASE Modes:
