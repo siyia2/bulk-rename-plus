@@ -520,34 +520,24 @@ std::string remove_date_seq(const std::string& file_string) {
 // Apply sequential folder numbering in parallel using OpenMP
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100) {
     int counter = 1; // Counter for immediate subdirectories
-    int last_number= 0;
+    int last_number = 0; // Variable to keep track of the last observed number
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths; // Store folder paths and their symlink status
-
+    
     bool unnumbered_folder_exists = false; // Flag to track if at least one unnumbered folder exists
-
+    
     // Continue recursion if the depth limit is not reached
     if (depth != 0) {
         // Decrement depth only if the depth limit is positive
         if (depth > 0)
             --depth;
 
-        // Collect folder paths and their modification dates
-        std::vector<std::pair<std::filesystem::file_time_type, fs::path>> folder_paths;
-        for (const auto& folder : fs::directory_iterator(base_directory)) {
-            bool skip = !symlinks && fs::is_symlink(folder);
-            if (folder.is_directory() && !skip) {
-                folder_paths.emplace_back(fs::last_write_time(folder), folder.path());
-            }
-        }
-
-        // Sort the folder paths by their modification dates
-        std::sort(folder_paths.begin(), folder_paths.end());
-
-        // Process the sorted folder paths
-        for (const auto& [modification_time, folder] : folder_paths) {
-            std::string folder_name = folder.filename().string();
-            unchanged_folder_paths.push_back({folder, fs::is_symlink(folder)}); // Store the path and its symlink status
+        // Collect folder paths and check for unnumbered folders
+    for (const auto& folder : fs::directory_iterator(base_directory)) {
+        bool skip = !symlinks && fs::is_symlink(folder);
+        if (folder.is_directory() && !skip) {
+            std::string folder_name = folder.path().filename().string();
+            unchanged_folder_paths.push_back({folder.path(), fs::is_symlink(folder)}); // Store the path and its symlink status
 
             size_t pos = folder_name.find('_');
             // Check if folder is unnumbered
@@ -557,13 +547,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 
             // Remove any existing numbering from the folder name
             std::string original_name;
-            if (folder_name.substr(0, 2) == "00" && pos != std::string::npos && pos > 0 && std::isdigit(folder_name[0])) {
-                original_name = folder_name.substr(pos + 1);
-            } else {
-                original_name = folder_name;
-            }
-            
-            // Remove any existing numbering from the folder name
             if (folder_name.substr(0, 2) == "00" && pos != std::string::npos && pos > 0 && std::isdigit(folder_name[0])) {
                 original_name = folder_name.substr(pos + 1);
             } else {
@@ -590,15 +573,16 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str();
 
             // Add folder to the vector for batch renaming
-            folders_to_rename.emplace_back(folder, new_name);
+            folders_to_rename.emplace_back(folder.path(), new_name);
 
             counter++; // Increment counter after each directory is processed
         }
+    }
 
         // Only proceed with renaming if at least one unnumbered folder exists
         if (unnumbered_folder_exists) {
             // Rename folders in parallel batches
-            #pragma omp parallel for shared(folders_to_rename, dirs_count) schedule(static, 1) num_threads(omp_get_max_threads())
+            #pragma omp parallel for shared(folders_to_rename, dirs_count) schedule(static, 1) num_threads(num_threads)
             for (size_t i = 0; i < folders_to_rename.size(); ++i) {
                 const auto& folder_pair = folders_to_rename[i];
                 const auto& old_path = folder_pair.first;
@@ -615,7 +599,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     }
                     continue; // Skip renaming if moving fails
                 }
-                if (verbose_enabled) {
+                if (verbose_enabled && !skipped_only) {
                     if ((symlinks && fs::is_symlink(old_path)) || fs::is_symlink(new_path)) {
                         print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[95m symlink_folder\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                     } else {
@@ -633,7 +617,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     bool is_symlink = folder_pair.second;
                     if (verbose_enabled && skipped) {
                         if (is_symlink) {
-                            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+                            print_verbose_enabled( "\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
                         } else {
                             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
                         }
