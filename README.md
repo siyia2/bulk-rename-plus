@@ -1,7 +1,7 @@
 # bulk-rename-plus
 Tiny and Powerful C++ cmd tool to rename recursively paths on Linux, useful for batch renaming.
 
-Multithreaded at the top level with each input path being assigned to a separate thread and at the low-level where batches each of 100 folders max and 1000 files max are processed by separate threads.
+Multithreaded at the top level with each input path being assigned to a separate thread and at the low-level where batches consisting of 100 folders max and 1000 files max are processed by separate threads.
 
 Minimal I/O writes, since `v1.0.4+` it checks and renames only when necessary.
 
