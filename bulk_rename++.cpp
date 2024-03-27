@@ -788,20 +788,12 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
     
-    // Define a semaphore with a maximum count of the number of paths from user input
-    Semaphore sem(num_paths);
-    
     // Vector to hold futures for each asynchronous task
     std::vector<std::future<void>> futures;
     
     for (int i = 0; i < num_paths; ++i) {
-        // Acquire a semaphore slot before launching each task
-        sem.wait();
 
-        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count, batch_size_files, batch_size_folders, symlinks, &skipped_file_count, &skipped_folder_count, &skipped_folder_special_count, &skipped, &skipped_only, &isFirstRun, &special, &sem]() {
-            // Release the semaphore slot when the task completes
-            std::shared_ptr<void> guard(nullptr, [&sem](void*) { sem.notify(); });
-            
+        futures.push_back(std::async(std::launch::deferred, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count, batch_size_files, batch_size_folders, symlinks, &skipped_file_count, &skipped_folder_count, &skipped_folder_special_count, &skipped, &skipped_only, &isFirstRun, &special]() {            
             bool isFirstRunLocal = true;
             
             // Obtain the current path
@@ -891,7 +883,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.8.9");
+        printVersionNumber("1.9.0");
         return 0;
     }
 

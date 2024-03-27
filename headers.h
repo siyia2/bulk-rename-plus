@@ -10,41 +10,14 @@
 #include <mutex>
 #include <omp.h>
 #include <queue>
-#include <semaphore>
 #include <unordered_set>
 #include <vector>
-
-// Semaphore used only in rename_path to limit thread creation
-class Semaphore {
-public:
-    Semaphore(int count = 0) : count_(count) {}
-
-    void notify() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        count_++;
-        condition_.notify_one();
-    }
-
-    void wait() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        while (count_ == 0) {
-            condition_.wait(lock);
-        }
-        count_--;
-    }
-
-private:
-    std::mutex mutex_;
-    std::condition_variable condition_;
-    int count_;
-};
 
 
 namespace fs = std::filesystem;
 
 // Global variable for getting the max_threads
 extern unsigned int max_threads;
-
 
 // Global and shared mutexes
 extern std::mutex skipped_folder_count_mutex;
