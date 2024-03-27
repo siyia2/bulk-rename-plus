@@ -518,7 +518,7 @@ std::string remove_date_seq(const std::string& file_string) {
 // Folder numbering functions mv style
  
 // Apply sequential folder numbering in parallel using OpenMP
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100, int num_paths = 1) {
     int counter = 1; // Counter for immediate subdirectories
     int last_number = 0; // Variable to keep track of the last observed number
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename; // Vector to store folders to be renamed
@@ -605,6 +605,21 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 			// Determine the number of threads to create (minimum of max_threads and folders_to_rename.size())
 			unsigned int num_threads = std::min(static_cast<unsigned int>(folders_to_rename.size()), max_threads);
 			
+	
+			if (num_paths > 1) {
+				// Calculate the maximum number of threads per path
+				unsigned int max_threads_per_path = max_threads / num_paths;
+    
+				// Check if the number of threads per path exceeds 1
+				if (max_threads_per_path < 1) {
+				// If it's less than 1, set it to 1 to ensure at least one thread per path
+				max_threads_per_path = 1;
+			}
+    
+			// Maximum number of threads per path
+			num_threads = max_threads_per_path;
+		}
+			
             // Rename folders in parallel batches
             #pragma omp parallel for shared(folders_to_rename, dirs_count) schedule(static, 1) num_threads(num_threads) if(num_threads > 1)
             for (size_t i = 0; i < folders_to_rename.size(); ++i) {
@@ -656,6 +671,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 }
 
 // Overloaded function with default verbose_enabled = false and batch processing
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100) {
-    rename_folders_with_sequential_numbering(base_directory, "", dirs_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100, int num_paths = 1) {
+    rename_folders_with_sequential_numbering(base_directory, "", dirs_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders, num_paths);
 }
