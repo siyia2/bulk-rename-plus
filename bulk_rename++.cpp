@@ -782,16 +782,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
  
 
-
-
 // Function to rename paths (directories and files) based on specified transformations asynchronously
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, int skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive, bool special) {
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
     
-    // Define a semaphore with a maximum count of 1
-    Semaphore sem(1);
+    // Define a semaphore with a maximum count of 2
+    Semaphore sem(num_paths);
     
     // Vector to hold futures for each asynchronous task
     std::vector<std::future<void>> futures;
@@ -893,7 +891,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.8.8");
+        printVersionNumber("1.8.9");
         return 0;
     }
 
