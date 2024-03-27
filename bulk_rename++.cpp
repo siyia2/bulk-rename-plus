@@ -8,8 +8,8 @@ std::mutex sequence_mutex;
 std::mutex files_count_mutex;
 std::mutex files_mutex;
 
+unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); // Get the number of available processor cores
 
-unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); // Get the number of available processor cores fallback to 2 if 0 or 0 >
 
 // Global print functions
 
@@ -788,10 +788,13 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
     
-   ThreadPool thread_pool(paths.size() > 1 ? 2 : max_threads); // Create ThreadPool with x2 max_threads if path size is more than one, else create with max_threads
-
+    // Vector to hold futures for each asynchronous task
+    std::vector<std::future<void>> futures;
+    
     for (int i = 0; i < num_paths; ++i) {
-        thread_pool.enqueue([&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count, batch_size_files, batch_size_folders, symlinks, &skipped_file_count, &skipped_folder_count, &skipped_folder_special_count, &skipped, &skipped_only, &isFirstRun, &special]() {            
+
+        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count, batch_size_files, batch_size_folders, symlinks, &skipped_file_count, &skipped_folder_count, &skipped_folder_special_count, &skipped, &skipped_only, &isFirstRun, &special]() {
+            
             bool isFirstRunLocal = true;
             
             // Obtain the current path
@@ -811,7 +814,12 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
                     rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
                 }
             }
-        });
+        }));
+    }
+
+    // Wait for all asynchronous tasks to complete
+    for(auto &future : futures) {
+        future.wait();
     }
 
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
@@ -876,7 +884,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.9.1");
+        printVersionNumber("1.9.2");
         return 0;
     }
 
