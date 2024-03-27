@@ -274,27 +274,20 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
     }
-    
-    // Determine the number of threads to create (minimum of max_threads and paths.size())
-    unsigned int num_threads = std::min(static_cast<unsigned int>(paths.size()), max_threads);
 
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
-    // Calculate batch size
-    int batch_size = paths.size() / num_threads;
+    // Get the number of available threads
+    int num_threads = omp_get_max_threads();
 
-    // Define the function to process each subset of paths
+    // Define the function to process each path
     auto process_paths = [&](int start_index, int end_index) {
-        // Convert paths to fs::path objects outside the loop
-        std::vector<fs::path> fs_paths;
-        fs_paths.reserve(end_index - start_index);
+        // Convert paths to fs::path objects
+        #pragma omp parallel for schedule(dynamic)
         for (int i = start_index; i < end_index; ++i) {
-            fs_paths.emplace_back(paths[i]);
-        }
-
-        for (const auto& current_fs_path : fs_paths) {
+            const auto& current_fs_path = paths[i];
             std::queue<std::pair<fs::path, int>> directories; // Queue to store directories and their depths
-            directories.push({current_fs_path, 0}); // Push the initial path onto the queue with depth 0
+            directories.push({fs::path(current_fs_path), 0}); // Push the initial path onto the queue with depth 0
 
             std::string depth_limit_reached_path; // Store the path where depth limit is reached
 
@@ -328,12 +321,12 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                                 directories.push({entry.path(), current_depth + 1}); // Push subdirectories onto the queue with incremented depth
                             } else if (fs::is_regular_file(entry)) {
                                 // Call the function for batch renaming here
-                                rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
+                                rename_extension({entry.path()}, case_input, verbose_enabled, files_count, batch_size_files, symlinks, skipped_file_count, skipped, skipped_only);
                             }
                         }
                     } else if (fs::is_regular_file(current_path)) {
                         // Call the function for batch renaming here
-                        rename_extension({current_path}, case_input, verbose_enabled, files_count, batch_size, symlinks, skipped_file_count, skipped, skipped_only);
+                        rename_extension({current_path}, case_input, verbose_enabled, files_count, batch_size_files, symlinks, skipped_file_count, skipped, skipped_only);
                     }
                 } catch (const std::exception& ex) {
                     if (verbose_enabled) {
@@ -344,12 +337,16 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         }
     };
 
-    // Launch parallel tasks for each subset of paths
-    #pragma omp parallel num_threads(num_threads) if(num_threads > 1)
+    // Divide the paths into chunks based on the number of available threads
+    int chunk_size = paths.size() / num_threads;
+
+    // Process paths in parallel using OpenMP
+    #pragma omp parallel
     {
         int thread_id = omp_get_thread_num();
-        int start_index = thread_id * batch_size;
-        int end_index = (thread_id == omp_get_max_threads() - 1) ? paths.size() : (thread_id + 1) * batch_size;
+        int start_index = thread_id * chunk_size;
+        int end_index = (thread_id == num_threads - 1) ? paths.size() : start_index + chunk_size;
+
         process_paths(start_index, end_index);
     }
 
