@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <vector>
 
-
+// Semaphore used only in rename_path to limit thread creation
 class Semaphore {
 public:
     Semaphore(int count = 0) : count_(count) {}
