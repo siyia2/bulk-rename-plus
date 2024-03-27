@@ -782,62 +782,77 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 }
  
 
-// Function to rename paths (directories and files) based on specified transformations
+
+
+// Function to rename paths (directories and files) based on specified transformations asynchronously
 void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, int skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive, bool special) {
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
-    
-    //  Number of paths to be processed based on std::vector<std::string> paths
+    // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
     
-    // Determine the number of threads to create (minimum of max_threads and paths.size())
-    unsigned int num_threads = std::min(static_cast<unsigned int>(num_paths), max_threads);
-
-    // Process paths in parallel using OpenMP
-    #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only) num_threads(num_threads) if(num_threads > 1)
+    // Define a semaphore with a maximum count of num_paths
+    Semaphore sem(num_paths);
+    
+    // Vector to hold futures for each asynchronous task
+    std::vector<std::future<void>> futures;
+    
     for (int i = 0; i < num_paths; ++i) {
-        // Make isFirstRun true necessary for folder sequence skipped folder counting
-        bool isFirstRunLocal = true;
-        
-        // Obtain the current path
-        fs::path current_path(paths[i]);
-        if (fs::exists(current_path)) {
-            if (fs::is_directory(current_path)) {
-                if (rename_parents) {
-                    // If -p option is used, only rename the immediate parent
-                    fs::path immediate_parent_path = current_path.parent_path();
-                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special);
-                } else {
-                    // Otherwise, rename the entire path
-                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special);
+        // Acquire a semaphore slot before launching each task
+        sem.wait();
+
+        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count, batch_size_files, batch_size_folders, symlinks, &skipped_file_count, &skipped_folder_count, &skipped_folder_special_count, &skipped, &skipped_only, &isFirstRun, &special, &sem]() {
+            // Release the semaphore slot when the task completes
+            std::shared_ptr<void> guard(nullptr, [&sem](void*) { sem.notify(); });
+            
+            bool isFirstRunLocal = true;
+            
+            // Obtain the current path
+            fs::path current_path(paths[i]);
+            if (fs::exists(current_path)) {
+                if (fs::is_directory(current_path)) {
+                    if (rename_parents) {
+                        // If -p option is used, only rename the immediate parent
+                        fs::path immediate_parent_path = current_path.parent_path();
+                        rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special);
+                    } else {
+                        // Otherwise, rename the entire path
+                        rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special);
+                    }
+                } else if (fs::is_regular_file(current_path)) {
+                    // For files, directly rename the item without considering the parent directory
+                    rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
                 }
-            } else if (fs::is_regular_file(current_path)) {
-                // For files, directly rename the item without considering the parent directory
-                rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
             }
-        }
+        }));
+    }
+
+    // Wait for all asynchronous tasks to complete
+    for(auto &future : futures) {
+        future.wait();
     }
 
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
-	if (!non_interactive || verbose_enabled) {
-    // Output summary of the renaming process
-    std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
-              << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m";
+    if (!non_interactive || verbose_enabled) {
+        // Output summary of the renaming process
+        std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
+                  << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m";
 
-    if (special) {
-        std::cout << skipped_folder_special_count << " folder(s) ";
-    } else {
-        std::cout << skipped_folder_count << " folder(s) ";
+        if (special) {
+            std::cout << skipped_folder_special_count << " folder(s) ";
+        } else {
+            std::cout << skipped_folder_count << " folder(s) ";
+        }
+
+        std::cout << "\033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
+                  << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
+                  << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
     }
-
-    std::cout << "\033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
-              << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
-              << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
-		  }
 }
 
 
+// Main function
 int main(int argc, char *argv[]) {
     // Initialize variables and flags
     std::vector<std::string> paths;
@@ -878,7 +893,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.8.7");
+        printVersionNumber("1.8.8");
         return 0;
     }
 
