@@ -793,7 +793,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     
     for (int i = 0; i < num_paths; ++i) {
 
-        futures.push_back(std::async(std::launch::deferred, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count, batch_size_files, batch_size_folders, symlinks, &skipped_file_count, &skipped_folder_count, &skipped_folder_special_count, &skipped, &skipped_only, &isFirstRun, &special]() {            
+        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count, batch_size_files, batch_size_folders, symlinks, &skipped_file_count, &skipped_folder_count, &skipped_folder_special_count, &skipped, &skipped_only, &isFirstRun, &special]() {            
             bool isFirstRunLocal = true;
             
             // Obtain the current path
