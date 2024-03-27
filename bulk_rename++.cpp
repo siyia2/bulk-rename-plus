@@ -790,8 +790,8 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
     
-    // Define a semaphore with a maximum count of num_paths
-    Semaphore sem(num_paths);
+    // Define a semaphore with a maximum count of 1
+    Semaphore sem(1);
     
     // Vector to hold futures for each asynchronous task
     std::vector<std::future<void>> futures;
