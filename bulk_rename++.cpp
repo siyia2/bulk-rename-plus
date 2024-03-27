@@ -278,7 +278,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
 
     // Get the number of available threads
-    int num_threads = omp_get_max_threads();
+    int num_threads = max_threads;
 
     // Define the function to process each path
     auto process_paths = [&](int start_index, int end_index) {
