@@ -345,7 +345,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     };
 
     // Launch parallel tasks for each subset of paths
-    #pragma omp parallel num_threads(num_threads)
+    #pragma omp parallel num_threads(num_threads) if(num_threads > 1)
     {
         int thread_id = omp_get_thread_num();
         int start_index = thread_id * batch_size;
@@ -751,7 +751,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 unsigned int chunk_size = batch_entries.size() / num_threads;
 
                 // Distribute tasks among available threads using OpenMP parallel for
-				#pragma omp parallel for shared(batch_entries) num_threads(num_threads)
+				#pragma omp parallel for shared(batch_entries) num_threads(num_threads) if(num_threads > 1)
                 for (unsigned int i = 0; i < num_threads; ++i) {
                     unsigned int start_index = i * chunk_size;
                     unsigned int end_index = (i == static_cast<unsigned int>(num_threads) - 1) ? batch_entries.size() : (i + 1) * chunk_size;
@@ -771,7 +771,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             unsigned int chunk_size = batch_entries.size() / num_threads;
 
             // Distribute tasks among available threads using OpenMP parallel for
-			#pragma omp parallel for shared(batch_entries) num_threads(num_threads)
+			#pragma omp parallel for shared(batch_entries) num_threads(num_threads) if(num_threads > 1)
             for (unsigned int i = 0; i < num_threads; ++i) {
                 unsigned int start_index = i * chunk_size;
                 unsigned int end_index = (i == static_cast<unsigned int>(num_threads) - 1) ? batch_entries.size() : (i + 1) * chunk_size;
@@ -796,7 +796,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     unsigned int num_threads = std::min(static_cast<unsigned int>(num_paths), max_threads);
 
     // Process paths in parallel using OpenMP
-    #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only) num_threads(num_threads)
+    #pragma omp parallel for shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only) num_threads(num_threads) if(num_threads > 1)
     for (int i = 0; i < num_paths; ++i) {
         // Make isFirstRun true necessary for folder sequence skipped folder counting
         bool isFirstRunLocal = true;
@@ -881,7 +881,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.8.6");
+        printVersionNumber("1.8.7");
         return 0;
     }
 

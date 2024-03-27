@@ -595,7 +595,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
 			unsigned int num_threads = std::min(static_cast<unsigned int>(folders_to_rename.size()), max_threads);
 			
             // Rename folders in parallel batches
-            #pragma omp parallel for shared(folders_to_rename, dirs_count) schedule(static, 1) num_threads(num_threads)
+            #pragma omp parallel for shared(folders_to_rename, dirs_count) schedule(static, 1) num_threads(num_threads) if(num_threads > 1)
             for (size_t i = 0; i < folders_to_rename.size(); ++i) {
                 const auto& folder_pair = folders_to_rename[i];
                 const auto& old_path = folder_pair.first;
