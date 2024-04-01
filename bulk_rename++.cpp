@@ -898,7 +898,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.9.2");
+        printVersionNumber("1.9.3");
         return 0;
     }
 
@@ -1156,6 +1156,14 @@ int main(int argc, char *argv[]) {
         std::cout << "\n\033[1mPress enter to exit...\033[0m";
         std::cin.get();
         std::system("clear");
+        // Suppress all messages
+		std::streambuf* cout_sbuf = std::cout.rdbuf();  
+		std::ofstream dev_null("/dev/null");
+		std::cout.rdbuf(dev_null.rdbuf()); 
+
+		// Restore the original buffer before exiting
+		std::cout.rdbuf(cout_sbuf);
     }
+    
     return 0;
 }
