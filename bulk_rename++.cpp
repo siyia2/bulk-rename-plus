@@ -1155,7 +1155,6 @@ int main(int argc, char *argv[]) {
         // Prompt the user to press enter to exit
         std::cout << "\n\033[1mPress enter to exit...\033[0m";
         std::cin.get();
-        std::system("clear");
         // Suppress all messages
 		std::streambuf* cout_sbuf = std::cout.rdbuf();  
 		std::ofstream dev_null("/dev/null");
@@ -1163,6 +1162,7 @@ int main(int argc, char *argv[]) {
 
 		// Restore the original buffer before exiting
 		std::cout.rdbuf(cout_sbuf);
+        std::system("clear");
     }
     
     return 0;
