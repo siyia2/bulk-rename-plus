@@ -32,7 +32,7 @@ void print_verbose_enabled(const std::string& message, std::ostream& os) {
 // Print the version number of the program
 void printVersionNumber(const std::string& version) {
     
-    std::cout << "\x1B[32mBulk-rename-plus v" << version << "\x1B[0m\n" << std::endl; // Output the version number in green color
+    std::cout << "\x1B[32mBulk Rename Plus v" << version << "\x1B[0m\n" << std::endl; // Output the version number in green color
 }
 
 
@@ -898,7 +898,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.9.3");
+        printVersionNumber("1.9.4");
         return 0;
     }
 
