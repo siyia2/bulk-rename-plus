@@ -10,7 +10,7 @@ MAKEFLAGS = -j$(NUM_PROCESSORS)
 
 SRC_DIR = $(CURDIR)/src
 OBJ_DIR = $(CURDIR)/obj
-INSTALL_DIR = /usr/local/bin
+INSTALL_DIR = $(HOME)/.local/bin
 
 SRC_FILES = bulk_rename++.cpp case_modes.cpp
 OBJ_FILES = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
