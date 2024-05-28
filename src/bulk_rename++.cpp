@@ -233,38 +233,35 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 
 // Function to rename a batch of files using multiple threads for parallel execution
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, bool skipped_only) {
+    #pragma omp parallel for schedule(dynamic)
+    for (std::size_t i = 0; i < data.size(); ++i) {
+        const auto& [old_path, new_path] = data[i];
 
-    // Use parallel execution with a limited number of threads
-    std::for_each(std::execution::par, data.begin(), data.end(),
-        [&](const auto& item) {
-            // Extract old and new paths from the pair
-            const auto& [old_path, new_path] = item;
-            try {
-                // Attempt to rename the file
-                fs::rename(old_path, new_path);
-                {
-                    // Safely increment files_count when a file is successfully renamed
-                    std::lock_guard<std::mutex> lock(files_count_mutex);
-                    ++files_count;
+        try {
+            // Attempt to rename the file
+            fs::rename(old_path, new_path);
+
+            // Safely increment files_count when a file is successfully renamed
+            #pragma omp atomic
+            ++files_count;
+
+            // Print a success message if verbose mode enabled
+            if (verbose_enabled && !skipped_only) {
+                if (fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
+                } else {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                 }
-                // Print a success message if verbose mode enabled
-                if (verbose_enabled && !skipped_only) {
-						if (fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
-						} else {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
-						}
-					}
-            } catch (const fs::filesystem_error& e) {
-                // Print an error message if renaming fails
-                if (e.code() == std::errc::permission_denied) {
-					if (verbose_enabled) {
-					print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
-					}
-				}
+            }
+        } catch (const fs::filesystem_error& e) {
+            // Print an error message if renaming fails
+            if (e.code() == std::errc::permission_denied) {
+                if (verbose_enabled) {
+                    print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
+                }
             }
         }
-    );
+    }
 }
 
 
@@ -524,44 +521,44 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
 // Function to rename a batch of files/directories using multiple threads for parallel execution
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count, bool skipped_only) {
+    #pragma omp parallel for schedule(dynamic)
+    for (std::size_t i = 0; i < data.size(); ++i) {
+        const auto& [item_path, new_name] = data[i];
+        fs::path new_path = item_path.parent_path() / new_name;
 
-    // Use parallel execution with a limited number of threads
-    std::for_each(std::execution::par, data.begin(), data.end(),
-        [&](const auto& item) {
-            const auto& [item_path, new_name] = item;
-            fs::path new_path = item_path.parent_path() / new_name;
-            try {
-                // Attempt to rename the file/directory
-                fs::rename(item_path, new_path);
-                if (verbose_enabled && !skipped_only) {
-                        // Print a success message if verbose mode enabled
-						if (fs::is_symlink(item_path) || fs::is_symlink(new_path)) {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + item_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
-						} else {
-							print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
-						}
-					}
-                // Update files_count or dirs_count based on the type of the renamed item
-                std::filesystem::directory_entry entry(new_path);
-                if (entry.is_regular_file()) {
-                    // Update files_count when a file is successfully renamed
-                    std::lock_guard<std::mutex> lock(files_count_mutex);
-                    ++files_count;
+        try {
+            // Attempt to rename the file/directory
+            fs::rename(item_path, new_path);
+
+            if (verbose_enabled && !skipped_only) {
+                // Print a success message if verbose mode enabled
+                if (fs::is_symlink(item_path) || fs::is_symlink(new_path)) {
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + item_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                 } else {
-                    // Update dirs_count when a directory is successfully renamed
-                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
-                    ++dirs_count;
+                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + item_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                 }
-            } catch (const fs::filesystem_error& e) {
-                // Print an error message if renaming fails
-                if (e.code() == std::errc::permission_denied) {
-					if (verbose_enabled) {
-					print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
-					}
-				}
+            }
+
+            // Update files_count or dirs_count based on the type of the renamed item
+            std::filesystem::directory_entry entry(new_path);
+            if (entry.is_regular_file()) {
+                // Update files_count when a file is successfully renamed
+                #pragma omp atomic
+                ++files_count;
+            } else {
+                // Update dirs_count when a directory is successfully renamed
+                #pragma omp atomic
+                ++dirs_count;
+            }
+        } catch (const fs::filesystem_error& e) {
+            // Print an error message if renaming fails
+            if (e.code() == std::errc::permission_denied) {
+                if (verbose_enabled) {
+                    print_error("\033[1;91mError\033[0m: " + std::string(e.what()) + "\n", std::cerr);
+                }
             }
         }
-    );
+    }
 }
 
 
@@ -898,7 +895,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("1.9.4");
+        printVersionNumber("1.9.5");
         return 0;
     }
 

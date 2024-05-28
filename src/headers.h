@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <execution>
 #include <future>
 #include <filesystem>
 #include <fstream>
