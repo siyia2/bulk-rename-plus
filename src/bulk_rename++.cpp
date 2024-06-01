@@ -353,8 +353,8 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
     if (!non_interactive || verbose_enabled) {
         // Print summary
-        std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0m\033[1m | \033[1mFrom: \033[1;95m" << paths.size()
-                  << " input path(s) \033[0m\033[1m" << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
+        std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0;1m | \033[1mFrom: \033[1;95m" << paths.size()
+                  << " input path(s) \033[0;1m" << "\n\n\033[0;1mTime Elapsed: " << std::setprecision(1)
                   << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
     }
 }
@@ -838,8 +838,8 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
     if (!non_interactive || verbose_enabled) {
         // Output summary of the renaming process
-        std::cout << "\n\033[0m\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0m\033[1m&& \033[1;94m"
-                  << dirs_count << " folder(s) \033[1m\033[0m\033[1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0m\033[1m&& \033[1;93m";
+        std::cout << "\n\033[0;1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m&& \033[1;94m"
+                  << dirs_count << " folder(s) \033[1m\033[0;1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0;1m&& \033[1;93m";
 
         if (special) {
             std::cout << skipped_folder_special_count << " folder(s) ";
@@ -847,8 +847,8 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
             std::cout << skipped_folder_count << " folder(s) ";
         }
 
-        std::cout << "\033[0m\033[0m\033[1m| From: \033[1;95m" << paths.size() << " input path(s)"
-                  << "\n\n\033[0m\033[1mTime Elapsed: " << std::setprecision(1)
+        std::cout << "\033[0m\033[0;1m| From: \033[1;95m" << paths.size() << " input path(s)"
+                  << "\n\n\033[0;1mTime Elapsed: " << std::setprecision(1)
                   << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
     }
 }
@@ -1060,7 +1060,7 @@ int main(int argc, char *argv[]) {
     // Check if paths end with '/'
     for (const std::string& path : paths) {
         if (path.back() != '/') {
-            print_error("\033[1;91mError: Path(s) must end with '/' - \033[0m\033[1me.g. \033[1;91m" + path + " \033[0m\033[1m-> \033[1;94m" + path +"/\033[0m" "\n\033[0m");
+            print_error("\033[1;91mError: Path(s) must end with '/' - \033[0;1me.g. \033[1;91m" + path + " \033[0;1m-> \033[1;94m" + path +"/\033[0m" "\n\033[0m");
             return 0;
         }
     }
@@ -1072,15 +1072,15 @@ int main(int argc, char *argv[]) {
     std::string confirmation;
     if (rename_parents && !ni_flag) {
         // Display the paths and their lowest parent directories that will be renamed
-        std::cout << "\033[0m\033[1mThe following path(s) and the \033[4mlowest Parent\033[0m\033[1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+        std::cout << "\033[0;1mThe following path(s) and the \033[4mlowest Parent\033[0;1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
         if (depth != -1) {
-            std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
+            std::cout << "\033[0;1m (up to depth " << depth << ")";
         }
         if (!transform_dirs) {
-            std::cout << "\033[0m\033[1m (excluding directories)";
+            std::cout << "\033[0;1m (excluding directories)";
         }
         if (!transform_files) {
-            std::cout << "\033[0m\033[1m (excluding files)";
+            std::cout << "\033[0;1m (excluding files)";
         }
         std::cout << ":\033[1m\n\n";
         for (const auto& path : paths) {
@@ -1088,9 +1088,9 @@ int main(int argc, char *argv[]) {
         }
     } else if (rename_extensions && !ni_flag) {
         // Display the paths where file extensions will be recursively renamed
-        std::cout << "\033[0m\033[1mThe file \033[4mextensions\033[0m\033[1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+        std::cout << "\033[0;1mThe file \033[4mextensions\033[0;1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
         if (depth != -1) {
-            std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
+            std::cout << "\033[0;1m (up to depth " << depth << ")";
         }
         std::cout << ":\033[1m\n\n";
         for (const auto& path : paths) {
@@ -1098,16 +1098,16 @@ int main(int argc, char *argv[]) {
         }
     } else if (!ni_flag) {
         // Display the paths that will be recursively renamed
-        std::cout << "\033[0m\033[1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+        std::cout << "\033[0;1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
         if (depth != -1) {
-            std::cout << "\033[0m\033[1m (up to depth " << depth << ")";
+            std::cout << "\033[0;1m (up to depth " << depth << ")";
         }
         if (!transform_dirs && rename_parents) {
-            std::cout << "\033[0m\033[1m (excluding both files and directories)";
+            std::cout << "\033[0;1m (excluding both files and directories)";
         } else if (!transform_dirs) {
-            std::cout << "\033[0m\033[1m (excluding directories)";
+            std::cout << "\033[0;1m (excluding directories)";
         } else if (!transform_files) {
-            std::cout << "\033[0m\033[1m (excluding files)";
+            std::cout << "\033[0;1m (excluding files)";
         }
         std::cout << ":\033[1m\n\n";
         for (const auto& path : paths) {
