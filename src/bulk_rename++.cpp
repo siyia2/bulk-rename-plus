@@ -8,7 +8,8 @@ std::mutex sequence_mutex;
 std::mutex files_count_mutex;
 std::mutex files_mutex;
 
-unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); // Get the number of available processor cores
+// Get the number of available processor cores
+unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); 
 
 
 // Global print functions
