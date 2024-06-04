@@ -6,6 +6,7 @@ pkgdesc='Tiny yet Powerful Non-Interactive Bulk Renamer, written in C++'
 arch=('x86_64')
 url="https://github.com/siyia2/bulk-rename-plus"
 license=('GPL3')
+makedepends=('binutils')
 depends=('coreutils' 'glibc')
 md5sums=('b6dcd9a1d91c503b531794b3e5fb09f8')
 
