@@ -15,6 +15,11 @@ INSTALL_DIR = $(HOME)/.local/bin
 SRC_FILES = bulk_rename++.cpp case_modes.cpp
 OBJ_FILES = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
+TARGET = bulk_rename++
+
+strip: $(TARGET)
+	strip $(TARGET) -o bulk_rename++
+
 all: bulk_rename++
 
 bulk_rename++: $(OBJ_FILES)
