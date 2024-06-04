@@ -27,7 +27,7 @@ Renamed to upperCase: 20249 file(s) and 2124 folder(s) from 1 input path(s) in 1
 
 ## How to use:
 
-Usage: bulk_rename++ [OPTIONS] [MODE] [PATHS] `||` bulk_rename++ [PATHS] [OPTIONS] [MODE]
+Usage: bulk_rename++ [OPTIONS] [MODE] [PATHS] or bulk_rename++ [PATHS] [OPTIONS] [MODE]
 
 Options: 
 - `-d` stands for recursion depth level (optional).
