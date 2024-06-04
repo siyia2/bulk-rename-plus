@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -O2 -Wall -Werror -fopenmp
-LDFLAGS = -fopenmp
+CXXFLAGS = -O2 -Wall -Werror -fopenmp -flto -fmerge-all-constants -fdata-sections -ffunction-sections
+LDFLAGS = -fopenmp -flto -ffunction-sections -fdata-sections -Wl,--gc-sections
 
 # Use the number of available processors from nproc
 NUM_PROCESSORS := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu)
