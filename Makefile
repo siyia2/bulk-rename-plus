@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -O2 -Wall -Werror -fopenmp -flto -fmerge-all-constants -fdata-sections -ffunction-sections
-LDFLAGS = -fopenmp -flto -ffunction-sections -fdata-sections -Wl,--gc-sections
+CXXFLAGS = -O2 -Wall -Werror -fopenmp -flto -fmerge-all-constants -fdata-sections -ffunction-sections -fno-plt -fno-rtti
+LDFLAGS = -fopenmp -flto -ffunction-sections -fdata-sections -fno-plt -Wl,--gc-sections -Wl,--strip-all -Wl,--as-needed -Wl,-z,relro -Wl,-z,now
 
 # Use the number of available processors from nproc
 NUM_PROCESSORS := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu)
@@ -14,11 +14,6 @@ INSTALL_DIR = $(HOME)/.local/bin
 
 SRC_FILES = bulk_rename++.cpp case_modes.cpp
 OBJ_FILES = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
-
-TARGET = bulk_rename++
-
-strip: $(TARGET)
-	strip $(TARGET) -o bulk_rename++
 
 all: bulk_rename++
 
