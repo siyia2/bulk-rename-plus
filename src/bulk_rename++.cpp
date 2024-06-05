@@ -18,7 +18,7 @@ unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs();
 void print_error(const std::string& error, std::ostream& os)   {
     
     std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cerr
-    std::cerr << error << std::endl; // Output the error message
+    std::cerr << "\n" << error; // Output the error message
 }
 
 
@@ -26,7 +26,7 @@ void print_error(const std::string& error, std::ostream& os)   {
 void print_verbose_enabled(const std::string& message, std::ostream& os) {
     
     std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cout
-    std::cout << message << std::endl; // Output the message
+    std::cout << "\n" << message; // Output the message
 }
 
 
@@ -1132,7 +1132,7 @@ int main(int argc, char *argv[]) {
             std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
             std::cout << "\n" << std::endl;
             std::cout << "\033[1mPress enter to exit...";
-            std::cin.get();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::system("clear");
             return 0;
         }
@@ -1152,7 +1152,7 @@ int main(int argc, char *argv[]) {
     if (!ni_flag) {
         // Prompt the user to press enter to exit
         std::cout << "\n\033[1mPress enter to exit...\033[0m";
-        std::cin.get();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         // Suppress all messages
 		std::streambuf* cout_sbuf = std::cout.rdbuf();  
 		std::ofstream dev_null("/dev/null");
