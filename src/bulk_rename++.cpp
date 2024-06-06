@@ -33,7 +33,7 @@ void print_verbose_enabled(const std::string& message, std::ostream& os) {
 // Print the version number of the program
 void printVersionNumber(const std::string& version) {
     
-    std::cout << "\x1B[32mBulk Rename Plus v" << version << "\x1B[0m\n" << std::endl; // Output the version number in green color
+    std::cout << "\x1B[32mBulk Rename Plus v" << version << "\x1B[0m\n"; // Output the version number in green color
 }
 
 
@@ -328,7 +328,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
                     }
                 } catch (const std::exception& ex) {
                     if (verbose_enabled) {
-                        std::cerr << "\033[1;91mError processing path\033[0m: " << current_path.string() << " - " << ex.what() << std::endl;
+                        std::cerr << "\n" << "\033[1;91mError processing path\033[0m: " << current_path.string() << " - " << ex.what();
                     }
                 }
             }
@@ -955,7 +955,7 @@ int main(int argc, char *argv[]) {
             } else if (arg == "-c") {
                 // Check if -c, -cp, -ce options are mixed
                 if (c_flag || cp_flag || ce_flag) {
-                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n\n");
                     return 1;
                 }
                 c_flag = true;
@@ -963,13 +963,13 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                 } else {
-                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n\n");
                     return 1;
                 }
             } else if (arg == "-cp") {
                 // Check if -c, -cp, -ce options are mixed
                 if (c_flag || cp_flag || ce_flag) {
-                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n\n");
                     return 1;
                 }
                 cp_flag = true;
@@ -978,18 +978,18 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                 } else {
-                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n\n");
                     return 1;
                 }
             } else if (arg == "-ce") {
                 // Check if -c, -cp, -ce options are mixed
                 if (c_flag || cp_flag || ce_flag) {
-                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n\n");
                     return 1;
                 } else if (arg == "-ce") {
                     // Check if -c, -cp, -ce options are mixed
                     if (fi_flag || fo_flag || ce_flag) {
-                        print_error("\033[1;91mError: Cannot mix -fi or -fo with -ce option.\033[0m\n");
+                        print_error("\033[1;91mError: Cannot mix -fi or -fo with -ce option.\033[0m\n\n");
                         return 1;
                     }
                 }
@@ -1000,14 +1000,14 @@ int main(int argc, char *argv[]) {
                     case_input = argv[++i];
                     case_specified = true;
                 } else {
-                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n\n");
                     return 1;
                 }
             }
         } else {
             // Check for duplicate paths
             if (std::find(paths.begin(), paths.end(), arg) != paths.end()) {
-                print_error("\033[1;91mError: Duplicate path detected - " + arg + "\033[0m\n");
+                print_error("\033[1;91mError: Duplicate path detected - " + arg + "\033[0m\n\n");
                 return 1;
             }
             paths.emplace_back(arg);
@@ -1016,17 +1016,17 @@ int main(int argc, char *argv[]) {
 
     // Perform renaming based on flags and options
     if (fi_flag && fo_flag) {
-        print_error("\033[1;91mError: Cannot mix -fi and -fo options.\033[0m\n");
+        print_error("\033[1;91mError: Cannot mix -fi and -fo options.\033[0m\n\n");
         return 1;
     }
 
     if ((v_flag && (vs_flag || vso_flag)) || (vs_flag && (v_flag || vso_flag)) || (vso_flag && (v_flag || vs_flag))) {
-        print_error("\033[1;91mError: Cannot mix -v, -vs, and -vso options.\033[0m\n");
+        print_error("\033[1;91mError: Cannot mix -v, -vs, and -vso options.\033[0m\n\n");
         return 1;
     }
 
     if (!case_specified) {
-        print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n");
+        print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n\n");
         return 1;
     }
 
@@ -1039,13 +1039,13 @@ int main(int argc, char *argv[]) {
     }
 
     if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
-        print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\033[0m\n");
+        print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\033[0m\n\n");
         return 1;
     }
 
     if (cp_flag && (std::find(valid_modes.begin(), valid_modes.end(), case_input) != valid_modes.end())) {
         if (case_input == "sequence") {
-            print_error("\033[1;91mError: sequence mode is only available with -c option.\033[0m\n");
+            print_error("\033[1;91mError: sequence mode is only available with -c option.\033[0m\n\n");
             return 1;
         }
     }
@@ -1053,7 +1053,7 @@ int main(int argc, char *argv[]) {
     // Check if paths exist
     for (const auto& path : paths) {
         if (!fs::exists(path)) {
-            print_error("\033[1;91mError: Path does not exist or not a directory - " + path + "\033[0m\n");
+            print_error("\033[1;91mError: Path does not exist or not a directory - " + path + "\033[0m\n\n");
             return 1;
         }
     }
@@ -1061,7 +1061,7 @@ int main(int argc, char *argv[]) {
     // Check if paths end with '/'
     for (const std::string& path : paths) {
         if (path.back() != '/') {
-            print_error("\033[1;91mError: Path(s) must end with '/' - \033[0;1me.g. \033[1;91m" + path + " \033[0;1m-> \033[1;94m" + path +"/\033[0m" "\n\033[0m");
+            print_error("\033[1;91mError: Path(s) must end with '/' - \033[0;1me.g. \033[1;91m" + path + " \033[0;1m-> \033[1;94m" + path +"/\033[0m" "\n\033[0m\n");
             return 0;
         }
     }
@@ -1085,7 +1085,7 @@ int main(int argc, char *argv[]) {
         }
         std::cout << ":\033[1m\n\n";
         for (const auto& path : paths) {
-            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+            std::cout << "\n" << "\033[1;94m" << path << "\033[0m";
         }
     } else if (rename_extensions && !ni_flag) {
         // Display the paths where file extensions will be recursively renamed
@@ -1095,7 +1095,7 @@ int main(int argc, char *argv[]) {
         }
         std::cout << ":\033[1m\n\n";
         for (const auto& path : paths) {
-            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+            std::cout << "\n" << "\033[1;94m" << path << "\033[0m";
         }
     } else if (!ni_flag) {
         // Display the paths that will be recursively renamed
@@ -1110,15 +1110,15 @@ int main(int argc, char *argv[]) {
         } else if (!transform_files) {
             std::cout << "\033[0;1m (excluding files)";
         }
-        std::cout << ":\033[1m\n\n";
+        std::cout << ":\033[1m\n";
         for (const auto& path : paths) {
-            std::cout << "\033[1;94m" << path << "\033[0m" << std::endl;
+            std::cout << "\n" << "\033[1;94m" << path << "\033[0m";
         }
     }
 
     // Prompt the user for confirmation
     if (!ni_flag) {
-        std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
+        std::cout << "\n\n\033[1mDo you want to proceed? (y/n): ";
         std::getline(std::cin, confirmation);
 
     }
@@ -1126,8 +1126,8 @@ int main(int argc, char *argv[]) {
         // If the user does not confirm, abort the operation
         if (confirmation != "y") {
             std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
-            std::cout << "\n" << std::endl;
-            std::cout << "\033[1mPress enter to exit...";
+            std::cout << "\n";
+            std::cout << "\n\033[1mPress enter to exit...";
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::system("clear");
             return 0;
