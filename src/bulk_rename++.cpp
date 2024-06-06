@@ -354,7 +354,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
     if (!non_interactive || verbose_enabled) {
         // Print summary
-        std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0;1m | \033[1mFrom: \033[1;95m" << paths.size()
+        std::cout << "\n\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0;1m | \033[1mFrom: \033[1;95m" << paths.size()
                   << " input path(s) \033[0;1m" << "\n\n\033[0;1mTime Elapsed: " << std::setprecision(1)
                   << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
     }
@@ -839,7 +839,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
     if (!non_interactive || verbose_enabled) {
         // Output summary of the renaming process
-        std::cout << "\n\033[0;1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m&& \033[1;94m"
+        std::cout << "\n\n\033[0;1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m&& \033[1;94m"
                   << dirs_count << " folder(s) \033[1m\033[0;1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0;1m&& \033[1;93m";
 
         if (special) {
@@ -1121,10 +1121,6 @@ int main(int argc, char *argv[]) {
         std::cout << "\n\033[1mDo you want to proceed? (y/n): ";
         std::getline(std::cin, confirmation);
 
-        // If verbose mode is enabled and the user confirms, output an empty line
-        if (verbose_enabled && confirmation == "y") {
-            std::cout << " " << std::endl;
-        }
     }
     if (!ni_flag) {
         // If the user does not confirm, abort the operation
