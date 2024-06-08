@@ -48,7 +48,7 @@ std::string remove_numbered_prefix(const std::string& file_string);
 std::string append_date_seq(const std::string& file_string);
 std::string remove_date_seq(const std::string& file_string);
 // Mv like style for folders only
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& [[maybe_unused]] skipped_folder_special_count, int depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths);
 // Simplified for folders only
 std::string get_renamed_folder_name_without_numbering(const fs::path& folder_path);
 std::string get_renamed_folder_name_without_date(const fs::path& folder_path);
@@ -61,6 +61,7 @@ void print_error(const std::string& error, std::ostream& os = std::cerr);
 void print_verbose_enabled(const std::string& message, std::ostream& os = std::cout);
 void printVersionNumber(const std::string& version);
 void print_help();
+void clearScrollBuffer();
 // For file extension renaming
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size, bool symlinks, int& skipped_file_count, bool skipped, bool skipped_only);
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, bool skipped_only);
