@@ -37,6 +37,15 @@ void printVersionNumber(const std::string& version) {
 }
 
 
+// Function to clear scrollbuffer
+void clearScrollBuffer() {
+    std::cout << "\033[3J";  // Clear the scrollback buffer
+    std::cout << "\033[2J";  // Clear the screen
+    std::cout << "\033[H";   // Move the cursor to the top-left corner
+    std::cout.flush();       // Ensure the output is flushed
+}
+
+
 // Function to print help
 void print_help() {
 
@@ -352,11 +361,14 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 
     // Calculate elapsed time
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
+    if (verbose_enabled) {
+		std::cout << "\n";
+	}
     if (!non_interactive || verbose_enabled) {
         // Print summary
-        std::cout << "\n\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0;1m | \033[1mFrom: \033[1;95m" << paths.size()
+        std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0;1m | \033[1mFrom: \033[1;95m" << paths.size()
                   << " input path(s) \033[0;1m" << "\n\n\033[0;1mTime Elapsed: " << std::setprecision(1)
-                  << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+                  << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n\n";
     }
 }
 
@@ -837,9 +849,12 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
+    if (verbose_enabled) {
+		std::cout << "\n";
+	}
     if (!non_interactive || verbose_enabled) {
         // Output summary of the renaming process
-        std::cout << "\n\n\033[0;1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m&& \033[1;94m"
+        std::cout << "\n\033[0;1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m&& \033[1;94m"
                   << dirs_count << " folder(s) \033[1m\033[0;1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0;1m&& \033[1;93m";
 
         if (special) {
@@ -850,7 +865,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 
         std::cout << "\033[0m\033[0;1m| From: \033[1;95m" << paths.size() << " input path(s)"
                   << "\n\n\033[0;1mTime Elapsed: " << std::setprecision(1)
-                  << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n";
+                  << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n\n";
     }
 }
 
@@ -949,7 +964,7 @@ int main(int argc, char *argv[]) {
                 non_interactive = true;
                 ni_flag = true;
             } else if (arg == "-h" || arg == "--help") {
-                std::system("clear");
+                clearScrollBuffer();
                 print_help();
                 return 0;
             } else if (arg == "-c") {
@@ -1066,7 +1081,7 @@ int main(int argc, char *argv[]) {
         }
     }
     if (!ni_flag || verbose_enabled) {
-        std::system("clear");
+        clearScrollBuffer();
     }
 
     // Prompt the user for confirmation before proceeding
@@ -1093,7 +1108,7 @@ int main(int argc, char *argv[]) {
         if (depth != -1) {
             std::cout << "\033[0;1m (up to depth " << depth << ")";
         }
-        std::cout << ":\033[1m\n\n";
+        std::cout << ":\033[1m\n";
         for (const auto& path : paths) {
             std::cout << "\n" << "\033[1;94m" << path << "\033[0m";
         }
@@ -1129,7 +1144,7 @@ int main(int argc, char *argv[]) {
             std::cout << "\n";
             std::cout << "\n\033[1mPress enter to exit...";
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::system("clear");
+            clearScrollBuffer();
             return 0;
         }
     }
@@ -1147,7 +1162,7 @@ int main(int argc, char *argv[]) {
 
     if (!ni_flag) {
         // Prompt the user to press enter to exit
-        std::cout << "\n\033[1mPress enter to exit...\033[0m";
+        std::cout << "\033[1mPress enter to exit...\033[0m";
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         // Suppress all messages
 		std::streambuf* cout_sbuf = std::cout.rdbuf();  
@@ -1156,7 +1171,7 @@ int main(int argc, char *argv[]) {
 
 		// Restore the original buffer before exiting
 		std::cout.rdbuf(cout_sbuf);
-        std::system("clear");
+        clearScrollBuffer();
     }
     
     return 0;
