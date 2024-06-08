@@ -48,7 +48,7 @@ std::string remove_numbered_prefix(const std::string& file_string);
 std::string append_date_seq(const std::string& file_string);
 std::string remove_date_seq(const std::string& file_string);
 // Mv like style for folders only
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths);
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& [[maybe_unused]] skipped_folder_special_count, int depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths);
 // Simplified for folders only
 std::string get_renamed_folder_name_without_numbering(const fs::path& folder_path);
 std::string get_renamed_folder_name_without_date(const fs::path& folder_path);
