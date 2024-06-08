@@ -15,7 +15,7 @@ unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs();
 // Global print functions
 
 // Print an error message to stderr
-void print_error(const std::string& error, std::ostream& os)   {
+void print_error(const std::string& error, std::ostream&)   {
     
     std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cerr
     std::cerr << "\n" << error; // Output the error message
@@ -23,7 +23,7 @@ void print_error(const std::string& error, std::ostream& os)   {
 
 
 // Print a message to stdout, assuming verbose mode is enabled
-void print_verbose_enabled(const std::string& message, std::ostream& os) {
+void print_verbose_enabled(const std::string& message, std::ostream&) {
     
     std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cout
     std::cout << "\n" << message; // Output the message
