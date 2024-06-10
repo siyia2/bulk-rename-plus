@@ -390,48 +390,6 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
 }
 
 
-// Helper function to add sequencial numbering to files
-void rename_files_sequentially(const std::filesystem::path& parent_path) {
-    // Get a vector of all regular files in the directory
-    std::vector<std::filesystem::path> files;
-    for (const auto& entry : std::filesystem::directory_iterator(parent_path)) {
-        if (entry.is_regular_file()) {
-            files.push_back(entry.path());
-        }
-    }
-
-    // Sort the files by their last modification time
-    std::sort(files.begin(), files.end(), [](const std::filesystem::path& a, const std::filesystem::path& b) {
-        return std::filesystem::last_write_time(a) < std::filesystem::last_write_time(b);
-    });
-
-    // Remove any existing numbering prefixes and get a set of existing numbers
-    static std::unordered_map<std::filesystem::path, int> counter_map;
-    counter_map[parent_path] = 0;
-    std::unordered_set<int> existing_numbers;
-
-    // Find the first gap in the sequence of numbers
-    int gap = 1;
-
-    // Rename files sequentially
-    for (const auto& file_path : files) {
-        std::string filename = file_path.filename().string();
-        if (!filename.empty() && std::isdigit(filename[0])) {
-            int number = std::stoi(filename.substr(0, filename.find('_')));
-            existing_numbers.insert(number);
-            while (existing_numbers.find(gap) != existing_numbers.end()) {
-                gap++;
-            }
-        }
-
-        std::string new_filename = append_numbered_prefix(parent_path, filename);
-        std::filesystem::path new_path = parent_path / new_filename;
-        std::filesystem::rename(file_path, new_path);
-        counter_map[parent_path]++;
-    }
-}
-
-
 // Function to remove sequencial numbering from files
 std::string remove_numbered_prefix(const std::string& file_string) {
     size_t pos = file_string.find_first_not_of("0123456789");
@@ -542,10 +500,9 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
            }
        }
 
-       // Sort the entries in alphabetical order by filename
-		std::sort(sorted_entries.begin(), sorted_entries.end(), [](const auto& a, const auto& b) {
-			return a.path().filename().string() < b.path().filename().string();
-		});
+       std::sort(sorted_entries.begin(), sorted_entries.end(), [](const auto& a, const auto& b) {
+			return a.last_write_time() < b.last_write_time(); // Change ">" to "<" to reverse the sorting order
+	});
 
        // Reset the counter to start from 1
        counter = 1;

@@ -475,15 +475,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                     new_name = from_camel_case(new_name);
                 } else if (transformation == "sequence") {
 					std::lock_guard<std::mutex> lock(sequence_mutex);
-					    // Get a list of all file names in the parent_path directory
-						std::vector<std::string> file_names;
-						for (const auto& entry : std::filesystem::directory_iterator(parent_path)) {
-							if (std::filesystem::is_regular_file(entry.path())) {
-								file_names.push_back(entry.path().filename().string());
-							}
-						}
-						// Sort the file names alphabetically
-						std::sort(file_names.begin(), file_names.end());
                     new_name = append_numbered_prefix(parent_path, new_name);
                 } else if (transformation == "rsequence") {
                     new_name = remove_numbered_prefix(new_name);
