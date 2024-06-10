@@ -42,8 +42,7 @@ std::string swapr_transform(const std::string& string);
 std::string to_camel_case(const std::string& string);
 std::string from_camel_case(const std::string& string);
 // Files only
-void rename_files_sequentially(const std::filesystem::path& parent_path);
-std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string);
+std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::vector<std::string>& sorted_files);
 std::string remove_numbered_prefix(const std::string& file_string);
 std::string append_date_seq(const std::string& file_string);
 std::string remove_date_seq(const std::string& file_string);
