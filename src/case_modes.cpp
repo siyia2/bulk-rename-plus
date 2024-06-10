@@ -542,9 +542,10 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
            }
        }
 
-       std::sort(sorted_entries.begin(), sorted_entries.end(), [](const auto& a, const auto& b) {
-			return a.last_write_time() < b.last_write_time(); // Change ">" to "<" to reverse the sorting order
-	});
+       // Sort the entries in alphabetical order by filename
+		std::sort(sorted_entries.begin(), sorted_entries.end(), [](const auto& a, const auto& b) {
+			return a.path().filename().string() < b.path().filename().string();
+		});
 
        // Reset the counter to start from 1
        counter = 1;
