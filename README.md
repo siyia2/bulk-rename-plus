@@ -72,7 +72,7 @@ Options:
 - `rnumeric`   Remove numeric characters from names (e.g., 1Te0st2 => Test)
 #### Custom CASE Modes:
 - `rbra`       Remove [ ] { } ( ) from names (e.g., [{Test}] => Test)
-- `roperand`   Remove - + > < = * from names (e.g., =T-e+s<t> => Test)
+- `roperand`   Remove - + > < = * from names (e.g., =T-e+s < t > => Test)
 - `rspecial`   Remove special characters from names (e.g., Tes\t!@#$%^|&~`'\"\";? => Test)
 - `swap`       Swap upper-lower case for names (e.g., Test => TeSt)
 - `swapr`      Swap lower-upper case for names (e.g., Test => tEsT)
