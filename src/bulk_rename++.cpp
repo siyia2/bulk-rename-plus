@@ -912,7 +912,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("2.0.0");
+        printVersionNumber("2.0.1");
         return 0;
     }
 
@@ -1143,7 +1143,7 @@ int main(int argc, char *argv[]) {
         if (confirmation != "y") {
             std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
             std::cout << "\n";
-            std::cout << "\n\033[1mPress enter to exit...";
+            std::cout << "\n\033[1mPress enter to exit...\033[0m";
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             clearScrollBuffer();
             return 0;
