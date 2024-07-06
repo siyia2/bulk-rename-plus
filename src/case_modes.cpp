@@ -481,7 +481,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths;
     std::vector<std::pair<std::string, fs::path>> folder_names;
 
-    bool unnumbered_folder_exists = false;
+    bool renaming_needed = false;
 
     if (depth != 0) {
         if (depth > 0)
@@ -493,45 +493,64 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             if (folder.is_directory() && !skip) {
                 std::string folder_name = folder.path().filename().string();
                 folder_names.emplace_back(folder_name, folder.path());
-                
-                size_t pos = folder_name.find('_');
-                if ((pos == std::string::npos || !std::all_of(folder_name.begin(), folder_name.begin() + pos, ::isdigit)) && !(folder_name.substr(0, 2) == "00")) {
-                    unnumbered_folder_exists = true;
-                }
             }
         }
 
-        // Sort folder names alphabetically
+        // Sort folder names alphabetically, ignoring any existing numbering
         std::sort(folder_names.begin(), folder_names.end(), 
-          [](const auto& a, const auto& b) { return a.first < b.first; });
+            [](const auto& a, const auto& b) {
+                std::string name_a = a.first, name_b = b.first;
+                size_t pos_a = name_a.find('_');
+                size_t pos_b = name_b.find('_');
+                if (pos_a != std::string::npos && std::all_of(name_a.begin(), name_a.begin() + pos_a, ::isdigit))
+                    name_a = name_a.substr(pos_a + 1);
+                if (pos_b != std::string::npos && std::all_of(name_b.begin(), name_b.begin() + pos_b, ::isdigit))
+                    name_b = name_b.substr(pos_b + 1);
+                return name_a < name_b;
+            });
 
-        // Process sorted folder names
-        int counter = 1;
+        // Check if renaming is needed
+        int expected_counter = 1;
         for (const auto& [folder_name, folder_path] : folder_names) {
-            unchanged_folder_paths.emplace_back(folder_path, fs::is_symlink(folder_path));
-
-            // Remove any existing numbering from the folder name
-            std::string original_name;
             size_t pos = folder_name.find('_');
-            if (folder_name.substr(0, 2) == "00" && pos != std::string::npos && pos > 0 && std::isdigit(folder_name[0])) {
-                original_name = folder_name.substr(pos + 1);
-            } else {
-                original_name = folder_name;
+            if (pos == std::string::npos || !std::all_of(folder_name.begin(), folder_name.begin() + pos, ::isdigit)) {
+                renaming_needed = true;
+                break;
             }
-
-            // Construct the new name with sequential numbering and original name
-            std::stringstream ss;
-            ss << std::setw(3) << std::setfill('0') << counter << "_" << original_name;
-            fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str();
-
-            // Add folder to the vector for batch renaming
-            folders_to_rename.emplace_back(folder_path, new_name);
-
-            counter++;
+            int current_number = std::stoi(folder_name.substr(0, pos));
+            if (current_number != expected_counter) {
+                renaming_needed = true;
+                break;
+            }
+            expected_counter++;
         }
 
-        // Only proceed with renaming if at least one unnumbered folder exists
-        if (unnumbered_folder_exists) {
+        // Process sorted folder names only if renaming is needed
+        if (renaming_needed) {
+            int counter = 1;
+            for (const auto& [folder_name, folder_path] : folder_names) {
+                // Remove any existing numbering from the folder name
+                std::string original_name = folder_name;
+                size_t pos = folder_name.find('_');
+                if (pos != std::string::npos && std::all_of(folder_name.begin(), folder_name.begin() + pos, ::isdigit)) {
+                    original_name = folder_name.substr(pos + 1);
+                }
+
+                // Construct the new name with sequential numbering and original name
+                std::stringstream ss;
+                ss << std::setw(3) << std::setfill('0') << counter << "_" << original_name;
+                fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str();
+
+                // Add folder to the vector for batch renaming only if the name has changed
+                if (new_name != folder_path) {
+                    folders_to_rename.emplace_back(folder_path, new_name);
+                } else {
+                    unchanged_folder_paths.emplace_back(folder_path, fs::is_symlink(folder_path));
+                }
+
+                counter++;
+            }
+
             // Determine the number of threads to create
             unsigned int num_threads = std::min(static_cast<unsigned int>(folders_to_rename.size()), max_threads);
 
@@ -569,19 +588,24 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                 }
             }
         } else {
-            // Print folder paths that did not need renaming
-            if (!unchanged_folder_paths.empty()) {
-                for (const auto& [folder_path, is_symlink] : unchanged_folder_paths) {
-                    if (verbose_enabled && skipped) {
-                        if (is_symlink) {
-                            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
-                        } else {
-                            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
-                        }
+            // If no renaming is needed, add all folders to unchanged_folder_paths
+            for (const auto& [folder_name, folder_path] : folder_names) {
+                unchanged_folder_paths.emplace_back(folder_path, fs::is_symlink(folder_path));
+            }
+        }
+
+        // Print folder paths that did not need renaming
+        if (!unchanged_folder_paths.empty()) {
+            for (const auto& [folder_path, is_symlink] : unchanged_folder_paths) {
+                if (verbose_enabled && skipped) {
+                    if (is_symlink) {
+                        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+                    } else {
+                        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
                     }
-                    std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
-                    ++skipped_folder_special_count;
                 }
+                std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
+                ++skipped_folder_special_count;
             }
         }
     }
