@@ -261,7 +261,12 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
                 if (fs::is_symlink(old_path) || fs::is_symlink(new_path)) {
                     print_verbose_enabled("\033[0m\033[92mRenamed\033[0m \033[95msymlink_file\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                 } else {
-                    print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
+                    // Use fs::status to check the file status after renaming
+                    fs::file_status status = fs::status(new_path);
+
+                    if (fs::is_regular_file(status)) {
+                        print_verbose_enabled("\033[0m\033[92mRenamed\033[0m file " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
+                    }
                 }
             }
         } catch (const fs::filesystem_error& e) {
@@ -390,6 +395,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
     
     std::vector<std::pair<fs::path, std::string>> rename_data;
+    rename_data.reserve(batch_size_files);
 
     // Check if the item is a directory
     if (is_directory) {
@@ -553,13 +559,15 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
                 }
             }
 
+            // Use fs::status to check the file status after renaming
+            fs::file_status status = fs::status(new_path);
+
             // Update files_count or dirs_count based on the type of the renamed item
-            std::filesystem::directory_entry entry(new_path);
-            if (entry.is_regular_file()) {
+            if (fs::is_regular_file(status)) {
                 // Update files_count when a file is successfully renamed
                 #pragma omp atomic
                 ++files_count;
-            } else {
+            } else if (fs::is_directory(status)) {
                 // Update dirs_count when a directory is successfully renamed
                 #pragma omp atomic
                 ++dirs_count;
@@ -752,6 +760,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
         // Vector to store entries in a batch
         std::vector<fs::path> batch_entries;
+            batch_entries.reserve(batch_size_folders);
         std::mutex batch_mutex; // Mutex to protect concurrent access to batch_entries
 
         // Iterate over subdirectories of the renamed directory
@@ -815,6 +824,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     
     // Vector to hold futures for each asynchronous task
     std::vector<std::future<void>> futures;
+    futures.reserve(num_paths);
     
     for (int i = 0; i < num_paths; ++i) {
 
@@ -912,7 +922,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("2.0.1");
+        printVersionNumber("2.0.2");
         return 0;
     }
 
