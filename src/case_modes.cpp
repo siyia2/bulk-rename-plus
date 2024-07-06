@@ -346,46 +346,69 @@ std::string append_date_suffix_to_folder_name(const fs::path& folder_path) {
 
 // Function to add sequencial numbering to files
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string) {
-    static std::unordered_map<std::filesystem::path, int> counter_map;
-    static std::unordered_map<std::filesystem::path, std::unordered_set<int>> existing_numbers_map;
-
-    // Initialize counter and existing_numbers if not already initialized
-    if (counter_map.find(parent_path) == counter_map.end()) {
-        counter_map[parent_path] = 0;
-        existing_numbers_map[parent_path] = std::unordered_set<int>();
+    static std::unordered_map<std::filesystem::path, std::vector<std::pair<std::string, std::string>>> file_map;
+    
+    // Initialize file_map if not already initialized
+    if (file_map.find(parent_path) == file_map.end()) {
+        file_map[parent_path] = std::vector<std::pair<std::string, std::string>>();
+        
+        // Collect all files in the directory
+        for (const auto& entry : std::filesystem::directory_iterator(parent_path)) {
+            const auto& filename = entry.path().filename().string();
+            std::string name_without_prefix = filename;
+            std::string prefix;
+            
+            if (!filename.empty() && std::isdigit(filename[0])) {
+                size_t underscore_pos = filename.find('_');
+                if (underscore_pos != std::string::npos && underscore_pos > 0 && 
+                    std::all_of(filename.begin(), filename.begin() + underscore_pos, ::isdigit)) {
+                    prefix = filename.substr(0, underscore_pos);
+                    name_without_prefix = filename.substr(underscore_pos + 1);
+                }
+            }
+            file_map[parent_path].emplace_back(name_without_prefix, prefix);
+        }
     }
-
-    auto& existing_numbers = existing_numbers_map[parent_path];
-
-    // Remove any existing numbered prefix
-    std::string filename_without_prefix;
+    
+    auto& files = file_map[parent_path];
+    
+    // Remove any existing numbered prefix from the new file
+    std::string filename_without_prefix = file_string;
     if (!file_string.empty() && std::isdigit(file_string[0])) {
         size_t underscore_pos = file_string.find('_');
-        if (underscore_pos != std::string::npos && underscore_pos > 0 && std::all_of(file_string.begin(), file_string.begin() + underscore_pos, ::isdigit)) {
-            int number = std::stoi(file_string.substr(0, underscore_pos));
-            existing_numbers.insert(number);
+        if (underscore_pos != std::string::npos && underscore_pos > 0 && 
+            std::all_of(file_string.begin(), file_string.begin() + underscore_pos, ::isdigit)) {
             filename_without_prefix = file_string.substr(underscore_pos + 1);
-        } else {
-            filename_without_prefix = file_string;
         }
-    } else {
-        filename_without_prefix = file_string;
     }
-
-    // Find the first gap in the sequence of numbers
-    int gap = 1;
-    while (existing_numbers.find(gap) != existing_numbers.end()) {
-        gap++;
+    
+    // Add the new file to the list if it doesn't exist
+    auto it = std::find_if(files.begin(), files.end(),
+                           [&filename_without_prefix](const auto& pair) { return pair.first == filename_without_prefix; });
+    if (it == files.end()) {
+        files.emplace_back(filename_without_prefix, "");
     }
-    existing_numbers.insert(gap);
-
-    int& counter = counter_map[parent_path];
-    counter++;
-
+    
+    // Sort files alphabetically by their names
+    std::sort(files.begin(), files.end());
+    
+    // Renumber files
+    int number = 1;
+    for (auto& [name, prefix] : files) {
+        std::ostringstream oss;
+        oss << std::setfill('0') << std::setw(3) << number;
+        prefix = oss.str();
+        number++;
+    }
+    
+    // Find the number for the new file
+    it = std::find_if(files.begin(), files.end(),
+                      [&filename_without_prefix](const auto& pair) { return pair.first == filename_without_prefix; });
+    std::string new_prefix = it->second;
+    
+    // Create the new filename
     std::ostringstream oss;
-    oss << std::setfill('0') << std::setw(3) << counter;
-    oss << "_" << filename_without_prefix;
-
+    oss << new_prefix << "_" << filename_without_prefix;
     return oss.str();
 }
 
