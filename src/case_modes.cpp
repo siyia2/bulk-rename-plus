@@ -502,7 +502,8 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
         }
 
         // Sort folder names alphabetically
-        std::sort(folder_names.begin(), folder_names.end());
+        std::sort(folder_names.begin(), folder_names.end(), 
+          [](const auto& a, const auto& b) { return a.first < b.first; });
 
         // Process sorted folder names
         int counter = 1;
