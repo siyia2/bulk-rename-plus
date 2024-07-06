@@ -477,9 +477,17 @@ std::string remove_date_seq(const std::string& file_string) {
  
 // Apply sequential folder numbering in parallel using OpenMP
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100, int num_paths = 1) {
+    // Reserve capacity for folders_to_rename
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename;
+    folders_to_rename.reserve(batch_size_folders);
+    
+    // Reserve capacity for unchanged_folder_paths
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths;
+    unchanged_folder_paths.reserve(batch_size_folders);
+    
+    // Reserve capacity for folder_names
     std::vector<std::pair<std::string, fs::path>> folder_names;
+    folder_names.reserve(batch_size_folders);
 
     bool renaming_needed = false;
 
