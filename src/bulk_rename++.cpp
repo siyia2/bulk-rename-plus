@@ -882,12 +882,12 @@ int main(int argc, char *argv[]) {
             } else if (arg == "-d" && i + 1 < argc) {
                 // Check if the depth value is empty or not a number
                 if (argv[i + 1] == nullptr || std::string(argv[i + 1]).empty() || !isdigit(argv[i + 1][0])) {
-                    print_error("\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n");
+                    print_error("\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n\n");
                     return 1;
                 }
                 depth = std::atoi(argv[++i]);
                 if (depth < -1) {
-                    print_error("\033[1;91mError: Depth value if set must be -1 or greater.\033[0m\n");
+                    print_error("\033[1;91mError: Depth value if set must be -1 or greater.\033[0m\n\n");
                     return 1;
                 }
             } else if (arg == "-v" || arg == "--verbose") {
