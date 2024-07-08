@@ -630,10 +630,18 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 new_dirname = get_renamed_folder_name_without_numbering(new_dirname);
             } else if (case_input == "date") {
                 new_dirname = append_date_suffix_to_folder_name(new_dirname);
+            } else if (case_input == "camel") {
+                new_dirname = to_camel_case(new_dirname);
+            } else if (case_input == "rcamel") {
+                new_dirname = from_camel_case(new_dirname);
             } else if (case_input == "rdate") {
                 new_dirname = get_renamed_folder_name_without_date(new_dirname);
             } else if (case_input == "sentence") {
                 new_dirname = sentenceCase(new_dirname);
+            }  else if (case_input == "swap") {
+                new_dirname = swap_transform(new_dirname);
+            } else if (case_input == "swapr") {
+                new_dirname = swapr_transform(new_dirname);
             } else if (case_input == "pascal") {
                 new_dirname = to_pascal(new_dirname);
             } else if (case_input == "rpascal") {
