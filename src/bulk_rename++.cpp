@@ -421,7 +421,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         // Increment the directory count
         std::lock_guard<std::mutex> lock(dirs_count_mutex);
         ++dirs_count;
-        std::cout << "\rTotal Files processed: " << dirs_count << std::flush;
         return;
     }
 
@@ -571,9 +570,7 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
             } else if (fs::is_directory(status)) {
                 // Update dirs_count when a directory is successfully renamed
                 #pragma omp atomic
-
                 ++dirs_count;
-                std::cout << "\rTotal Folders processed: " << dirs_count << std::flush;
             }
         } catch (const fs::filesystem_error& e) {
             // Print an error message if renaming fails
