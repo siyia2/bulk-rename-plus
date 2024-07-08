@@ -23,7 +23,7 @@ std::string sentenceCase(const std::string& string) {
         } else {
             result << static_cast<char>(std::tolower(c));
         }
-        if (std::isspace(c) || c == '.') { // Consider a new word after a space or period for files
+        if (std::isspace(c) || c == '.') { // Consider a new word after a space or period
             newWord = true;
         }
     }
