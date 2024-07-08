@@ -23,7 +23,7 @@ std::string sentenceCase(const std::string& string) {
         } else {
             result << static_cast<char>(std::tolower(c));
         }
-        if (std::isspace(c) || c == '.') { // Consider a new word after a space or period
+        if (std::isspace(c) || c == '.') { // Consider a new word after a space or period for files
             newWord = true;
         }
     }
@@ -122,7 +122,7 @@ std::string swapr_transform(const std::string& string) {
 
 
 // Function to rename to pascalCase
-std::string to_camel_case(const std::string& string) {
+std::string to_camel_case(const std::string& string, bool isFile) {
     bool hasUpperCase = false;
     bool hasSpace = false;
 
@@ -149,7 +149,7 @@ std::string to_camel_case(const std::string& string) {
     bool afterDot = false;
 
     for (char c : string) {
-        if (c == '.') {
+        if (c == '.' && isFile) {
             afterDot = true;
         }
         if (afterDot) {
@@ -188,7 +188,7 @@ std::string from_camel_case(const std::string& string) {
 }
 
 // Function to rename to pascalCase
-std::string to_pascal(const std::string& string) {
+std::string to_pascal(const std::string& string, bool isFile) {
     bool hasUpperCase = false;
     bool hasSpace = false;
 
@@ -198,7 +198,7 @@ std::string to_pascal(const std::string& string) {
         } else if (c == ' ') {
             hasSpace = true;
         }
-        if (c == '.') {
+        if (c == '.' && isFile) {
             // Stop processing after encountering a period
             break;
         }
@@ -215,7 +215,7 @@ std::string to_pascal(const std::string& string) {
     bool afterDot = false;
 
     for (char c : string) {
-        if (c == '.') {
+        if (c == '.' && isFile) {
             afterDot = true;
         }
         if (afterDot) {

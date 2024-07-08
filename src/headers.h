@@ -33,13 +33,13 @@ extern std::mutex cout_mutex;
 // General
 std::string remove_numbering(const std::string& filename);
 std::string sentenceCase(const std::string& string);
-std::string to_pascal(const std::string& string);
+std::string to_pascal(const std::string& string, bool isFile);
 std::string from_pascal_case(const std::string& string);
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string);
 std::string capitalizeFirstLetter(const std::string& string);
 std::string swap_transform(const std::string& string);
 std::string swapr_transform(const std::string& string);
-std::string to_camel_case(const std::string& string);
+std::string to_camel_case(const std::string& string, bool isFile);
 std::string from_camel_case(const std::string& string);
 // Files only
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::vector<std::string>& sorted_files);

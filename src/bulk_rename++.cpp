@@ -445,7 +445,8 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
                     return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                 }), new_name.end());
             } else if (case_input == "camel") {
-                new_name = to_camel_case(new_name);
+				bool isFile = true;
+                new_name = to_camel_case(new_name, isFile);
             } else if (case_input == "rcamel") {
                 new_name = from_camel_case(new_name);
             } else if (case_input == "sequence") {
@@ -464,7 +465,8 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             } else if (case_input == "swapr") {
                 new_name = swapr_transform(new_name);
             } else if (case_input == "pascal") {
-                new_name = to_pascal(new_name);
+				bool isFile = true;
+                new_name = to_pascal(new_name, isFile);
             } else if (case_input == "rpascal") {
                 new_name = from_pascal_case(new_name);
             }
@@ -619,7 +621,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     return c == '-' || c == '+' || c == '>' || c == '<' || c == '=' || c == '*';
                 }), new_dirname.end());
             } else if (case_input == "camel") {
-                new_dirname = to_camel_case(new_dirname);
+				bool isFile = false;
+                new_dirname = to_camel_case(new_dirname, isFile);
             } else if (case_input == "rcamel") {
                 new_dirname = from_camel_case(new_dirname);
             } else if (case_input == "sequence") {
@@ -639,7 +642,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else if (case_input == "swapr") {
                 new_dirname = swapr_transform(new_dirname);
             } else if (case_input == "pascal") {
-                new_dirname = to_pascal(new_dirname);
+				bool isFile = false;
+                new_dirname = to_pascal(new_dirname, isFile);
             } else if (case_input == "rpascal") {
                 new_dirname = from_pascal_case(new_dirname);
             }
