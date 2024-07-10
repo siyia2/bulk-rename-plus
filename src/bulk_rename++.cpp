@@ -754,48 +754,36 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
-    
-    // Vector to hold futures for each asynchronous task
-    std::vector<std::future<void>> futures;
-    futures.reserve(num_paths);
-    
+    omp_set_num_threads(num_paths);
+    #pragma omp parallel for default(none) shared(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special, num_paths)
     for (int i = 0; i < num_paths; ++i) {
-
-        futures.push_back(std::async(std::launch::async, [&paths, i, &case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, &files_count, &dirs_count, batch_size_files, batch_size_folders, symlinks, &skipped_file_count, &skipped_folder_count, &skipped_folder_special_count, &skipped, &skipped_only, &isFirstRun, &special, &num_paths]() {
-            
-            bool isFirstRunLocal = true;
-            
-            // Obtain the current path
-            fs::path current_path(paths[i]);
-            if (fs::exists(current_path)) {
-                if (fs::is_directory(current_path)) {
-                    if (rename_parents) {
-                        // If -p option is used, only rename the immediate parent
-                        fs::path immediate_parent_path = current_path.parent_path();
-                        rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special, num_paths);
-                    } else {
-                        // Otherwise, rename the entire path
-                        rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRunLocal, special, num_paths);
-                    }
-                } else if (fs::is_regular_file(current_path)) {
-                    // For files, directly rename the item without considering the parent directory
-                    rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
+		isFirstRun = true;
+        
+        // Obtain the current path
+        fs::path current_path(paths[i]);
+        if (fs::exists(current_path)) {
+            if (fs::is_directory(current_path)) {
+                if (rename_parents) {
+                    // If -p option is used, only rename the immediate parent
+                    fs::path immediate_parent_path = current_path.parent_path();
+                    rename_directory(immediate_parent_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special, num_paths);
+                } else {
+                    // Otherwise, rename the entire path
+                    rename_directory(current_path, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special, num_paths);
                 }
+            } else if (fs::is_regular_file(current_path)) {
+                // For files, directly rename the item without considering the parent directory
+                rename_file(current_path, case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
             }
-        }));
-    }
-
-    // Wait for all asynchronous tasks to complete
-    for(auto &future : futures) {
-        future.wait();
+        }
     }
 
     auto end_time = std::chrono::steady_clock::now(); // End time measurement
 
     std::chrono::duration<double> elapsed_seconds = end_time - start_time; // Calculate elapsed time
     if (verbose_enabled) {
-		std::cout << "\n";
-	}
+        std::cout << "\n";
+    }
     if (!non_interactive || verbose_enabled) {
         // Output summary of the renaming process
         std::cout << "\n\033[0;1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m&& \033[1;94m"
@@ -1104,18 +1092,18 @@ int main(int argc, char *argv[]) {
         rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive, special);
     }
 
-    if (!ni_flag) {
-        // Prompt the user to press enter to exit
-        std::cout << "\033[1mPress enter to exit...\033[0m";
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        // Suppress all messages
+	if (!ni_flag) {
+		// Prompt the user to press enter to exit
+		std::cout << "\033[1mPress enter to exit...\033[0m";
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        
+		// Suppress all messages
 		std::streambuf* cout_sbuf = std::cout.rdbuf();  
-		std::ofstream dev_null("/dev/null");
-		std::cout.rdbuf(dev_null.rdbuf()); 
-
+		std::cout.rdbuf(nullptr); // Redirect cout to null buffer
+        
 		// Restore the original buffer before exiting
 		std::cout.rdbuf(cout_sbuf);
-        clearScrollBuffer();
+		clearScrollBuffer();
     }
     
     return 0;
