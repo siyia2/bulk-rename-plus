@@ -242,7 +242,8 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 
 // Function to rename a batch of files using multiple threads for parallel execution
 void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, bool skipped_only) {
-    #pragma omp parallel for schedule(dynamic)
+    int num_threads = std::min(static_cast<int>(data.size()), static_cast<int>(max_threads));
+    #pragma omp parallel for schedule(dynamic) num_threads(num_threads)
     for (std::size_t i = 0; i < data.size(); ++i) {
         const auto& [old_path, new_path] = data[i];
 
@@ -504,7 +505,8 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
 // Function to rename a batch of files/directories using multiple threads for parallel execution
 void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count, bool skipped_only) {
-    #pragma omp parallel for schedule(dynamic)
+    int num_threads = std::min(static_cast<int>(data.size()), static_cast<int>(max_threads));
+    #pragma omp parallel for schedule(dynamic) num_threads(num_threads)
     for (std::size_t i = 0; i < data.size(); ++i) {
         const auto& [item_path, new_name] = data[i];
         fs::path new_path = item_path.parent_path() / new_name;
