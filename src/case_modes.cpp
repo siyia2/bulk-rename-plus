@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GNU General Public License v3.0 or later
+
 #include "headers.h"
 
 // Necessary redefinition of global and shared mutexes
