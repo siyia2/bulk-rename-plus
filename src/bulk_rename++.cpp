@@ -845,7 +845,7 @@ int main(int argc, char *argv[]) {
     // Check if --version flag is present
     if (argc > 1 && std::string(argv[1]) == "--version") {
         // Print version number and exit
-        printVersionNumber("2.0.5");
+        printVersionNumber("2.0.6");
         return 0;
     }
 
