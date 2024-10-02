@@ -804,6 +804,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 }
 
 
+// Function to provide examples on user query
 std::string example_transform(const std::string& mode, std::string word, bool ce_flag) {
     std::string transformed_word;  // To hold the transformed word
 
