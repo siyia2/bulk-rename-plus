@@ -825,7 +825,7 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
         word = "Te st";
     } else if (!ce_flag && (mode == "pascal" || mode == "camel")) {
         word = "Te st";
-    } else if (!ce_flag && mode == "snake") {
+    } else if (!ce_flag && mode == "rsnake") {
         word = "Te_st";
     } else if (!ce_flag && (mode == "rcamel" || mode == "rpascal")) {
         word = "TeSt";
