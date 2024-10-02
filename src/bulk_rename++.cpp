@@ -808,11 +808,13 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 std::string example_transform(const std::string& mode, std::string word, bool ce_flag) {
     std::string transformed_word;  // To hold the transformed word
 
-    // Decide the initial word based on the ce_flag
      // Decide the initial word based on the ce_flag
-    if (ce_flag) {
+    if (ce_flag && !(mode == "rbak")) {
         word = "Test.txt";
-    } else if (!ce_flag && mode == "title") {
+    } else if (ce_flag && mode == "rbak") {
+        word = "Test.txt.bak";
+    } 
+    else if (!ce_flag && mode == "title") {
         word = "test.txt";
     } 
     else if (!ce_flag && mode == "rsequence") {
@@ -1195,17 +1197,23 @@ int main(int argc, char *argv[]) {
     }
 
 	if (!ni_flag) {
-		// Prompt the user to press enter to exit
-		std::cout << "\033[1mPress enter to exit...\033[0m";
-		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		// Suppress all messages by redirecting cout to null buffer
+        std::streambuf* cout_sbuf = std::cout.rdbuf();
+        std::cout.rdbuf(nullptr); // Redirect cout to null buffer
         
-		// Suppress all messages
-		std::streambuf* cout_sbuf = std::cout.rdbuf();  
-		std::cout.rdbuf(nullptr); // Redirect cout to null buffer
+        // Prompt the user to press enter to exit
+        std::cout.rdbuf(cout_sbuf); // Restore cout to original buffer before the prompt
+        std::cout << "\033[1mPress enter to exit...\033[0m";
         
-		// Restore the original buffer before exiting
-		std::cout.rdbuf(cout_sbuf);
-		clearScrollBuffer();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        
+        // Restore cout to suppress output for any subsequent operations if needed
+        std::cout.rdbuf(nullptr);
+        
+        clearScrollBuffer();
+        
+        // Restore cout before exiting
+        std::cout.rdbuf(cout_sbuf);
     }
     
     return 0;
