@@ -804,6 +804,70 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 }
 
 
+std::string example_transform(const std::string& mode, bool ce_flag) {
+    
+    std::string word;
+    
+    // Decide the initial word based on the ce_flag
+    if (ce_flag) {
+        word = "Test.txt";
+    } else if (!ce_flag && mode == "title") {
+		word = "test.txt";
+    } else {
+		word = "Test";
+	}
+    
+    // Perform transformation based on the mode
+    if (mode == "lower") {
+        return ce_flag ? "test.txt" : "test";  // Adjust for ce_flag
+    } else if (mode == "upper") {
+        return ce_flag ? "TEST.TXT" : "TEST";  // Uppercase transformation
+    } else if (mode == "reverse") {
+        return ce_flag ? "tSET.TXT" : "tSET";  // Reverse case
+    } else if (mode == "title") {
+		return ce_flag ? "Test.Txt" : "Test";  // Title Case
+    } else if (mode == "swap") {
+        return ce_flag ? "tEST.TXT" : "tEST";  // Swap case
+    } else if (mode == "swapr") {
+        return ce_flag ? "TesT.Txt" : "TesT";  // Swap reverse case
+    } else if (mode == "pascal") {
+        return ce_flag ? "TeSt.Txt" : "TeSt";  // Pascal case
+    } else if (mode == "camel") {
+        return ce_flag ? "teSt.txt" : "teSt";  // Camel case
+    } else if (mode == "kebab") {
+        return ce_flag ? "Te-st.txt" : "Te-st";  // Kebab case
+    } else if (mode == "snake") {
+        return ce_flag ? "Te_st.txt" : "Te_st";  // Snake case
+    } else if (mode == "rpascal") {
+        return ce_flag ? "Te St.txt" : "Te St";  // Reverse Pascal case
+    } else if (mode == "rcamel") {
+        return ce_flag ? "te st.txt" : "te st";  // Reverse Camel case
+    } else if (mode == "rsnake") {
+        return ce_flag ? "Te st.txt" : "Te st";  // Reverse Snake case
+    } else if (mode == "rkebab") {
+        return ce_flag ? "Te st.txt" : "Te st";  // Reverse Kebab case
+    } else if (mode == "date") {
+        return ce_flag ? "Test_20240215.txt" : "Test_20240215";  // Append date
+    } else if (mode == "sequence") {
+        return ce_flag ? "001_Test.txt" : "001_Test";  // Append numeric sequence
+    } else if (mode == "rsequence") {
+        return ce_flag ? "Test.txt" : "Test";  // Remove numeric sequence
+    } else if (mode == "rdate") {
+        return ce_flag ? "Test.txt" : "Test";  // Remove date
+    } else if (mode == "bak") {
+        return ce_flag ? "Test.txt.bak" : "Test.bak";  // Add .bak to file extension
+    } else if (mode == "rbak") {
+        return ce_flag ? "Test.txt" : "Test";  // Remove .bak from file extension
+    } else if (mode == "noext") {
+        return "Test";  // Remove file extension, no need to check ce_flag
+    
+    }
+
+    // Default to original word if no mode matches
+    return word;
+}
+
+
 // Main function
 int main(int argc, char *argv[]) {
     // Initialize variables and flags
@@ -962,6 +1026,8 @@ int main(int argc, char *argv[]) {
             paths.emplace_back(arg);
         }
     }
+    
+    std::string transformed_word = example_transform(case_input, ce_flag);
 
     // Perform renaming based on flags and options
     if (fi_flag && fo_flag) {
@@ -1022,7 +1088,8 @@ int main(int argc, char *argv[]) {
     std::string confirmation;
     if (rename_parents && !ni_flag) {
         // Display the paths and their lowest parent directories that will be renamed
-        std::cout << "\033[0;1mThe following path(s) and the \033[4mlowest Parent\033[0;1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+		std::cout << "\033[0;1mThe following path(s) and the \033[4mlowest Parent\033[0;1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m"
+          << case_input << " case (e.g., Test => " << transformed_word << ")\033[0m";
         if (depth != -1) {
             std::cout << "\033[0;1m (up to depth " << depth << ")";
         }
@@ -1038,7 +1105,8 @@ int main(int argc, char *argv[]) {
         }
     } else if (rename_extensions && !ni_flag) {
         // Display the paths where file extensions will be recursively renamed
-        std::cout << "\033[0;1mThe file \033[4mextensions\033[0;1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+        std::cout << "\033[0;1mThe file \033[4mextensions\033[0;1m under the following path(s) \033[1mwill be recursively renamed to \033[0m\e[1;38;5;214m"
+         << case_input << " case (e.g., Test => " << transformed_word << ")\033[0m";
         if (depth != -1) {
             std::cout << "\033[0;1m (up to depth " << depth << ")";
         }
@@ -1048,7 +1116,8 @@ int main(int argc, char *argv[]) {
         }
     } else if (!ni_flag) {
         // Display the paths that will be recursively renamed
-        std::cout << "\033[0;1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m" << case_input << "Case\033[0m";
+        std::cout << "\033[0;1mThe following path(s) will be recursively renamed to \033[0m\e[1;38;5;214m"
+          << case_input << " case (e.g., Test => " << transformed_word << ")\033[0m";
         if (depth != -1) {
             std::cout << "\033[0;1m (up to depth " << depth << ")";
         }
