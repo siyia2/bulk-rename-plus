@@ -808,7 +808,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
 std::string example_transform(const std::string& mode, std::string word, bool ce_flag) {
     std::string transformed_word;  // To hold the transformed word
 
-     // Decide the initial word based on the ce_flag
+     // Decide the initial word based on the ce_flag and modes
     if (ce_flag && !(mode == "rbak")) {
         word = "Test.txt";
     } else if (ce_flag && mode == "rbak") {
@@ -852,7 +852,7 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
     }
     
 
-    // Perform transformation based on the mode
+    // Display transformation based on the mode
     if (mode == "lower") {
         transformed_word = ce_flag ? "test.txt" : "test";  // Adjust for ce_flag
     } else if (mode == "upper") {
