@@ -894,11 +894,9 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
     }
 
     // Return formatted string
-    return std::string(mode + " case (e.g., " + word + " => " + transformed_word + ")\033[0m");
+    return std::string(mode + "_Case \033[0;1m(e.g., \033[38;5;130m" + word + " => " + transformed_word + "\033[0;1m)\033[0m");
 }
 
-//roperand Remove - + > < = * from names (e.g., =T-e+s < t > => Test)
-//rspecial Remove special characters from names (e.g., Tes\t!@#$%^|&~'"";? => Test)
 
 // Main function
 int main(int argc, char *argv[]) {
