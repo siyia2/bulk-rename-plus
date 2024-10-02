@@ -808,13 +808,34 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
     std::string transformed_word;  // To hold the transformed word
 
     // Decide the initial word based on the ce_flag
+     // Decide the initial word based on the ce_flag
     if (ce_flag) {
         word = "Test.txt";
     } else if (!ce_flag && mode == "title") {
-        word = "test";  // This should remain as is
-    } else {
-        word = "test";  // This is for other modes that are not "title"
+        word = "test.txt";
+    } 
+    else if (!ce_flag && mode == "rsequence") {
+        word = "001_Test";
     }
+    else if (!ce_flag && mode == "rdate") {
+        word = "Test_20240215";
+    }
+    else if (!ce_flag && mode == "rspecial") {
+        word = "T'es!@#$%^|&~t;";
+    }
+    else if (!ce_flag && mode == "roperand") {
+        word = "=T-e+s<t>";
+    }
+    else if (!ce_flag && mode == "rnumeric") {
+        word = "1Te0st2";
+    }
+    else if (!ce_flag && mode == "rbra") {
+        word = "[{Test}]";
+    }
+    else {
+        word = "Test";
+    }
+    
 
     // Perform transformation based on the mode
     if (mode == "lower") {
@@ -828,7 +849,7 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
     } else if (mode == "swap") {
         transformed_word = ce_flag ? "tEST.TXT" : "tEST";  // Swap case
     } else if (mode == "swapr") {
-        transformed_word = ce_flag ? "TesT.Txt" : "TesT";  // Swap reverse case
+        transformed_word = ce_flag ? "TesT.Txt" : "tEsT";  // Swap reverse case
     } else if (mode == "pascal") {
         transformed_word = ce_flag ? "TeSt.Txt" : "TeSt";  // Pascal case
     } else if (mode == "camel") {
@@ -853,7 +874,16 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
         transformed_word = ce_flag ? "Test.txt" : "Test";  // Remove numeric sequence
     } else if (mode == "rdate") {
         transformed_word = ce_flag ? "Test.txt" : "Test";  // Remove date
-    } else if (mode == "bak") {
+    } else if (mode == "rbra") {
+        transformed_word = ce_flag ? "Test.txt" : "Test"; // Remove brackets around names
+    } else if (mode == "rspecial") {
+        transformed_word = ce_flag ? "Test.txt" : "Test"; // Remove special characters from names
+    } else if (mode == "roperand") {
+        transformed_word = ce_flag ? "Test.txt" : "Test"; // Remove arithmetic operands from names
+    } else if (mode == "rnumeric") {
+        transformed_word = ce_flag ? "Test.txt" : "Test"; // Remove numeric characters from names
+    }
+	  else if (mode == "bak") {
         transformed_word = ce_flag ? "Test.txt.bak" : "Test.bak";  // Add .bak to file extension
     } else if (mode == "rbak") {
         transformed_word = ce_flag ? "Test.txt" : "Test";  // Remove .bak from file extension
@@ -867,6 +897,8 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
     return std::string(mode + " case (e.g., " + word + " => " + transformed_word + ")\033[0m");
 }
 
+//roperand Remove - + > < = * from names (e.g., =T-e+s < t > => Test)
+//rspecial Remove special characters from names (e.g., Tes\t!@#$%^|&~'"";? => Test)
 
 // Main function
 int main(int argc, char *argv[]) {
@@ -1088,7 +1120,7 @@ int main(int argc, char *argv[]) {
     std::string confirmation;
     if (rename_parents && !ni_flag) {
         // Display the paths and their lowest parent directories that will be renamed
-		std::cout << "\033[0;1mThe following path(s) and the \033[4mlowest Parent\033[0;1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m"
+		std::cout << "\033[0;1mThe following path(s) and their \033[4mlowest Parent\033[0;1m dir(s), will be recursively renamed to \033[0m\e[1;38;5;214m"
          << result;
         if (depth != -1) {
             std::cout << "\033[0;1m (up to depth " << depth << ")";
