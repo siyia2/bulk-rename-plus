@@ -819,6 +819,18 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
     } 
     else if (!ce_flag && mode == "rsequence") {
         word = "001_Test";
+    } else if (!ce_flag && mode == "rkebab") {
+        word = "Te-st";
+    } else if (!ce_flag && (mode == "kebab" || mode == "snake")) {
+        word = "Te st";
+    } else if (!ce_flag && (mode == "pascal" || mode == "camel")) {
+        word = "Te st";
+    } else if (!ce_flag && mode == "snake") {
+        word = "Te_st";
+    } else if (!ce_flag && (mode == "rcamel" || mode == "rpascal")) {
+        word = "TeSt";
+    } else if (!ce_flag && mode == "sentence") {
+        word = "Te st";
     }
     else if (!ce_flag && mode == "rdate") {
         word = "Test_20240215";
