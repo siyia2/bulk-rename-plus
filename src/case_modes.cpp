@@ -2,10 +2,8 @@
 
 #include "headers.h"
 
-// Necessary redefinition of global and shared mutexes
+// Global and shared mutexes
 std::mutex cout_mutex;
-std::mutex dirs_count_mutex;
-std::mutex skipped_folder_count_mutex;
 
 // Separate string operations
 
@@ -478,7 +476,7 @@ std::string remove_date_seq(const std::string& file_string) {
 // Folder numbering functions mv style
  
 // Apply sequential folder numbering in parallel using OpenMP
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, int& dirs_count, int& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100, int num_paths = 1) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, std::atomic<int>& dirs_count, std::atomic<int>& skipped_folder_special_count, int depth, bool verbose_enabled = false, bool skipped = false, bool skipped_only = false, bool symlinks = false, size_t batch_size_folders = 100, int num_paths = 1) {
     // Reserve capacity for folders_to_rename
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename;
     folders_to_rename.reserve(batch_size_folders);
@@ -580,7 +578,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     try {
                         fs::rename(old_path, new_path);
                     } catch (const fs::filesystem_error& e) {
-                        std::lock_guard<std::mutex> lock(dirs_count_mutex);
                         if (e.code() == std::errc::permission_denied && verbose_enabled) {
                             print_error("\033[1;91mError\033[0m: " + std::string(e.what()));
                         }
@@ -593,7 +590,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                             print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                         }
                     }
-                    std::lock_guard<std::mutex> lock(dirs_count_mutex);
                     ++dirs_count;
                 }
             }
@@ -614,7 +610,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                         print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
                     }
                 }
-                std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
                 ++skipped_folder_special_count;
             }
         }

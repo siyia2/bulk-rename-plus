@@ -5,9 +5,7 @@
 // General purpose stuff
 
 // Mutexes for main program
-std::mutex skipped_file_count_mutex;
 std::mutex sequence_mutex;
-std::mutex files_count_mutex;
 std::mutex files_mutex;
 
 // Get the number of available processor cores
@@ -151,7 +149,7 @@ static const std::vector<std::string> transformation_commands = {
 
 
 // Function to rename file extensions
-void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, int& files_count, size_t batch_size, bool symlinks, int& skipped_file_count, bool skipped, bool skipped_only) {
+void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, std::atomic<int>& files_count, size_t batch_size, bool symlinks, std::atomic<int>& skipped_file_count, bool skipped, bool skipped_only) {
     // Vector to store pairs of old and new paths for renaming
     std::vector<std::pair<fs::path, fs::path>> rename_batch;
     rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
@@ -160,7 +158,6 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
     for (const auto& item_path : item_paths) {
         // Check if the item is a directory or a symlink
         if (fs::is_symlink(item_path) && !symlinks) {
-            std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
             ++skipped_file_count;
             // Skip if it's a symlink, print a message if verbose mode enabled
             if (verbose_enabled && skipped) {
@@ -205,7 +202,6 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
             }
 
             if (extension == new_extension) {
-                std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
                 ++skipped_file_count;
             }
 
@@ -243,7 +239,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 
 
 // Function to rename a batch of files using multiple threads for parallel execution
-void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, int& files_count, bool skipped_only) {
+void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& data, bool verbose_enabled, std::atomic<int>& files_count, bool skipped_only) {
     int num_threads = std::min(static_cast<int>(data.size()), static_cast<int>(max_threads));
     #pragma omp parallel for schedule(dynamic) num_threads(num_threads)
     for (std::size_t i = 0; i < data.size(); ++i) {
@@ -254,7 +250,6 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
             fs::rename(old_path, new_path);
 
             // Safely increment files_count when a file is successfully renamed
-            #pragma omp atomic
             ++files_count;
 
             // Print a success message if verbose mode enabled
@@ -283,7 +278,7 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
 
 
 // Function to search subdirs for file extensions recursively for multiple paths in parallel
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, int& files_count, size_t batch_size_files, bool symlinks, int& skipped_file_count, bool skipped, bool skipped_only, bool non_interactive) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, std::atomic<int>& files_count, size_t batch_size_files, bool symlinks, std::atomic<int>& skipped_file_count, bool skipped, bool skipped_only, bool non_interactive) {
     // If depth is negative, set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
@@ -374,10 +369,9 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
 // Rename file&directory stuff
  
 // Function to rename files
-void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, size_t batch_size_files, bool symlinks, int& skipped_file_count, int& skipped_folder_count, bool skipped, bool skipped_only) {
+void rename_file(const fs::path& item_path, const std::string& case_input, bool is_directory, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, size_t batch_size_files, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, bool skipped, bool skipped_only) {
     // Check if the item is a symbolic link
     if ((fs::is_symlink(item_path) && !symlinks) || !fs::is_regular_file(item_path)) {
-        std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
         ++skipped_file_count;
         if (verbose_enabled && transform_files && !symlinks && skipped) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[95msymlink_file\033[0m " + item_path.string() + " (excluded)", std::cout);
@@ -393,7 +387,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         for (const auto& entry : fs::directory_iterator(item_path)) {
             rename_file(entry.path(), case_input, entry.is_directory(), verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
         }
-        std::lock_guard<std::mutex> lock(dirs_count_mutex);
         ++dirs_count;
         return;
     }
@@ -477,7 +470,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
     }
 
     if (name == new_name && transform_files) {
-        std::lock_guard<std::mutex> lock(skipped_file_count_mutex);
         ++skipped_file_count;
     }
 
@@ -506,7 +498,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
 
 // Function to rename a batch of files/directories using multiple threads for parallel execution
-void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, int& files_count, int& dirs_count, bool skipped_only) {
+void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, bool verbose_enabled, std::atomic<int>& files_count, std::atomic<int>& dirs_count, bool skipped_only) {
     int num_threads = std::min(static_cast<int>(data.size()), static_cast<int>(max_threads));
     #pragma omp parallel for schedule(dynamic) num_threads(num_threads)
     for (std::size_t i = 0; i < data.size(); ++i) {
@@ -532,11 +524,9 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
             // Update files_count or dirs_count based on the type of the renamed item
             if (fs::is_regular_file(status)) {
                 // Update files_count when a file is successfully renamed
-                #pragma omp atomic
                 ++files_count;
             } else if (fs::is_directory(status)) {
                 // Update dirs_count when a directory is successfully renamed
-                #pragma omp atomic
                 ++dirs_count;
             }
         } catch (const fs::filesystem_error& e) {
@@ -552,7 +542,7 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
 
 
 // Function to rename a directory based on specified transformations
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int& files_count, int& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int& skipped_file_count, int& skipped_folder_count, int& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool& special, int num_paths) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool& special, int num_paths) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     
@@ -570,7 +560,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     // Early exit if the directory is a symlink and should not be transformed
     if (fs::is_symlink(directory_path) && !symlinks) {
 		if (transform_dirs) {
-		std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
 		    ++skipped_folder_count;
 		}
         if (verbose_enabled && skipped) {
@@ -657,7 +646,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
     fs::path new_path = directory_path.parent_path() / new_dirname;
 
     if (directory_path == new_path && transform_dirs && !special) {
-        std::lock_guard<std::mutex> lock(skipped_folder_count_mutex);
         ++skipped_folder_count;
     }
 
@@ -672,7 +660,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     print_verbose_enabled("\033[0m\033[92mRenamed \033[94mfolder\033[0m " + directory_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                 }
             }
-            std::lock_guard<std::mutex> lock(dirs_count_mutex);
             ++dirs_count;
         } catch (const fs::filesystem_error& e) {
             if (e.code() == std::errc::permission_denied) {
@@ -752,7 +739,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
  
 
 // Function to rename paths (directories and files) based on specified transformations asynchronously
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, int files_count, int dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, int skipped_file_count, int skipped_folder_count, int skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive, bool special) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, std::atomic<int>& files_count, std::atomic<int>& dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive, bool special) {
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
@@ -921,11 +908,11 @@ int main(int argc, char *argv[]) {
     bool rename_parents = false;
     bool rename_extensions = false;
     bool verbose_enabled = false;
-    int skipped_folder_special_count = 0;
-    int skipped_folder_count = 0;
-    int skipped_file_count = 0;
-    int files_count = 0;
-    int dirs_count = 0;
+    std::atomic<int> skipped_folder_special_count{0};
+    std::atomic<int> skipped_folder_count{0};
+    std::atomic<int> skipped_file_count{0};
+    std::atomic<int> files_count {0};
+    std::atomic<int> dirs_count{0};
     int depth = -1;
     bool case_specified = false;
     bool transform_dirs = true;
@@ -1205,7 +1192,8 @@ int main(int argc, char *argv[]) {
     } else if (!transform_dirs) {
         rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive, special);
     } else {
-        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count - paths.size(), skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive, special);
+		std::atomic<int> temp_skipped_folder_count = skipped_folder_count - paths.size();
+        rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, temp_skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive, special);
     }
 
 	if (!ni_flag) {
