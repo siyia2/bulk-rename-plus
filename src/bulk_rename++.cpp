@@ -12,6 +12,32 @@ std::mutex files_mutex;
 unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); 
 
 
+// Terminal blocking and unblocking
+
+// Function to flush input buffer
+void flushStdin() {
+    tcflush(STDIN_FILENO, TCIFLUSH);
+}
+
+
+// Function to disable input during processing
+void disableInput() {
+    struct termios term;
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+}
+
+
+// Function to restore normal input
+void restoreInput() {
+    struct termios term;
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_lflag |= ICANON | ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+}
+
+
 // Global print functions
 
 // Print an error message to stderr
@@ -1183,7 +1209,9 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
-
+    
+	disableInput();
+	
     // Perform the renaming operation based on the selected mode
     if (rename_parents) {
         rename_path(paths, case_input, true, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive, special); // Pass true for rename_parents
@@ -1195,25 +1223,18 @@ int main(int argc, char *argv[]) {
 		std::atomic<int> temp_skipped_folder_count = skipped_folder_count - paths.size();
         rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, temp_skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive, special);
     }
-
+    flushStdin();
+	disableInput();
 	if (!ni_flag) {
-		// Suppress all messages by redirecting cout to null buffer
-        std::streambuf* cout_sbuf = std::cout.rdbuf();
-        std::cout.rdbuf(nullptr); // Redirect cout to null buffer
         
         // Prompt the user to press enter to exit
-        std::cout.rdbuf(cout_sbuf); // Restore cout to original buffer before the prompt
         std::cout << "\033[1mPress enter to exit...\033[0m";
         
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         
-        // Restore cout to suppress output for any subsequent operations if needed
-        std::cout.rdbuf(nullptr);
         
         clearScrollBuffer();
         
-        // Restore cout before exiting
-        std::cout.rdbuf(cout_sbuf);
     }
     
     return 0;

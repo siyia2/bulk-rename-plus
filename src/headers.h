@@ -11,6 +11,8 @@
 #include <mutex>
 #include <omp.h>
 #include <queue>
+#include <termios.h>
+#include <unistd.h>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -54,7 +56,9 @@ std::string append_date_suffix_to_folder_name(const fs::path& folder_path);
 // main
 
 // General
-std::string example_transform(const std::string& mode, std::string word, bool ce_flag);
+void flushStdin();
+void disableInput();
+void restoreInput();
 void print_error(const std::string& error, std::ostream& os = std::cerr);
 void print_verbose_enabled(const std::string& message, std::ostream& os = std::cout);
 void printVersionNumber(const std::string& version);
