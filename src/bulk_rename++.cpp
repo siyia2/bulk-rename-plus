@@ -562,6 +562,45 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
 }
 
 
+bool sort_folder_names(const std::pair<std::string, fs::path>& a, const std::pair<std::string, fs::path>& b) {
+    std::string name_a = a.first, name_b = b.first;
+    size_t pos_a = name_a.find('_');
+    size_t pos_b = name_b.find('_');
+    if (pos_a != std::string::npos && std::all_of(name_a.begin(), name_a.begin() + pos_a, ::isdigit))
+        name_a = name_a.substr(pos_a + 1);
+    if (pos_b != std::string::npos && std::all_of(name_b.begin(), name_b.begin() + pos_b, ::isdigit))
+        name_b = name_b.substr(pos_b + 1);
+    return name_a < name_b;
+}
+
+
+void rename_folder_sequential(const std::filesystem::path& folder_path, const std::filesystem::path& new_path, std::atomic<int>& skipped_folder_count, std::atomic<int>& dirs_count, bool verbose_enabled, bool skipped_only, bool skipped) {
+    std::string original_name = folder_path.filename().string();
+    std::string new_name = new_path.filename().string();
+
+    if (original_name == new_name) {
+        // Name unchanged, skip and count
+        skipped_folder_count.fetch_add(1, std::memory_order_relaxed);
+        if (verbose_enabled && skipped) {
+            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mfolder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+        }
+        return;
+    }
+
+    try {
+        std::filesystem::rename(folder_path, new_path);
+        if (verbose_enabled && !skipped_only) {
+            print_verbose_enabled("\033[0m\033[92mRenamed\033[94m folder\033[0m " + folder_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
+        }
+        dirs_count.fetch_add(1, std::memory_order_relaxed);
+    } catch (const std::filesystem::filesystem_error& e) {
+        if (verbose_enabled && e.code() == std::errc::permission_denied) {
+            print_error("\033[1;91mError\033[0m: Permission denied: " + folder_path.string(), std::cout);
+        }
+    }
+}
+
+
 // Function to rename a directory based on specified transformations
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, bool skipped, bool skipped_only, bool isFirstRun, int num_paths) {
     std::string dirname = directory_path.filename().string();
@@ -613,17 +652,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 }
 
                 // Sort folder names alphabetically, ignoring existing numbering
-                std::sort(folder_names.begin(), folder_names.end(), 
-                    [](const auto& a, const auto& b) {
-                        std::string name_a = a.first, name_b = b.first;
-                        size_t pos_a = name_a.find('_');
-                        size_t pos_b = name_b.find('_');
-                        if (pos_a != std::string::npos && std::all_of(name_a.begin(), name_a.begin() + pos_a, ::isdigit))
-                            name_a = name_a.substr(pos_a + 1);
-                        if (pos_b != std::string::npos && std::all_of(name_b.begin(), name_b.begin() + pos_b, ::isdigit))
-                            name_b = name_b.substr(pos_b + 1);
-                        return name_a < name_b;
-                    });
+				std::sort(folder_names.begin(), folder_names.end(), sort_folder_names);
 
                 // Generate sequential names for current directory
                 auto sequential_names = generate_sequential_names(folder_names, "");
@@ -633,26 +662,8 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     fs::path new_path = directory_path / new_name;
                     std::string original_name = folder_path.filename().string();
 
-                    if (original_name == new_name) {
-                        // Name unchanged, skip and count
-                        ++skipped_folder_count;
-                        if (verbose_enabled && skipped) {
-                            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mfolder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
-                        }
-                        continue;
-                    }
-
-                    try {
-                        fs::rename(folder_path, new_path);
-                        if (verbose_enabled && !skipped_only) {
-                            print_verbose_enabled("\033[0m\033[92mRenamed\033[94m folder\033[0m " + folder_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
-                        }
-                        ++dirs_count;
-                    } catch (const fs::filesystem_error& e) {
-                        if (verbose_enabled && e.code() == std::errc::permission_denied) {
-                            print_error("\033[1;91mError\033[0m: Permission denied: " + folder_path.string(), std::cout);
-                        }
-                    }
+                    // Call the rename_folder function to handle the renaming logic
+					rename_folder_sequential(folder_path, new_path, skipped_folder_count, dirs_count, verbose_enabled, skipped_only, skipped);
                 }
             } else if (case_input == "lower") {
                 std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
