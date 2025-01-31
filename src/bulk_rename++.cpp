@@ -1230,7 +1230,7 @@ int main(int argc, char *argv[]) {
     if (!ni_flag) {
         // If the user does not confirm, abort the operation
         if (confirmation != "y") {
-            std::cout << "\n\033[1;91mOperation aborted by user.\033[0m";
+            std::cout << "\n\033[1;93mRename operation aborted by user.\033[0m";
             std::cout << "\n";
             std::cout << "\n\033[1mPress enter to exit...\033[0m";
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -1239,7 +1239,7 @@ int main(int argc, char *argv[]) {
         }
     }
     
-	disableInput();
+	if (!ni_flag) disableInput();
 	
     // Perform the renaming operation based on the selected mode
     if (rename_parents) {
@@ -1252,10 +1252,10 @@ int main(int argc, char *argv[]) {
 		std::atomic<int> temp_skipped_folder_count = skipped_folder_count - paths.size();
         rename_path(paths, case_input, rename_parents, verbose_enabled, transform_dirs, transform_files, depth, files_count, dirs_count, batch_size_files, batch_size_folders, symlinks, skipped_file_count, temp_skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, non_interactive, special);
     }
-    flushStdin();
-	disableInput();
+    
 	if (!ni_flag) {
-        
+        flushStdin();
+		restoreInputI();
         // Prompt the user to press enter to exit
         std::cout << "\033[1mPress enter to exit...\033[0m";
         
