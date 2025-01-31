@@ -2,6 +2,7 @@
 
 #include "headers.h"
 
+
 // General purpose stuff
 
 // Global and shared mutexes
@@ -176,7 +177,7 @@ static const std::vector<std::string> transformation_commands = {
 
 // Function to rename file extensions
 void rename_extension(const std::vector<fs::path>& item_paths, const std::string& case_input, bool verbose_enabled, std::atomic<int>& files_count, size_t batch_size, bool symlinks, std::atomic<int>& skipped_file_count, bool skipped, bool skipped_only) {
-    // Vector to store pairs of old and new paths for renaming
+    // Local vector to store pairs of old and new paths for renaming (per thread)
     std::vector<std::pair<fs::path, fs::path>> rename_batch;
     rename_batch.reserve(item_paths.size()); // Reserve space for efficiency
 
@@ -260,6 +261,7 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
         batch_rename_extension(rename_batch, verbose_enabled, files_count, skipped_only);
     }
 }
+
 
 
 // Function to rename a batch of files using multiple threads for parallel execution
@@ -403,8 +405,9 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         return; // Skip processing symbolic links
     }
 
+    // Thread-local vector for renaming data
     std::vector<std::pair<fs::path, std::string>> rename_data;
-    rename_data.reserve(batch_size_files);
+    rename_data.reserve(batch_size_files);  // Reserve space for batch size
 
     // Check if the item is a directory
     if (is_directory) {
@@ -493,6 +496,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         }
     }
 
+    // Check if the name is unchanged, and skip if necessary
     if (name == new_name && transform_files) {
         ++skipped_file_count;
     }
@@ -516,6 +520,7 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
         }
     }
 }
+
 
 
 // Function to rename a batch of files/directories using multiple threads for parallel execution
