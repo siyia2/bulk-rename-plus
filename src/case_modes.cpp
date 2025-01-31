@@ -119,141 +119,99 @@ std::string swapr_transform(const std::string& string) {
 }
 
 
-// Function to rename to pascalCase
+// Converts to camelCase (first letter lowercase, rest words capitalized)
 std::string to_camel_case(const std::string& string, bool isFile) {
-    bool hasUpperCase = false;
-    bool hasSpace = false;
-
-    for (char c : string) {
-        if (std::isupper(c)) {
-            hasUpperCase = true;
-        } else if (c == ' ') {
-            hasSpace = true;
+    std::string base = string;
+    std::string extension;
+    
+    // Split filename into base and extension at last dot
+    if (isFile) {
+        size_t lastDot = string.find_last_of('.');
+        if (lastDot != std::string::npos) {
+            base = string.substr(0, lastDot);
+            extension = string.substr(lastDot);
         }
-        if (c == '.') {
-            // Stop processing after encountering a period
-            break;
-        }
-    }
-
-    if (!hasSpace && hasUpperCase) {
-        return string;
     }
 
     std::string result;
-    result.reserve(string.size() + 10); // Adjust the reserve size as needed
-
     bool capitalizeNext = false;
-    bool afterDot = false;
+    bool firstChar = true;
 
-    for (char c : string) {
-        if (c == '.' && isFile) {
-            afterDot = true;
-        }
-        if (afterDot) {
-            result += c;
-        } else {
-            if (std::isalpha(c)) {
-                result += capitalizeNext ? toupper(c) : tolower(c); // Use toupper directly
-                capitalizeNext = false;
-            } else if (c == ' ') {
-                capitalizeNext = true;
+    for (char c : base) {
+        if (std::isalpha(c)) {
+            if (firstChar) {
+                result += tolower(c); // Force first character lowercase
+                firstChar = false;
             } else {
-                result += c;
+                result += capitalizeNext ? toupper(c) : tolower(c);
             }
+            capitalizeNext = false;
+        } else if (c == ' ') {
+            capitalizeNext = true;
+        } else {
+            result += c;
+            capitalizeNext = !std::isalnum(c); // Reset on non-alphanumeric
         }
     }
 
-    return result;
+    return result + extension;
 }
 
+// Converts to PascalCase (all words capitalized)
+std::string to_pascal(const std::string& string, bool isFile) {
+    std::string base = string;
+    std::string extension;
+    
+    // Split filename into base and extension at last dot
+    if (isFile) {
+        size_t lastDot = string.find_last_of('.');
+        if (lastDot != std::string::npos) {
+            base = string.substr(0, lastDot);
+            extension = string.substr(lastDot);
+        }
+    }
 
-// Function to reverse camelCase
+    std::string result;
+    bool capitalizeNext = true;
+
+    for (char c : base) {
+        if (std::isalpha(c)) {
+            result += capitalizeNext ? toupper(c) : tolower(c);
+            capitalizeNext = false;
+        } else if (c == ' ') {
+            capitalizeNext = true;
+        } else {
+            result += c;
+            capitalizeNext = !std::isalnum(c); // Reset on non-alphanumeric
+        }
+    }
+
+    return result + extension;
+}
+
+// Reverses camelCase or PascalCase to space-separated
 std::string from_camel_case(const std::string& string) {
     std::string result;
-    result.reserve(string.size() + std::count_if(string.begin(), string.end(), ::isupper)); // Reserve space for the result string
-
-    for (char c : string) {
-        if (std::isupper(c)) {
-            result += ' ';
-            result += std::tolower(c);
-        } else {
-            result += c;
-        }
-    }
-
-    return result;
-}
-
-// Function to rename to pascalCase
-std::string to_pascal(const std::string& string, bool isFile) {
-    bool hasUpperCase = false;
-    bool hasSpace = false;
-
-    for (char c : string) {
-        if (std::isupper(c)) {
-            hasUpperCase = true;
-        } else if (c == ' ') {
-            hasSpace = true;
-        }
-        if (c == '.' && isFile) {
-            // Stop processing after encountering a period
-            break;
-        }
-    }
-
-    if (!hasSpace && hasUpperCase) {
-        return string;
-    }
-
-    std::string result;
-    result.reserve(string.size() + 10); // Adjust the reserve size as needed
-
-    bool capitalizeNext = true; // Start with true for PascalCase
-    bool afterDot = false;
-
-    for (char c : string) {
-        if (c == '.' && isFile) {
-            afterDot = true;
-        }
-        if (afterDot) {
-            result += c;
-            capitalizeNext = true; // Reset for new word after period
-        } else {
-            if (std::isalpha(c)) {
-                result += capitalizeNext ? toupper(c) : tolower(c);
-                capitalizeNext = false;
-            } else if (c == ' ') {
-                capitalizeNext = true;
-            } else {
-                result += c;
-            }
-        }
-    }
-
-    return result;
-}
-
-
-// Function to reverse pascalCase
-std::string from_pascal_case(const std::string& string) {
-    std::string result;
-    result.reserve(string.size()); // Reserve space for the result string
-
     for (size_t i = 0; i < string.size(); ++i) {
         char c = string[i];
-        if (std::isupper(c)) {
-            // If the current character is uppercase and it's not the first character,
-            // and the previous character was lowercase, add a space before appending the uppercase character
-            if (i != 0 && std::islower(string[i - 1])) {
-                result += ' ';
-            }
-            result += c;
-        } else {
-            result += std::tolower(c);
+        if (isupper(c) && i != 0) {
+            result += ' ';
         }
+        result += tolower(c);
     }
+    return result;
+}
 
+// Reverses PascalCase to space-separated (special handling for initial caps)
+std::string from_pascal_case(const std::string& string) {
+    std::string result;
+    for (size_t i = 0; i < string.size(); ++i) {
+        char c = string[i];
+        if (isupper(c) && i != 0) {
+            result += ' ';
+        }
+        result += tolower(c);
+    }
     return result;
 }
 
