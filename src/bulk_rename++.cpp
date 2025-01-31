@@ -6,7 +6,7 @@
 // General purpose stuff
 
 // Global and shared mutexes
-std::mutex cout_mutex;
+std::mutex sequence_mutex;
 
 // Get the number of available processor cores
 unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); 
@@ -40,19 +40,25 @@ void restoreInput() {
 
 // Global print functions
 
-// Print an error message to stderr
-void print_error(const std::string& error, std::ostream&)   {
-    
-    std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cerr
-    std::cerr << "\n" << error; // Output the error message
+// Thread-Local Storage for error messages
+thread_local std::ostringstream thread_error_stream;
+
+// Print an error message to stderr in a thread safe manner
+void print_error(const std::string& error, std::ostream& out) {
+    thread_error_stream.str("");  // Clear the buffer
+    thread_error_stream << error;
+    out << thread_error_stream.str() << std::endl;
 }
 
 
-// Print a message to stdout, assuming verbose mode is enabled
-void print_verbose_enabled(const std::string& message, std::ostream&) {
-    
-    std::lock_guard<std::mutex> lock(cout_mutex); // Ensure thread safety when writing to std::cout
-    std::cout << "\n" << message; // Output the message
+// Thread-Local Storage for messages
+thread_local std::ostringstream thread_stream;
+
+// Print a message to stdout, assuming verbose mode is enabled in a thread safe manner
+void print_verbose_enabled(const std::string& message, std::ostream& out) {
+    thread_stream.str("");  // Clear the buffer
+    thread_stream << message;
+    out << thread_stream.str() << std::endl;
 }
 
 
@@ -662,6 +668,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else if (case_input == "rcamel") {
                 new_dirname = from_camel_case(new_dirname);
             } else if (case_input == "sequence") {
+				std::lock_guard<std::mutex> lock(sequence_mutex);
                 special = true;
                 rename_folders_with_sequential_numbering(directory_path, "", dirs_count, skipped_folder_special_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders, num_paths);
             } else if (case_input == "rsequence") {
