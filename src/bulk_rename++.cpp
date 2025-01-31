@@ -4,9 +4,8 @@
 
 // General purpose stuff
 
-// Mutexes for main program
-std::mutex sequence_mutex;
-std::mutex files_mutex;
+// Mutex for cout
+std::mutex cout_mutex;
 
 // Get the number of available processor cores
 unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); 
@@ -470,7 +469,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             } else if (case_input == "rcamel") {
                 new_name = from_camel_case(new_name);
             } else if (case_input == "sequence") {
-                std::lock_guard<std::mutex> lock(sequence_mutex);
                 new_name = append_numbered_prefix(item_path.parent_path(), new_name);
             } else if (case_input == "rsequence") {
                 new_name = remove_numbered_prefix(new_name);

@@ -2,8 +2,6 @@
 
 #include "headers.h"
 
-// Global and shared mutexes
-std::mutex cout_mutex;
 
 // Separate string operations
 
