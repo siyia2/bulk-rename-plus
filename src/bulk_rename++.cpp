@@ -250,7 +250,6 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 
         // Batch processing: if batch size reached, rename batch and clear
         if (rename_batch.size() >= batch_size) {
-            std::lock_guard<std::mutex> lock(files_mutex);
             batch_rename_extension(rename_batch, verbose_enabled, files_count, skipped_only);
             rename_batch.clear(); // Clear the batch after processing
         }
@@ -258,7 +257,6 @@ void rename_extension(const std::vector<fs::path>& item_paths, const std::string
 
     // Process remaining items in the batch if any
     if (!rename_batch.empty()) {
-        std::lock_guard<std::mutex> lock(files_mutex);
         batch_rename_extension(rename_batch, verbose_enabled, files_count, skipped_only);
     }
 }
@@ -501,19 +499,16 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
 
     // Add data to the list if new name differs
     if (name != new_name) {
-        std::lock_guard<std::mutex> lock(files_mutex);
         rename_data.emplace_back(item_path, new_name);
     }
 
     // Check if batch size is reached and perform renaming
     if (rename_data.size() >= batch_size_files) {
-        std::lock_guard<std::mutex> lock(files_mutex);
         rename_batch(rename_data, verbose_enabled, files_count, dirs_count, skipped_only);
         rename_data.clear();
     } else {
         // Rename any remaining data after processing the loop
         if (!rename_data.empty()) {
-            std::lock_guard<std::mutex> lock(files_mutex);
             rename_batch(rename_data, verbose_enabled, files_count, dirs_count, skipped_only);
         }
         if (name == new_name && verbose_enabled && skipped && transform_files) {
