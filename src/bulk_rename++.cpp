@@ -1255,7 +1255,7 @@ int main(int argc, char *argv[]) {
     
 	if (!ni_flag) {
         flushStdin();
-		restoreInputI();
+		restoreInput();
         // Prompt the user to press enter to exit
         std::cout << "\033[1mPress enter to exit...\033[0m";
         
