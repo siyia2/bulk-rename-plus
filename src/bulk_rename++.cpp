@@ -5,9 +5,6 @@
 
 // General purpose stuff
 
-// Global and shared mutexes
-std::mutex sequence_mutex;
-
 // Get the number of available processor cores
 unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); 
 
@@ -589,6 +586,22 @@ void process_in_batches(const std::vector<fs::path>& items,
     }
 }
 
+std::string add_numbered_prefix(const std::string& original_name, int counter) {
+    // First, remove any existing numbered prefix
+    size_t pos = original_name.find_first_not_of("0123456789");
+    std::string stripped_name;
+    
+    if (pos != std::string::npos && pos > 0 && original_name[pos] == '_') {
+        stripped_name = original_name.substr(pos + 1);
+    } else {
+        stripped_name = original_name;
+    }
+    
+    // Format the counter with leading zeros and prepend to the stripped name
+    std::stringstream ss;
+    ss << std::setw(3) << std::setfill('0') << counter << "_" << stripped_name;
+    return ss.str();
+}
 
 // Function to rename a directory based on specified transformations
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool& special, int num_paths) {
@@ -668,7 +681,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else if (case_input == "rcamel") {
                 new_dirname = from_camel_case(new_dirname);
             } else if (case_input == "sequence") {
-				std::lock_guard<std::mutex> lock(sequence_mutex);
                 special = true;
                 rename_folders_with_sequential_numbering(directory_path, "", dirs_count, skipped_folder_special_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders, num_paths);
             } else if (case_input == "rsequence") {

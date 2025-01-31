@@ -23,9 +23,6 @@ namespace fs = std::filesystem;
 extern unsigned int max_threads;
 
 
-// Global and shared mutexes
-extern std::mutex cout_mutex;
-
 // Function prototypes
 
 // Case modes
