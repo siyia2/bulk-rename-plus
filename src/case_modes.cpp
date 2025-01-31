@@ -53,65 +53,86 @@ std::string capitalizeFirstLetter(const std::string& input) {
 // Function to reaname to swapCase
 std::string swap_transform(const std::string& string) {
     std::stringstream transformed;
-    bool capitalize = false; // Start by capitalizing
-    bool inFolderName = true; // Start within folder name
-    size_t folderDelimiter = string.find_last_of("/\\"); // Find the last folder delimiter
-    size_t length = string.length(); // Cache the length of the string string
+    bool capitalize = false; // Toggle state for characters after the first in folder names
+    bool inFolderName = true; // Track if we're at the start of a folder component
+    const size_t folderDelimiter = string.find_last_of("/\\");
+    const size_t length = string.length();
 
     for (size_t i = 0; i < length; ++i) {
-        char c = string[i];
-        if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
+        const char c = string[i];
+        
+        // Apply transformation only to the path part before the last folder delimiter
+        if (i < folderDelimiter || folderDelimiter == std::string::npos) {
             if (inFolderName) {
-                transformed << static_cast<char>(std::toupper(c)); // Capitalize first character in folder name
-                inFolderName = false; // Exit folder name after first character
+                // Capitalize first character of folder component
+                transformed << static_cast<char>(std::toupper(c));
+                inFolderName = false;
             } else {
                 if (std::isalpha(c)) {
+                    // Alternate case for subsequent characters
                     if (capitalize) {
                         transformed << static_cast<char>(std::toupper(c));
                     } else {
                         transformed << static_cast<char>(std::tolower(c));
                     }
-                    capitalize = !capitalize; // Toggle between upper and lower case
+                    capitalize = !capitalize;
                 } else {
-                    transformed << c; // Keep non-alphabetic characters unchanged
+                    transformed << c;
+                    // Reset state for new folder component
+                    if (c == '/' || c == '\\') {
+                        inFolderName = true;
+                        capitalize = false; // Reset toggle for next folder
+                    }
                 }
             }
         } else {
-            transformed << c; // Keep characters after the folder delimiter unchanged
+            // Leave filename part unchanged
+            transformed << c;
         }
     }
 
     return transformed.str();
 }
 
+
 // Function to reaname to swaprCase
 std::string swapr_transform(const std::string& string) {
     std::stringstream transformed;
-    bool capitalize = false; // Start by capitalizing
-    bool inFolderName = true; // Start within folder name
-    size_t folderDelimiter = string.find_last_of("/\\"); // Find the last folder delimiter
-    size_t length = string.length(); // Cache the length of the string string
+    bool capitalize = false; // Toggle state for characters after the first in folder names
+    bool inFolderName = true; // Track if we're at the start of a folder component
+    const size_t folderDelimiter = string.find_last_of("/\\");
+    const size_t length = string.length();
 
     for (size_t i = 0; i < length; ++i) {
-        char c = string[i];
-        if (i < folderDelimiter || folderDelimiter == std::string::npos) { // Ignore transformation after folder delimiter
+        const char c = string[i];
+        
+        // Apply transformation only to the path part before the last folder delimiter
+        if (i < folderDelimiter || folderDelimiter == std::string::npos) {
             if (inFolderName) {
-                transformed << static_cast<char>(std::tolower(c)); // lower first character in folder name
-                inFolderName = false; // Exit folder name after first character
+                // Lowercase first character of folder component
+                transformed << static_cast<char>(std::tolower(c));
+                inFolderName = false;
             } else {
                 if (std::isalpha(c)) {
+                    // Alternate case for subsequent characters
                     if (capitalize) {
                         transformed << static_cast<char>(std::tolower(c));
                     } else {
                         transformed << static_cast<char>(std::toupper(c));
                     }
-                    capitalize = !capitalize; // Toggle between lower and upper case
+                    capitalize = !capitalize;
                 } else {
-                    transformed << c; // Keep non-alphabetic characters unchanged
+                    transformed << c;
+                    // Reset state for new folder component
+                    if (c == '/' || c == '\\') {
+                        inFolderName = true;
+                        capitalize = false; // Reset toggle for next folder
+                    }
                 }
             }
         } else {
-            transformed << c; // Keep characters after the folder delimiter unchanged
+            // Leave filename part unchanged
+            transformed << c;
         }
     }
 
