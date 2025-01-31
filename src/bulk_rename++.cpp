@@ -631,6 +631,17 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 // Rename folders in current directory
                 for (const auto& [folder_path, new_name] : sequential_names) {
                     fs::path new_path = directory_path / new_name;
+                    std::string original_name = folder_path.filename().string();
+
+                    if (original_name == new_name) {
+                        // Name unchanged, skip and count
+                        ++skipped_folder_count;
+                        if (verbose_enabled && skipped) {
+                            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mfolder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+                        }
+                        continue;
+                    }
+
                     try {
                         fs::rename(folder_path, new_path);
                         if (verbose_enabled && !skipped_only) {
