@@ -53,6 +53,7 @@ std::string append_date_suffix_to_folder_name(const fs::path& folder_path);
 // main
 
 // General
+std::string example_transform(const std::string& mode, std::string word, bool ce_flag);
 void flushStdin();
 void disableInput();
 void restoreInput();
