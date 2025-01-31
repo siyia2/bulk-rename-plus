@@ -7,7 +7,6 @@
 
 // Global and shared mutexes
 std::mutex cout_mutex;
-std::mutex sequence_mutex;
 
 // Get the number of available processor cores
 unsigned int max_threads = (omp_get_num_procs() <= 0) ? 2 : omp_get_num_procs(); 
@@ -473,7 +472,6 @@ void rename_file(const fs::path& item_path, const std::string& case_input, bool 
             } else if (case_input == "rcamel") {
                 new_name = from_camel_case(new_name);
             } else if (case_input == "sequence") {
-                std::lock_guard<std::mutex> lock(sequence_mutex);
                 new_name = append_numbered_prefix(item_path.parent_path(), new_name);
             } else if (case_input == "rsequence") {
                 new_name = remove_numbered_prefix(new_name);
@@ -567,6 +565,25 @@ void rename_batch(const std::vector<std::pair<fs::path, std::string>>& data, boo
 }
 
 
+// Helper template for batch parallel processing
+template<typename Func>
+void process_in_batches(const std::vector<fs::path>& items, 
+                       size_t batch_size, 
+                       unsigned int num_threads, 
+                       Func func) {
+    const size_t total_items = items.size();
+    for (size_t start = 0; start < total_items; start += batch_size) {
+        const size_t end = std::min(start + batch_size, total_items);
+        const std::vector<fs::path> batch(items.begin() + start, items.begin() + end);
+        
+        #pragma omp parallel for num_threads(num_threads) schedule(static)
+        for (size_t i = 0; i < batch.size(); ++i) {
+            func(batch[i]);
+        }
+    }
+}
+
+
 // Function to rename a directory based on specified transformations
 void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool& special, int num_paths) {
     std::string dirname = directory_path.filename().string();
@@ -645,7 +662,6 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             } else if (case_input == "rcamel") {
                 new_dirname = from_camel_case(new_dirname);
             } else if (case_input == "sequence") {
-                std::lock_guard<std::mutex> lock(sequence_mutex);
                 special = true;
                 rename_folders_with_sequential_numbering(directory_path, "", dirs_count, skipped_folder_special_count, depth, verbose_enabled, skipped, skipped_only, symlinks, batch_size_folders, num_paths);
             } else if (case_input == "rsequence") {
@@ -715,51 +731,57 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
         isFirstRun = false;
     }
     
+    
+    if (num_paths > 1) {
+        num_threads = std::max(omp_get_max_threads() / num_paths, 1);
+    }
+
+    // Process directory contents
     if (depth != 0) {
         if (depth > 0) --depth;
-        std::vector<fs::path> batch_entries;
-        batch_entries.reserve(batch_size_folders);
-        std::mutex batch_mutex;
+        
+        std::vector<fs::path> dir_batch;
+        std::vector<fs::path> file_batch;
+        dir_batch.reserve(batch_size_folders);
+        file_batch.reserve(batch_size_files);
 
+        // Separate directory and file processing
         for (const auto& entry : fs::directory_iterator(new_path)) {
-            if (entry.is_directory() && !rename_parents) {
-                std::lock_guard<std::mutex> lock(batch_mutex);
-                batch_entries.emplace_back(entry.path());
-            } else if (entry.is_directory() && rename_parents) {
-                rename_directory(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special, num_paths);
+            if (entry.is_directory()) {
+                if (rename_parents) {
+                    rename_directory(entry.path(), case_input, false, verbose_enabled,
+                                   transform_dirs, transform_files, files_count, dirs_count,
+                                   depth, batch_size_files, batch_size_folders, symlinks,
+                                   skipped_file_count, skipped_folder_count,
+                                   skipped_folder_special_count, skipped, skipped_only,
+                                   isFirstRun, special, num_paths);
+                } else {
+                    dir_batch.emplace_back(entry.path());
+                }
             } else {
-                rename_file(entry.path(), case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, batch_size_files, symlinks, skipped_file_count, skipped_folder_count, skipped, skipped_only);
-            }
-
-            if (batch_entries.size() >= batch_size_folders) {
-                unsigned int chunk_size = batch_entries.size() / num_threads;
-
-                #pragma omp parallel for shared(batch_entries) num_threads(num_threads) if(num_threads > 1)
-                for (unsigned int i = 0; i < num_threads; ++i) {
-                    unsigned int start_index = i * chunk_size;
-                    unsigned int end_index = (i == static_cast<unsigned int>(num_threads) - 1) ? batch_entries.size() : (i + 1) * chunk_size;
-
-                    for (unsigned int j = start_index; j < end_index; ++j) {
-                        rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special, num_paths);
-                    }
-                }
-                batch_entries.clear();
+                file_batch.emplace_back(entry.path());
             }
         }
 
-        if (!batch_entries.empty()) {
-            unsigned int chunk_size = batch_entries.size() / num_threads;
+        // Parallel directory processing
+        process_in_batches(dir_batch, batch_size_folders, num_threads,
+            [&](const fs::path& dir) {
+                rename_directory(dir, case_input, false, verbose_enabled,
+                               transform_dirs, transform_files, files_count, dirs_count,
+                               depth, batch_size_files, batch_size_folders, symlinks,
+                               skipped_file_count, skipped_folder_count,
+                               skipped_folder_special_count, skipped, skipped_only,
+                               isFirstRun, special, num_paths);
+            });
 
-            #pragma omp parallel for shared(batch_entries) num_threads(num_threads) if(num_threads > 1)
-            for (unsigned int i = 0; i < num_threads; ++i) {
-                unsigned int start_index = i * chunk_size;
-                unsigned int end_index = (i == static_cast<unsigned int>(num_threads) - 1) ? batch_entries.size() : (i + 1) * chunk_size;
-
-                for (unsigned int j = start_index; j < end_index; ++j) {
-                    rename_directory(batch_entries[j], case_input, false, verbose_enabled, transform_dirs, transform_files, files_count, dirs_count, depth, batch_size_files, batch_size_folders, symlinks, skipped_file_count, skipped_folder_count, skipped_folder_special_count, skipped, skipped_only, isFirstRun, special, num_paths);
-                }
-            }
-        }
+        // Parallel file processing
+        process_in_batches(file_batch, batch_size_files, num_threads,
+            [&](const fs::path& file) {
+                rename_file(file, case_input, false, verbose_enabled,
+                          transform_dirs, transform_files, files_count, dirs_count,
+                          batch_size_files, symlinks, skipped_file_count,
+                          skipped_folder_count, skipped, skipped_only);
+            });
     }
 }
  
