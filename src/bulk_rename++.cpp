@@ -572,7 +572,7 @@ bool sort_folder_names(const std::pair<std::string, fs::path>& a, const std::pai
 }
 
 
-void rename_folder_sequential(const std::filesystem::path& folder_path, const std::filesystem::path& new_path, std::atomic<int>& skipped_folder_count, std::atomic<int>& dirs_count, bool verbose_enabled, bool skipped_only, bool skipped) {
+void rename_folder_sequential(const std::filesystem::path& folder_path, const std::filesystem::path& new_path, std::atomic<int>& skipped_folder_count, std::atomic<int>& dirs_count, bool verbose_enabled, bool skipped_only, bool skipped, bool symlinks, bool transform_dirs, bool transform_files) {
     std::string original_name = folder_path.filename().string();
     std::string new_name = new_path.filename().string();
 
@@ -580,21 +580,39 @@ void rename_folder_sequential(const std::filesystem::path& folder_path, const st
         // Name unchanged, skip and count
         skipped_folder_count.fetch_add(1, std::memory_order_relaxed);
         if (verbose_enabled && skipped) {
-            print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mfolder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+            if (std::filesystem::is_symlink(folder_path) || (std::filesystem::is_symlink(new_path) && symlinks)) {
+                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+            } else {
+                print_verbose_enabled("\033[0m\033[93mSkipped\033[0m \033[94mfolder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+            }
         }
         return;
     }
 
     try {
         std::filesystem::rename(folder_path, new_path);
+
         if (verbose_enabled && !skipped_only) {
-            print_verbose_enabled("\033[0m\033[92mRenamed\033[94m folder\033[0m " + folder_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
+            if (std::filesystem::is_symlink(folder_path) || (std::filesystem::is_symlink(new_path) && symlinks)) {
+                print_verbose_enabled("\033[0m\033[92mRenamed \033[95msymlink_folder\033[0m " + folder_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
+            } else {
+                print_verbose_enabled("\033[0m\033[92mRenamed \033[94mfolder\033[0m " + folder_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
+            }
         }
+
         dirs_count.fetch_add(1, std::memory_order_relaxed);
+
     } catch (const std::filesystem::filesystem_error& e) {
         if (verbose_enabled && e.code() == std::errc::permission_denied) {
             print_error("\033[1;91mError\033[0m: Permission denied: " + folder_path.string(), std::cout);
         }
+    }
+
+    // Handling skipped symlink folder (verbose)
+    if (verbose_enabled && (std::filesystem::is_symlink(folder_path) || std::filesystem::is_symlink(new_path)) && !transform_files && skipped) {
+        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
+    } else if (verbose_enabled && (std::filesystem::is_symlink(folder_path) || std::filesystem::is_symlink(new_path)) && transform_dirs && transform_files && skipped) {
+        print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
     }
 }
 
@@ -661,7 +679,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                     std::string original_name = folder_path.filename().string();
 
                     // Call the rename_folder function to handle the renaming logic
-					rename_folder_sequential(folder_path, new_path, skipped_folder_count, dirs_count, verbose_enabled, skipped_only, skipped);
+					rename_folder_sequential(folder_path, new_path, skipped_folder_count, dirs_count, verbose_enabled, skipped_only, skipped, symlinks, transform_dirs, transform_files);
                 }
             } else if (case_input == "lower") {
                 std::transform(new_dirname.begin(), new_dirname.end(), new_dirname.begin(), ::tolower);
