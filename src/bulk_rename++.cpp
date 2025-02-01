@@ -588,7 +588,7 @@ void process_in_batches(const std::vector<fs::path>& items,
 
 
 // Function to rename a directory based on specified transformations
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, std::atomic<bool>& isFirstRun, std::atomic<bool>& special, int num_paths) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool& special, int num_paths) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname; // Initialize with the original name
     
@@ -715,14 +715,14 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             return;
         }
     } else {
-        if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && !transform_files && skipped) {
+        if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && !transform_files && !special && skipped) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + directory_path.string() + " (name unchanged)", std::cout);
         } else if (verbose_enabled && (std::filesystem::is_symlink(directory_path) || std::filesystem::is_symlink(new_path)) && transform_dirs && transform_files && !special && skipped) {
             print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[95m symlink_folder\033[0m " + directory_path.string() + " (name unchanged)", std::cout);
         }
         if (!rename_parents && isFirstRun) {
         } else {
-            if (verbose_enabled && !transform_files && skipped) {
+            if (verbose_enabled && !transform_files && !special && skipped) {
                 print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)", std::cout);
             } else if (verbose_enabled && transform_dirs && transform_files && !special && skipped) {
                 print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + directory_path.string() + " (name unchanged)", std::cout);
@@ -741,33 +741,31 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
     // Process directory contents
     if (depth != 0) {
-    if (depth > 0) --depth;
+        if (depth > 0) --depth;
+        
+        std::vector<fs::path> dir_batch;
+        std::vector<fs::path> file_batch;
+        dir_batch.reserve(batch_size_folders);
+        file_batch.reserve(batch_size_files);
 
-    std::vector<fs::path> dir_batch;
-    std::vector<fs::path> file_batch;
-    dir_batch.reserve(batch_size_folders);
-    file_batch.reserve(batch_size_files);
-
-    // Separate directory and file processing
-    for (const auto& entry : fs::directory_iterator(new_path)) {
-        if (entry.is_directory()) {
-            if (rename_parents) {
-                rename_directory(entry.path(), case_input, false, verbose_enabled,
-                               transform_dirs, transform_files, files_count, dirs_count,
-                               depth, batch_size_files, batch_size_folders, symlinks,
-                               skipped_file_count, skipped_folder_count,
-                               skipped_folder_special_count, skipped, skipped_only,
-                               isFirstRun, special, num_paths);
+        // Separate directory and file processing
+        for (const auto& entry : fs::directory_iterator(new_path)) {
+            if (entry.is_directory()) {
+                if (rename_parents) {
+                    rename_directory(entry.path(), case_input, false, verbose_enabled,
+                                   transform_dirs, transform_files, files_count, dirs_count,
+                                   depth, batch_size_files, batch_size_folders, symlinks,
+                                   skipped_file_count, skipped_folder_count,
+                                   skipped_folder_special_count, skipped, skipped_only,
+                                   isFirstRun, special, num_paths);
+                } else {
+                    dir_batch.emplace_back(entry.path());
+                }
             } else {
-                dir_batch.emplace_back(entry.path());
+                file_batch.emplace_back(entry.path());
             }
-        } else {
-            file_batch.emplace_back(entry.path());
         }
-    }
 
-    // Only process directories if the transformation is not 'sequence'
-    if (case_input != "sequence") {
         // Parallel directory processing
         process_in_batches(dir_batch, batch_size_folders, num_threads,
             [&](const fs::path& dir) {
@@ -778,22 +776,21 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                                skipped_folder_special_count, skipped, skipped_only,
                                isFirstRun, special, num_paths);
             });
-    }
 
-    // Parallel file processing
-    process_in_batches(file_batch, batch_size_files, num_threads,
-        [&](const fs::path& file) {
-            rename_file(file, case_input, false, verbose_enabled,
-                      transform_dirs, transform_files, files_count, dirs_count,
-                      batch_size_files, symlinks, skipped_file_count,
-                      skipped_folder_count, skipped, skipped_only);
-        });
-	}
+        // Parallel file processing
+        process_in_batches(file_batch, batch_size_files, num_threads,
+            [&](const fs::path& file) {
+                rename_file(file, case_input, false, verbose_enabled,
+                          transform_dirs, transform_files, files_count, dirs_count,
+                          batch_size_files, symlinks, skipped_file_count,
+                          skipped_folder_count, skipped, skipped_only);
+            });
+    }
 }
  
 
 // Function to rename paths (directories and files) based on specified transformations asynchronously
-void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, std::atomic<int>& files_count, std::atomic<int>& dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, std::atomic<bool>& isFirstRun, bool non_interactive, std::atomic<bool>& special) {
+void rename_path(const std::vector<std::string>& paths, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, int depth, std::atomic<int>& files_count, std::atomic<int>& dirs_count, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, bool isFirstRun, bool non_interactive, bool special) {
     auto start_time = std::chrono::steady_clock::now(); // Start time measurement
     // Number of paths to be processed based on std::vector<std::string> paths
     int num_paths = paths.size();
@@ -974,8 +971,8 @@ int main(int argc, char *argv[]) {
     bool skipped = false;
     bool skipped_only = false;
     bool symlinks = false;
-    std::atomic<bool> isFirstRun{true};
-    std::atomic<bool> special{false};
+    bool isFirstRun = true;
+    bool special= false;
     bool non_interactive = false;
     constexpr int batch_size_files = 1000;
     constexpr int batch_size_folders = 100;
