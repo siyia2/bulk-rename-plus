@@ -451,7 +451,7 @@ std::string remove_date_seq(const std::string& file_string) {
 
  
 // Folder numbering functions mv style
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, std::atomic<int>& dirs_count, std::atomic<int>& skipped_folder_special_count, int depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, std::atomic<int>& dirs_count, std::atomic<int>& skipped_folder_special_count, std::atomic<int>& depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths) {
     // Reserve capacity for folders_to_rename
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename;
     folders_to_rename.reserve(batch_size_folders);
@@ -565,7 +565,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                             print_verbose_enabled("\033[0m\033[92mRenamed\033[0m\033[94m folder\033[0m " + old_path.string() + "\e[1;38;5;214m -> \033[0m" + new_path.string(), std::cout);
                         }
                     }
-                    ++dirs_count;
+                    dirs_count.fetch_add(1, std::memory_order_relaxed);
                 }
             }
         } else {
@@ -585,7 +585,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                         print_verbose_enabled("\033[0m\033[93mSkipped\033[0m\033[94m folder\033[0m " + folder_path.string() + " (name unchanged)", std::cout);
                     }
                 }
-                ++skipped_folder_special_count;
+                skipped_folder_special_count.fetch_add(1, std::memory_order_relaxed);
             }
         }
     }
