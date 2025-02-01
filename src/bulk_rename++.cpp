@@ -1219,7 +1219,7 @@ int main(int argc, char *argv[]) {
 
     // Prompt the user for confirmation
     if (!ni_flag) {
-        std::cout << "\n\n\033[1mDo you want to proceed? (y/n): ";
+        std::cout << "\n\n\033[1mDo you want to proceed? (y/n): \033[0m";
         std::getline(std::cin, confirmation);
 
     }
