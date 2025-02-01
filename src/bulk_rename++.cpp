@@ -1008,123 +1008,135 @@ int main(int argc, char *argv[]) {
     bool vso_flag = false;
 
     for (int i = 1; i < argc; ++i) {
-        std::string arg(argv[i]);
-        if (valid_flags.count(arg)) {
-            if (arg == "-fi") {
-                transform_dirs = false;
-                fi_flag = true;
-            } else if (arg == "-sym") {
-                symlinks = true;
-            } else if (arg == "-fo") {
-                transform_files = false;
-                fo_flag = true;
-            } else if (arg == "-d" && i + 1 < argc) {
-                // Check if the depth value is empty or not a number
-                if (argv[i + 1] == nullptr || std::string(argv[i + 1]).empty() || !isdigit(argv[i + 1][0])) {
-                    print_error("\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n\n");
-                    return 1;
-                }
-                depth = std::atoi(argv[++i]);
-                if (depth < -1) {
-                    print_error("\033[1;91mError: Depth value if set must be -1 or greater.\033[0m\n\n");
-                    return 1;
-                }
-            } else if (arg == "-v" || arg == "--verbose") {
-                v_flag = true;
-                verbose_enabled = true;
-            } else if (arg == "-vs") {
-                vs_flag = true;
-                verbose_enabled = true;
-                skipped = true;
-            } else if (arg == "-vso") {
-                vso_flag = true;
-                verbose_enabled = true;
-                skipped = true;
-                skipped_only = true;
-            } else if (arg == "-ni") {
-                non_interactive = true;
-                ni_flag = true;
-            } else if (arg == "-h" || arg == "--help") {
-                clearScrollBuffer();
-                print_help();
-                return 0;
-            } else if (arg == "-c") {
-                // Check if -c, -cp, -ce options are mixed
-                if (c_flag || cp_flag || ce_flag) {
-                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n\n");
-                    return 1;
-                }
-                c_flag = true;
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                } else {
-                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n\n");
-                    return 1;
-                }
-            } else if (arg == "-cp") {
-                // Check if -c, -cp, -ce options are mixed
-                if (c_flag || cp_flag || ce_flag) {
-                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n\n");
-                    return 1;
-                }
-                cp_flag = true;
-                rename_parents = true;
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                } else {
-                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n\n");
-                    return 1;
-                }
-            } else if (arg == "-ce") {
-                // Check if -c, -cp, -ce options are mixed
-                if (c_flag || cp_flag || ce_flag) {
-                    print_error("\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n\n");
-                    return 1;
-                } else if (arg == "-ce") {
-                    // Check if -c, -cp, -ce options are mixed
-                    if (fi_flag || fo_flag || ce_flag) {
-                        print_error("\033[1;91mError: Cannot mix -fi or -fo with -ce option.\033[0m\n\n");
-                        return 1;
-                    }
-                }
-
-                ce_flag = true;
-                rename_extensions = true;
-                if (i + 1 < argc) {
-                    case_input = argv[++i];
-                    case_specified = true;
-                } else {
-                    print_error("\033[1;91mError: Missing argument for option " + arg + "\033[0m\n\n");
-                    return 1;
-                }
-            }
-        } else {
-            // Check for duplicate paths
-            if (std::find(paths.begin(), paths.end(), arg) != paths.end()) {
-                print_error("\033[1;91mError: Duplicate path detected - " + arg + "\033[0m\n\n");
+    std::string arg(argv[i]);
+    if (valid_flags.count(arg) || arg.substr(0, 2) == "-d") {  // Allow "-d" with appended value
+        if (arg == "-fi") {
+            transform_dirs = false;
+            fi_flag = true;
+        } else if (arg == "-sym") {
+            symlinks = true;
+        } else if (arg == "-fo") {
+            transform_files = false;
+            fo_flag = true;
+        } else if (arg.substr(0, 2) == "-d") {  // Handle "-d" with appended value
+            std::string depth_value;
+            if (arg.size() > 2) {  // If the depth value is appended to "-d" (e.g., "-d0")
+                depth_value = arg.substr(2);
+            } else if (i + 1 < argc) {  // If the depth value is provided as the next argument (e.g., "-d 0")
+                depth_value = argv[i + 1];
+                ++i;  // Skip the next argument since it's the depth value
+            } else {
+                print_error("\n\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n\n");
                 return 1;
             }
-            paths.emplace_back(arg);
+
+            // Check if the depth value is empty or not a number
+            if (depth_value.empty() || !std::all_of(depth_value.begin(), depth_value.end(), ::isdigit)) {
+                print_error("\n\033[1;91mError: Depth value if set must be a non-negative integer.\033[0m\n");
+                return 1;
+            }
+
+            depth = std::atoi(depth_value.c_str());
+            if (depth < -1) {
+                print_error("\n\033[1;91mError: Depth value if set must be -1 or greater.\033[0m\n");
+                return 1;
+            }
+        } else if (arg == "-v" || arg == "--verbose") {
+            v_flag = true;
+            verbose_enabled = true;
+        } else if (arg == "-vs") {
+            vs_flag = true;
+            verbose_enabled = true;
+            skipped = true;
+        } else if (arg == "-vso") {
+            vso_flag = true;
+            verbose_enabled = true;
+            skipped = true;
+            skipped_only = true;
+        } else if (arg == "-ni") {
+            non_interactive = true;
+            ni_flag = true;
+        } else if (arg == "-h" || arg == "--help") {
+            clearScrollBuffer();
+            print_help();
+            return 0;
+        } else if (arg == "-c") {
+            // Check if -c, -cp, -ce options are mixed
+            if (c_flag || cp_flag || ce_flag) {
+                print_error("\n\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                return 1;
+            }
+            c_flag = true;
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
+            } else {
+                print_error("\n\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                return 1;
+            }
+        } else if (arg == "-cp") {
+            // Check if -c, -cp, -ce options are mixed
+            if (c_flag || cp_flag || ce_flag) {
+                print_error("\n\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                return 1;
+            }
+            cp_flag = true;
+            rename_parents = true;
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
+            } else {
+                print_error("\n\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                return 1;
+            }
+        } else if (arg == "-ce") {
+            // Check if -c, -cp, -ce options are mixed
+            if (c_flag || cp_flag || ce_flag) {
+                print_error("\n\033[1;91mError: Cannot mix -c, -cp, and -ce options.\033[0m\n");
+                return 1;
+            } else if (arg == "-ce") {
+                // Check if -c, -cp, -ce options are mixed
+                if (fi_flag || fo_flag || ce_flag) {
+                    print_error("\n\033[1;91mError: Cannot mix -fi or -fo with -ce option.\033[0m\n");
+                    return 1;
+                }
+            }
+
+            ce_flag = true;
+            rename_extensions = true;
+            if (i + 1 < argc) {
+                case_input = argv[++i];
+                case_specified = true;
+            } else {
+                print_error("\n\033[1;91mError: Missing argument for option " + arg + "\033[0m\n");
+                return 1;
+            }
         }
-    }
+		} else {
+			// Check for duplicate paths
+			if (std::find(paths.begin(), paths.end(), arg) != paths.end()) {
+				print_error("\n\033[1;91mError: Duplicate path detected - " + arg + "\033[0m\n");
+				return 1;
+			}
+			paths.emplace_back(arg);
+		}
+	}
     std::string word;
     std::string result = example_transform(case_input, word, ce_flag);
 
     // Perform renaming based on flags and options
     if (fi_flag && fo_flag) {
-        print_error("\033[1;91mError: Cannot mix -fi and -fo options.\033[0m\n\n");
+        print_error("\n\033[1;91mError: Cannot mix -fi and -fo options.\033[0m\n");
         return 1;
     }
 
     if ((v_flag && (vs_flag || vso_flag)) || (vs_flag && (v_flag || vso_flag)) || (vso_flag && (v_flag || vs_flag))) {
-        print_error("\033[1;91mError: Cannot mix -v, -vs, and -vso options.\033[0m\n\n");
+        print_error("\n\033[1;91mError: Cannot mix -v, -vs, and -vso options.\033[0m\n");
         return 1;
     }
 
     if (!case_specified) {
-        print_error("\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n\n");
+        print_error("\n\033[1;91mError: Case conversion mode not specified (-c, -cp, or -ce option is required)\033[0m\n");
         return 1;
     }
 
@@ -1137,13 +1149,13 @@ int main(int argc, char *argv[]) {
     }
 
     if (std::find(valid_modes.begin(), valid_modes.end(), case_input) == valid_modes.end()) {
-        print_error("\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\033[0m\n\n");
+        print_error("\n\033[1;91mError: Unspecified or invalid case mode - " + case_input + ". Run 'bulk_rename++ --help'.\033[0m\n");
         return 1;
     }
 
     if (cp_flag && (std::find(valid_modes.begin(), valid_modes.end(), case_input) != valid_modes.end())) {
         if (case_input == "sequence") {
-            print_error("\033[1;91mError: sequence mode is only available with -c option.\033[0m\n\n");
+            print_error("\n\033[1;91mError: sequence mode is only available with -c option.\033[0m\n");
             return 1;
         }
     }
@@ -1151,7 +1163,7 @@ int main(int argc, char *argv[]) {
     // Check if paths exist
     for (const auto& path : paths) {
         if (!fs::exists(path)) {
-            print_error("\033[1;91mError: Path does not exist or not a directory - " + path + "\033[0m\n\n");
+            print_error("\n\033[1;91mError: Path does not exist or not a directory - " + path + "\033[0m\n");
             return 1;
         }
     }
@@ -1159,7 +1171,7 @@ int main(int argc, char *argv[]) {
     // Check if paths end with '/'
     for (const std::string& path : paths) {
         if (path.back() != '/') {
-            print_error("\033[1;91mError: Path(s) must end with '/' - \033[0;1me.g. \033[1;91m" + path + " \033[0;1m-> \033[1;94m" + path +"/\033[0m" "\n\033[0m\n");
+            print_error("\n\033[1;91mError: Path(s) must end with '/' - \033[0;1me.g. \033[1;91m" + path + " \033[0;1m-> \033[1;94m" + path +"/\033[0m" "\n\033[0m\n");
             return 0;
         }
     }
