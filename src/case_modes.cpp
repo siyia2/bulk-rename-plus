@@ -366,23 +366,22 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
 
 // Function to remove sequential numbering from files
 std::string remove_numbered_prefix(const std::string& file_string) {
-    size_t pos = file_string.find_first_not_of("0123456789");
+    // Check if the string starts with "00"
+    if (file_string.size() >= 2 && file_string[0] == '0' && file_string[1] == '0') {
+        // Find where the digits end
+        size_t pos = 0;
+        while (pos < file_string.size() && std::isdigit(file_string[pos])) {
+            pos++;
+        }
 
-    // Check if the filename starts with digits followed by an underscore
-    if (pos != std::string::npos && pos > 0 && file_string[pos] == '_' && file_string[pos - 1] != '_') {
-        // Remove the number and the first underscore
-        return file_string.substr(pos + 1);
-    }
-
-    // If the prefix contains a number at the beginning, remove it
-    if (pos == 0) {
-        size_t underscore_pos = file_string.find('_');
-        if (underscore_pos != std::string::npos && underscore_pos > 0) {
-            return file_string.substr(underscore_pos + 1);
+        // Check if digits are followed by an underscore
+        if (pos < file_string.size() && file_string[pos] == '_') {
+            // Remove everything up to and including the underscore
+            return file_string.substr(pos + 1);
         }
     }
 
-    return file_string; // Return the original name if no number found or if number is not followed by an underscore
+    return file_string; // Return original if no "00" prefix found
 }
 
 
