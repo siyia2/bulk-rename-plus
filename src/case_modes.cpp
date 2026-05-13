@@ -7,13 +7,13 @@
 
 // for Files&Dirs
 
-// Function to reaname to sentenceCase
+// Function to rename to sentenceCase
 std::string sentenceCase(const std::string& string) {
     if (string.empty()) return string; // Handling empty string case
-    
+
     std::stringstream result;
     bool newWord = true;
-    
+
     for (char c : string) {
         if (newWord && std::isalpha(c)) {
             result << static_cast<char>(std::toupper(c));
@@ -25,18 +25,18 @@ std::string sentenceCase(const std::string& string) {
             newWord = true;
         }
     }
-    
+
     return result.str();
 }
 
 
-// Function to reaname to titlerCase
+// Function to rename to titleCase (capitalizes only the very first letter of the whole string)
 std::string capitalizeFirstLetter(const std::string& input) {
     if (input.empty()) return input; // Handling empty string case
-    
+
     std::stringstream result;
     bool first = true;
-    
+
     for (char c : input) {
         if (first && std::isalpha(c)) {
             result << static_cast<char>(std::toupper(c));
@@ -45,12 +45,14 @@ std::string capitalizeFirstLetter(const std::string& input) {
             result << static_cast<char>(std::tolower(c)); // Convert to lowercase
         }
     }
-    
+
     return result.str();
 }
 
 
-// Function to reaname to swapCase
+// Function to rename to swapCase:
+// Capitalizes the first character of each folder component, then alternates
+// upper/lower for subsequent alpha chars. Filename part is left unchanged.
 std::string swap_transform(const std::string& string) {
     std::stringstream transformed;
     bool capitalize = false; // Toggle state for characters after the first in folder names
@@ -60,7 +62,7 @@ std::string swap_transform(const std::string& string) {
 
     for (size_t i = 0; i < length; ++i) {
         const char c = string[i];
-        
+
         // Apply transformation only to the path part before the last folder delimiter
         if (i < folderDelimiter || folderDelimiter == std::string::npos) {
             if (inFolderName) {
@@ -95,7 +97,9 @@ std::string swap_transform(const std::string& string) {
 }
 
 
-// Function to reaname to swaprCase
+// Function to rename to swaprCase:
+// Lowercases the first character of each folder component, then alternates
+// lower/upper for subsequent alpha chars. Filename part is left unchanged.
 std::string swapr_transform(const std::string& string) {
     std::stringstream transformed;
     bool capitalize = false; // Toggle state for characters after the first in folder names
@@ -105,7 +109,7 @@ std::string swapr_transform(const std::string& string) {
 
     for (size_t i = 0; i < length; ++i) {
         const char c = string[i];
-        
+
         // Apply transformation only to the path part before the last folder delimiter
         if (i < folderDelimiter || folderDelimiter == std::string::npos) {
             if (inFolderName) {
@@ -144,7 +148,7 @@ std::string swapr_transform(const std::string& string) {
 std::string to_camel_case(const std::string& string, bool isFile) {
     std::string base = string;
     std::string extension;
-    
+
     // Split filename into base and extension at last dot
     if (isFile) {
         size_t lastDot = string.find_last_of('.');
@@ -171,7 +175,7 @@ std::string to_camel_case(const std::string& string, bool isFile) {
             capitalizeNext = true;
         } else {
             result += c;
-            capitalizeNext = !std::isalnum(c); // Reset on non-alphanumeric
+            capitalizeNext = !std::isalnum(c); // Capitalize after non-alphanumeric
         }
     }
 
@@ -182,7 +186,7 @@ std::string to_camel_case(const std::string& string, bool isFile) {
 std::string to_pascal(const std::string& string, bool isFile) {
     std::string base = string;
     std::string extension;
-    
+
     // Split filename into base and extension at last dot
     if (isFile) {
         size_t lastDot = string.find_last_of('.');
@@ -203,14 +207,14 @@ std::string to_pascal(const std::string& string, bool isFile) {
             capitalizeNext = true;
         } else {
             result += c;
-            capitalizeNext = !std::isalnum(c); // Reset on non-alphanumeric
+            capitalizeNext = !std::isalnum(c); // Capitalize after non-alphanumeric
         }
     }
 
     return result + extension;
 }
 
-// Reverses camelCase or PascalCase to space-separated
+// Reverses camelCase to space-separated lowercase words
 std::string from_camel_case(const std::string& string) {
     std::string result;
     for (size_t i = 0; i < string.size(); ++i) {
@@ -223,7 +227,9 @@ std::string from_camel_case(const std::string& string) {
     return result;
 }
 
-// Reverses PascalCase to space-separated (special handling for initial caps)
+// Reverses PascalCase to space-separated, preserving the leading capital as lowercase
+// (behaviour is identical to from_camel_case; both insert a space before each
+// interior uppercase letter and lowercase everything)
 std::string from_pascal_case(const std::string& string) {
     std::string result;
     for (size_t i = 0; i < string.size(); ++i) {
@@ -237,19 +243,18 @@ std::string from_pascal_case(const std::string& string) {
 }
 
 
-// Function to remove sequential numbering from folder name
-std::string get_renamed_folder_name_without_numbering(const fs::path& folder_path) {
-    std::string folder_name = folder_path.filename().string();
-
+// Function to remove sequential numbering from folder name.
+// Accepts a bare folder name (not a full path).
+std::string get_renamed_folder_name_without_numbering(const std::string& folder_name) {
     // Find the position of the first non-zero digit
     size_t first_non_zero = folder_name.find_first_not_of('0');
 
     // Check if the folder name starts with a sequence of digits followed by an underscore
     size_t underscore_pos = folder_name.find('_', first_non_zero);
-    if (underscore_pos != std::string::npos && folder_name.find_first_not_of("0123456789", first_non_zero) == underscore_pos) {
+    if (underscore_pos != std::string::npos &&
+        folder_name.find_first_not_of("0123456789", first_non_zero) == underscore_pos) {
         // Extract the original name without the numbering
-        std::string original_name = folder_name.substr(underscore_pos + 1);
-        return original_name;
+        return folder_name.substr(underscore_pos + 1);
     }
 
     // No sequential numbering found, return original name
@@ -257,10 +262,9 @@ std::string get_renamed_folder_name_without_numbering(const fs::path& folder_pat
 }
 
 
-// Function to remove date suffix from folder name
-std::string get_renamed_folder_name_without_date(const fs::path& folder_path) {
-    std::string folder_name = folder_path.filename().string();
-
+// Function to remove date suffix from folder name.
+// Accepts a bare folder name (not a full path).
+std::string get_renamed_folder_name_without_date(const std::string& folder_name) {
     // Check if the folder name ends with the date suffix format "_YYYYMMDD"
     if (folder_name.size() < 9 || folder_name.substr(folder_name.size() - 9, 1) != "_")
         return folder_name; // No date suffix found, return original name
@@ -277,23 +281,20 @@ std::string get_renamed_folder_name_without_date(const fs::path& folder_path) {
         return folder_name; // Not a valid date suffix, return original name
 
     // Remove the date suffix from the folder name
-    std::string new_folder_name = folder_name.substr(0, folder_name.size() - 9);
-
-    return new_folder_name;
+    return folder_name.substr(0, folder_name.size() - 9);
 }
 
-// Function to append date suffix to folder name
-std::string append_date_suffix_to_folder_name(const fs::path& folder_path) {
-    std::string folder_name = folder_path.filename().string();
-
+// Function to append date suffix to folder name.
+// Accepts a bare folder name (not a full path).
+std::string append_date_suffix_to_folder_name(const std::string& folder_name) {
     // If the folder name is empty, return an empty string
     if (folder_name.empty())
         return "";
 
-    // Check if the folder name already ends with a date suffix
+    // Check if the folder name already ends with a date suffix (_YYYYMMDD)
     if (folder_name.size() >= 9 && folder_name.substr(folder_name.size() - 9, 1) == "_" &&
         folder_name.substr(folder_name.size() - 8, 8).find_first_not_of("0123456789") == std::string::npos)
-        return folder_name; // If it does, do not rename
+        return folder_name; // Already has a date suffix; do not rename
 
     // Find the last underscore character in the folder name, excluding numeric prefix
     size_t last_underscore_pos = folder_name.find_last_of('_', folder_name.find_first_not_of("0123456789"));
@@ -302,7 +303,7 @@ std::string append_date_suffix_to_folder_name(const fs::path& folder_path) {
     if (last_underscore_pos != std::string::npos &&
         folder_name.size() - last_underscore_pos == 9 &&
         folder_name.substr(last_underscore_pos + 1, 8).find_first_not_of("0123456789") == std::string::npos)
-        return folder_name; // If it does, do not rename
+        return folder_name; // Already has a date suffix; do not rename
 
     // Get the current date in YYYYMMDD format
     auto now = std::chrono::system_clock::now();
@@ -312,22 +313,19 @@ std::string append_date_suffix_to_folder_name(const fs::path& folder_path) {
     oss << std::put_time(&local_tm, "%Y%m%d");
     std::string date_suffix = "_" + oss.str();
 
-    // Append the date suffix to the folder name
-    std::string new_folder_name = folder_name + date_suffix;
-
-    return new_folder_name;
+    return folder_name + date_suffix;
 }
 
 
 // For Files
 
-// Function to add sequencial numbering to files
+// Function to add sequential numbering to files
 std::string append_numbered_prefix(const std::filesystem::path& parent_path, const std::string& file_string) {
     static std::unordered_map<std::filesystem::path, std::vector<std::string>> file_map;
-    
+
     // Clear the file map for this parent path
     file_map[parent_path].clear();
-    
+
     // Function to remove existing numeric prefix
     auto remove_prefix = [](const std::string& filename) {
         size_t pos = filename.find('_');
@@ -343,22 +341,22 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
             file_map[parent_path].push_back(remove_prefix(entry.path().filename().string()));
         }
     }
-    
+
     auto& files = file_map[parent_path];
-    
+
     // Add the new file to the list if it doesn't exist
     std::string file_without_prefix = remove_prefix(file_string);
     if (std::find(files.begin(), files.end(), file_without_prefix) == files.end()) {
         files.push_back(file_without_prefix);
     }
-    
+
     // Sort files alphabetically by their names
     std::sort(files.begin(), files.end());
-    
+
     // Find the position of the current file
     auto it = std::find(files.begin(), files.end(), file_without_prefix);
     int position = std::distance(files.begin(), it) + 1;
-    
+
     // Create the new filename
     std::ostringstream oss;
     oss << std::setfill('0') << std::setw(3) << position << "_" << file_without_prefix;
@@ -366,11 +364,11 @@ std::string append_numbered_prefix(const std::filesystem::path& parent_path, con
 }
 
 
-// Function to remove sequencial numbering from files
+// Function to remove sequential numbering from files
 std::string remove_numbered_prefix(const std::string& file_string) {
     size_t pos = file_string.find_first_not_of("0123456789");
 
-    // Check if the filename is already numbered and contains an underscore after numbering
+    // Check if the filename starts with digits followed by an underscore
     if (pos != std::string::npos && pos > 0 && file_string[pos] == '_' && file_string[pos - 1] != '_') {
         // Remove the number and the first underscore
         return file_string.substr(pos + 1);
@@ -449,17 +447,17 @@ std::string remove_date_seq(const std::string& file_string) {
     return file_string;
 }
 
- 
+
 // Folder numbering functions mv style
 void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, std::atomic<int>& dirs_count, std::atomic<int>& skipped_folder_special_count, std::atomic<int>& depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths) {
     // Reserve capacity for folders_to_rename
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename;
     folders_to_rename.reserve(batch_size_folders);
-    
+
     // Reserve capacity for unchanged_folder_paths
     std::vector<std::pair<fs::path, bool>> unchanged_folder_paths;
     unchanged_folder_paths.reserve(batch_size_folders);
-    
+
     // Reserve capacity for folder_names
     std::vector<std::pair<std::string, fs::path>> folder_names;
     folder_names.reserve(batch_size_folders);
@@ -480,7 +478,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
         }
 
         // Sort folder names alphabetically, ignoring any existing numbering
-        std::sort(folder_names.begin(), folder_names.end(), 
+        std::sort(folder_names.begin(), folder_names.end(),
             [](const auto& a, const auto& b) {
                 std::string name_a = a.first, name_b = b.first;
                 size_t pos_a = name_a.find('_');
@@ -519,10 +517,10 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     original_name = folder_name.substr(pos + 1);
                 }
 
-                // Construct the new name with sequential numbering and original name
                 std::stringstream ss;
                 ss << std::setw(3) << std::setfill('0') << counter << "_" << original_name;
-                fs::path new_name = base_directory / (prefix.empty() ? "" : (prefix + "_")) / ss.str();
+                std::string new_filename = (prefix.empty() ? "" : (prefix + "_")) + ss.str();
+                fs::path new_name = base_directory / new_filename;
 
                 // Add folder to the vector for batch renaming only if the name has changed
                 if (new_name != folder_path) {
@@ -538,7 +536,7 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
             unsigned int num_threads = std::min(static_cast<unsigned int>(folders_to_rename.size()), max_threads);
 
             if (num_paths > 1) {
-                unsigned int max_threads_per_path = std::max(1u, max_threads / num_paths);
+                unsigned int max_threads_per_path = std::max(1u, max_threads / static_cast<unsigned int>(num_paths));
                 num_threads = max_threads_per_path;
             }
 
