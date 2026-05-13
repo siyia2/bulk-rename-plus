@@ -289,7 +289,7 @@ void batch_rename_extension(const std::vector<std::pair<fs::path, fs::path>>& da
 
 
 // Function to search subdirs for file extensions recursively for multiple paths in parallel
-void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, std::atomic<int>& depth, std::atomic<int>& files_count, size_t batch_size_files, bool symlinks, std::atomic<int>& skipped_file_count, bool skipped, bool skipped_only, bool non_interactive) {
+void rename_extension_path(const std::vector<std::string>& paths, const std::string& case_input, bool verbose_enabled, int depth, std::atomic<int>& files_count, size_t batch_size_files, bool symlinks, std::atomic<int>& skipped_file_count, bool skipped, bool skipped_only, bool non_interactive) {
     // If depth is negative, set it to a very large number to effectively disable the depth limit
     if (depth < 0) {
         depth = std::numeric_limits<int>::max();
@@ -536,7 +536,7 @@ void process_in_batches(const std::vector<fs::path>& items,
 
 
 // Function to rename a directory based on specified transformations
-void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, std::atomic<int>& depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, std::atomic<bool>& isFirstRun, std::atomic<bool>& special, int num_paths) {
+void rename_directory(const fs::path& directory_path, const std::string& case_input, bool rename_parents, bool verbose_enabled, bool transform_dirs, bool transform_files, std::atomic<int>& files_count, std::atomic<int>& dirs_count, int depth, size_t batch_size_files, size_t batch_size_folders, bool symlinks, std::atomic<int>& skipped_file_count, std::atomic<int>& skipped_folder_count, std::atomic<int>& skipped_folder_special_count, bool skipped, bool skipped_only, std::atomic<bool>& isFirstRun, std::atomic<bool>& special, int num_paths) {
     std::string dirname = directory_path.filename().string();
     std::string new_dirname = dirname;
 
@@ -678,7 +678,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
 
     // Process directory contents
     if (depth != 0) {
-        if (depth > 0) --depth;
+            int child_depth = (depth > 0) ? depth - 1 : depth;
 
         std::vector<fs::path> dir_batch;
         std::vector<fs::path> file_batch;
@@ -690,7 +690,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
                 if (rename_parents) {
                     rename_directory(entry.path(), case_input, false, verbose_enabled,
                                    transform_dirs, transform_files, files_count, dirs_count,
-                                   depth, batch_size_files, batch_size_folders, symlinks,
+                                   child_depth, batch_size_files, batch_size_folders, symlinks,
                                    skipped_file_count, skipped_folder_count,
                                    skipped_folder_special_count, skipped, skipped_only,
                                    isFirstRun, special, num_paths);
@@ -707,7 +707,7 @@ void rename_directory(const fs::path& directory_path, const std::string& case_in
             [&](const fs::path& dir) {
                 rename_directory(dir, case_input, false, verbose_enabled,
                                transform_dirs, transform_files, files_count, dirs_count,
-                               depth, batch_size_files, batch_size_folders, symlinks,
+                               child_depth, batch_size_files, batch_size_folders, symlinks,
                                skipped_file_count, skipped_folder_count,
                                skipped_folder_special_count, skipped, skipped_only,
                                isFirstRun, special, num_paths);

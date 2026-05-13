@@ -449,7 +449,7 @@ std::string remove_date_seq(const std::string& file_string) {
 
 
 // Folder numbering functions mv style
-void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, std::atomic<int>& dirs_count, std::atomic<int>& skipped_folder_special_count, std::atomic<int>& depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths) {
+void rename_folders_with_sequential_numbering(const fs::path& base_directory, std::string prefix, std::atomic<int>& dirs_count, std::atomic<int>& skipped_folder_special_count, int depth, bool verbose_enabled, bool skipped, bool skipped_only, bool symlinks, size_t batch_size_folders, int num_paths) {
     // Reserve capacity for folders_to_rename
     std::vector<std::pair<fs::path, fs::path>> folders_to_rename;
     folders_to_rename.reserve(batch_size_folders);
@@ -465,8 +465,6 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
     bool renaming_needed = false;
 
     if (depth != 0) {
-        if (depth > 0)
-            --depth;
 
         // Collect folder paths and names
         for (const auto& folder : fs::directory_iterator(base_directory)) {
@@ -517,6 +515,8 @@ void rename_folders_with_sequential_numbering(const fs::path& base_directory, st
                     original_name = folder_name.substr(pos + 1);
                 }
 
+                // Construct the new name with sequential numbering and original name
+                // Fix: prefix is prepended to the filename string, not inserted as a path segment
                 std::stringstream ss;
                 ss << std::setw(3) << std::setfill('0') << counter << "_" << original_name;
                 std::string new_filename = (prefix.empty() ? "" : (prefix + "_")) + ss.str();
