@@ -55,7 +55,7 @@ void print_verbose_enabled(const std::string& message, std::ostream& out) {
 
 // Print the version number of the program
 void printVersionNumber(const std::string& version) {
-    std::cout << "\x1B[32mBulk Rename Plus v" << version << "\x1B[0m\n";
+    std::cout << "\x1B[1mBulk Rename Plus v" << version << "\x1B[0m\n";
 }
 
 
@@ -72,7 +72,7 @@ void clearScrollBuffer() {
 // Function to print help
 void print_help() {
 
-std::cout << "\n\x1B[32mUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
+std::cout << "\nUsage: bulk_rename++ [OPTIONS] [MODE] [PATHS]\n"
           << "Renames all files and folders under the specified path(s).\n"
           << "\n"
           << "Options:\n"
