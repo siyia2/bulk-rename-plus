@@ -1,11 +1,13 @@
+# Default: dynamic build
 CXX = g++
 CXXFLAGS = -O3 -Wall -Wextra -fopenmp -flto -fmerge-all-constants -fdata-sections -ffunction-sections -fno-plt -fno-rtti
 LDFLAGS = -fopenmp -flto -ffunction-sections -fdata-sections -fno-plt -Wl,--gc-sections -Wl,--strip-all -Wl,--as-needed -Wl,-z,relro -Wl,-z,now
 
-# Flags for static builds
-#CXX = g++
-#CXXFLAGS = -static -O3 -Wall -Wextra -fopenmp -flto -fmerge-all-constants -fdata-sections -ffunction-sections -fno-plt -fno-rtti
-#LDFLAGS = -static -fopenmp -flto -ffunction-sections -fdata-sections -fno-plt -Wl,--gc-sections -Wl,--strip-all -Wl,--as-needed -Wl,-z,relro -Wl,-z,now
+# Static build flags (enabled with STATIC=1)
+ifeq ($(STATIC),1)
+    CXXFLAGS += -static
+    LDFLAGS = -static -fopenmp -flto -ffunction-sections -fdata-sections -fno-plt -Wl,--gc-sections -Wl,--strip-all -Wl,--as-needed -Wl,-z,relro -Wl,-z,now
+endif
 
 # Use the number of available processors from nproc
 NUM_PROCESSORS := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu)
