@@ -350,7 +350,7 @@ void rename_extension_path(const std::vector<std::string>& paths, const std::str
         std::cout << "\n";
     }
     if (!non_interactive || verbose_enabled) {
-        std::cout << "\n\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0;1m | \033[1mFrom: \033[1;95m" << paths.size()
+        std::cout << "\n\033[1A\033[K\033[1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m | Skipped: \033[1;93m" << skipped_file_count << " file(s)\033[0;1m | \033[1mFrom: \033[1;95m" << paths.size()
                   << " input path(s) \033[0;1m" << "\n\n\033[0;1mTime Elapsed: " << std::setprecision(1)
                   << std::fixed << elapsed_seconds.count() << "\033[1m second(s)\n\n";
     }
@@ -763,7 +763,7 @@ void rename_path(const std::vector<std::string>& paths, const std::string& case_
         std::cout << "\n";
     }
     if (!non_interactive || verbose_enabled) {
-        std::cout << "\n\033[0;1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m&& \033[1;94m"
+        std::cout << "\n\033[1A\033[K\033[0;1mRenamed: \033[1;92m" << files_count << " file(s) \033[0;1m&& \033[1;94m"
                   << dirs_count << " folder(s) \033[1m\033[0;1m| Skipped: \033[1;93m" << skipped_file_count << " file(s) \033[0;1m&& \033[1;93m";
 
         if (special) {
@@ -1142,12 +1142,10 @@ int main(int argc, char *argv[]) {
 
     if (!ni_flag) {
         if (confirmation != "y") {
-            std::cout << "\n\033[1;93mRename operation aborted by user.\033[0m";
-            std::cout << "\n";
-            std::cout << "\n\033[1mPress enter to exit...\033[0m";
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             clearScrollBuffer();
             return 0;
+        } else {
+            std::cout << "\033[1A\033[K";
         }
     }
 
