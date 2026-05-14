@@ -820,37 +820,36 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
 
     // Display transformation based on the mode
     if (mode == "lower") {
-        transformed_word = ce_flag ? "test.txt" : "test";
+        transformed_word = ce_flag ? "Test.txt" : "test";
     } else if (mode == "upper") {
-        transformed_word = ce_flag ? "TEST.TXT" : "TEST";
+        transformed_word = ce_flag ? "Test.TXT" : "TEST";
     } else if (mode == "reverse") {
-        transformed_word = ce_flag ? "tSET.TXT" : "tSET";
+        transformed_word = ce_flag ? "Test.TXT" : "tSET";
     } else if (mode == "title") {
         transformed_word = ce_flag ? "Test.Txt" : "Test";
     } else if (mode == "swap") {
-        transformed_word = ce_flag ? "tEST.TXT" : "tEST";
+        transformed_word = ce_flag ? "Test.TXT" : "tEST";
     } else if (mode == "swapr") {
-        transformed_word = ce_flag ? "TesT.Txt" : "tEsT";
+        transformed_word = ce_flag ? "Test.Txt" : "tEsT";
     } else if (mode == "pascal") {
-        transformed_word = ce_flag ? "TeSt.Txt" : "TeSt";
+        transformed_word = ce_flag ? "Test.Txt" : "TeSt";
     } else if (mode == "camel") {
-        transformed_word = ce_flag ? "teSt.txt" : "teSt";
+        transformed_word = ce_flag ? "Test.txt" : "teSt";
     } else if (mode == "kebab") {
-        transformed_word = ce_flag ? "Te-st.txt" : "Te-st";
+        transformed_word = ce_flag ? "Test.txt" : "Te-st";
     } else if (mode == "snake") {
-        transformed_word = ce_flag ? "Te_st.txt" : "Te_st";
+        transformed_word = ce_flag ? "Test.txt" : "Te_st";
     } else if (mode == "rpascal") {
-        transformed_word = ce_flag ? "Te St.txt" : "Te St";
+        transformed_word = ce_flag ? "Test.txt" : "Te St";
     } else if (mode == "rcamel") {
-        transformed_word = ce_flag ? "te st.txt" : "te st";
+        transformed_word = ce_flag ? "Test.txt" : "te st";
     } else if (mode == "rsnake") {
-        transformed_word = ce_flag ? "Te st.txt" : "Te st";
+        transformed_word = ce_flag ? "Test.txt" : "Te st";
     } else if (mode == "rkebab") {
-        transformed_word = ce_flag ? "Te st.txt" : "Te st";
-    } else if (mode == "date") {
-        transformed_word = ce_flag ? "Test_20240215.txt" : "Test_20240215";
+        transformed_word = ce_flag ? "Test.txt" : "Te st";
+        transformed_word = ce_flag ? "Test.txt" : "Test_20240215";
     } else if (mode == "sequence") {
-        transformed_word = ce_flag ? "001_Test.txt" : "001_Test";
+        transformed_word = ce_flag ? "Test.txt" : "001_Test";
     } else if (mode == "rsequence") {
         transformed_word = ce_flag ? "Test.txt" : "Test";
     } else if (mode == "rdate") {
