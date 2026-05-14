@@ -847,6 +847,7 @@ std::string example_transform(const std::string& mode, std::string word, bool ce
         transformed_word = ce_flag ? "Test.txt" : "Te st";
     } else if (mode == "rkebab") {
         transformed_word = ce_flag ? "Test.txt" : "Te st";
+    } else if (mode == "date") {
         transformed_word = ce_flag ? "Test.txt" : "Test_20240215";
     } else if (mode == "sequence") {
         transformed_word = ce_flag ? "Test.txt" : "001_Test";
